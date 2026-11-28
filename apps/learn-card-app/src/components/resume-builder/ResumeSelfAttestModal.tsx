@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('resume-self-attest-modal');
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import {
     BoostCategoryOptionsEnum,
     boostCategoryMetadata,
@@ -205,7 +205,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     disabled={continueDisabled}
                 >
                     {isLoading ? (
-                        <IonSpinner name="crescent" className="w-4 h-4" />
+                        <AppSpinner name="crescent" className="w-4 h-4" />
                     ) : (
                         m['common.add']()
                     )}

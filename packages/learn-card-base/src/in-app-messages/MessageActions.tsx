@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, alertCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import type { InAppMessageAction } from '@learncard/types';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { useCapgoUpdate } from './useCapgoUpdate';
 import { useT } from '../i18n';
 import type { MessageInteraction, MessagePresentationProps } from './presentationTypes';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 interface MessageActionsProps extends Pick<MessagePresentationProps, 'onClose' | 'onAction'> {
     actions: InAppMessageAction[];
@@ -80,7 +80,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                                 return (
                                     <div key={index} className="space-y-v3-3">
                                         <div className="p-3.5 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left">
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={alertCircleOutline}
                                                 className="text-red-400 text-lg mt-0.5 shrink-0"
                                             />
@@ -102,7 +102,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                                 return (
                                     <div key={index} className="space-y-v3-3">
                                         <div className="p-3.5 bg-emerald-50/80 backdrop-blur-sm border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left">
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={checkmarkCircleOutline}
                                                 className="text-emerald-500 text-lg mt-0.5 shrink-0"
                                             />

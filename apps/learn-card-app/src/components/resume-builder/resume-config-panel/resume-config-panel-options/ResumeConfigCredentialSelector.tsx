@@ -3,10 +3,14 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInstance } from 'swiper';
 
 import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
-import { chevronDownOutline, chevronUpOutline, searchOutline } from 'ionicons/icons';
+import {
+    chevronDownOutline,
+    chevronUpOutline,
+    searchOutline,
+} from 'learn-card-base/icons/ionicons';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import type { CredentialCategory } from 'learn-card-base/types/credentials';
 
 import { useGetCredentialList } from 'learn-card-base';
@@ -211,7 +215,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                         </div>
                     </div>
                 </div>
-                <IonIcon
+                <AppIcon
                     color="grayscale-800"
                     icon={open ? chevronDownOutline : chevronUpOutline}
                     className="shrink-0 text-grayscale-500"
@@ -227,7 +231,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                     <div className="overflow-hidden pb-4">
                         <div className="px-4 pt-4">
                             <div className="flex items-center gap-3 rounded-2xl bg-grayscale-100 px-4 py-3">
-                                <IonIcon
+                                <AppIcon
                                     icon={searchOutline}
                                     className="h-5 w-5 shrink-0 text-grayscale-500"
                                 />

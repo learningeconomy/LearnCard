@@ -1,4 +1,4 @@
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const BoostTextSkeleton: React.FC<{
     containerClassName?: string;
@@ -6,7 +6,7 @@ export const BoostTextSkeleton: React.FC<{
 }> = ({ containerClassName, skeletonStyles }) => {
     return (
         <section className={containerClassName}>
-            <IonSkeletonText animated={true} style={{ ...skeletonStyles }} />
+            <AppSkeletonText animated={true} style={{ ...skeletonStyles }} />
         </section>
     );
 };
@@ -17,7 +17,7 @@ export const BoostSkeleton: React.FC<{
 }> = ({ containerClassName, skeletonStyles }) => {
     return (
         <section className={containerClassName}>
-            <IonSkeletonText animated={true} style={{ ...skeletonStyles }} />
+            <AppSkeletonText animated={true} style={{ ...skeletonStyles }} />
         </section>
     );
 };

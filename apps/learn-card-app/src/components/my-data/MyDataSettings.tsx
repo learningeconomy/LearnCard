@@ -1,19 +1,13 @@
 import React from 'react';
 
-import {
-    IonPage,
-    IonGrid,
-    IonCol,
-    IonRow,
-    IonToolbar,
-    IonHeader,
-    IonContent,
-    IonToggle,
-} from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { boostVCTypeOptions } from '../boost/boost-options/boostOptions';
 import { ProfilePicture } from 'learn-card-base';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const MyDataSettings: React.FC<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
@@ -21,13 +15,13 @@ const MyDataSettings: React.FC<{
     handleGoBack: () => void;
 }> = ({ selectedItem, handleGoBack }) => {
     return (
-        <IonPage className="bg-grayscale-900">
-            <IonHeader className="ion-no-border mt-[25px]">
-                <IonToolbar className="ion-no-border" color="grayscale-900">
-                    <IonGrid className="bg-grayscale-900">
-                        <IonRow className="w-full flex flex-col items-center justify-center">
-                            <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                <IonCol className="flex flex-1 justify-start items-center">
+        <AppPage className="bg-grayscale-900">
+            <AppHeader className="ion-no-border mt-[25px]">
+                <AppToolbar className="ion-no-border" color="grayscale-900">
+                    <AppGrid className="bg-grayscale-900">
+                        <AppRow className="w-full flex flex-col items-center justify-center">
+                            <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-white p-0 mr-[10px]"
                                         aria-label="Back button"
@@ -47,16 +41,16 @@ const MyDataSettings: React.FC<{
                                             {selectedItem?.name}
                                         </h3>
                                     </div>
-                                </IonCol>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent fullscreen color="grayscale-900">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol
+                                </AppCol>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent fullscreen color="grayscale-900">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol
                             size="12"
                             className="flex flex-col items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                         >
@@ -67,11 +61,11 @@ const MyDataSettings: React.FC<{
                                 We will use your data to train a personalized tutor for you based on
                                 your skills, goals, and experiences.
                             </p>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
 
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol
                             size="12"
                             className="flex items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                         >
@@ -81,7 +75,7 @@ const MyDataSettings: React.FC<{
                                 </h1>
                             </div>
 
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="emerald-700"
                                 // onIonInput={() => {
@@ -89,17 +83,17 @@ const MyDataSettings: React.FC<{
                                 // }}
                                 // checked={toggle}
                             />
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
 
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
                         <p className="w-full text-left text-white text-base normal">
                             Allow "{selectedItem?.name}" to write
                         </p>
-                    </IonRow>
+                    </AppRow>
 
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol
                             size="12"
                             className="flex flex-col w-full bg-white rounded-[20px] ion-padding"
                         >
@@ -128,7 +122,7 @@ const MyDataSettings: React.FC<{
                                             </h3>
                                         </div>
 
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             color="emerald-700"
                                             // onIonInput={() => {
@@ -139,17 +133,17 @@ const MyDataSettings: React.FC<{
                                     </div>
                                 );
                             })}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
 
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
                         <p className="w-full text-left text-white text-base normal">
                             Allow "{selectedItem?.name}" to read
                         </p>
-                    </IonRow>
+                    </AppRow>
 
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol
                             size="12"
                             className="flex flex-col w-full bg-white rounded-[20px] ion-padding"
                         >
@@ -178,7 +172,7 @@ const MyDataSettings: React.FC<{
                                             </h3>
                                         </div>
 
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             color="emerald-700"
                                             // onIonInput={() => {
@@ -201,7 +195,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -222,7 +216,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -243,7 +237,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -264,7 +258,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -285,7 +279,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -306,7 +300,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -315,10 +309,10 @@ const MyDataSettings: React.FC<{
                                     // checked={toggle}
                                 />
                             </div>
-                        </IonCol>
+                        </AppCol>
 
-                        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                            <IonCol
+                        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                            <AppCol
                                 size="12"
                                 className="flex flex-col items-center justify-between w-full bg-white rounded-[20px]"
                             >
@@ -330,11 +324,11 @@ const MyDataSettings: React.FC<{
                                     </div>
                                     <CaretLeft className="rotate-180 text-grayscale-500" />
                                 </button>
-                            </IonCol>
-                        </IonRow>
+                            </AppCol>
+                        </AppRow>
 
-                        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                            <IonCol
+                        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                            <AppCol
                                 size="12"
                                 className="flex flex-col items-center justify-between w-full bg-white rounded-[20px]"
                             >
@@ -346,12 +340,12 @@ const MyDataSettings: React.FC<{
                                     </div>
                                     <CaretLeft className="rotate-180 text-grayscale-500" />
                                 </button>
-                            </IonCol>
-                        </IonRow>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                            </AppCol>
+                        </AppRow>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

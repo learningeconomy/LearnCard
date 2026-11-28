@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, shieldHalfOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    alertCircleOutline,
+    shieldHalfOutline,
+    checkmarkCircleOutline,
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
 
@@ -62,7 +66,7 @@ export const EscrowRecoveryHoldBanner = ({
             {success ? (
                 <div className="flex flex-col items-center justify-center py-4 space-y-v3-3 animate-fade-in-up motion-reduce:animate-none">
                     <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <IonIcon
+                        <AppIcon
                             icon={checkmarkCircleOutline}
                             className="text-emerald-600 text-2xl"
                         />
@@ -75,7 +79,7 @@ export const EscrowRecoveryHoldBanner = ({
                 <>
                     <div className="flex items-start gap-4">
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                            <IonIcon icon={shieldHalfOutline} className="text-amber-600 text-xl" />
+                            <AppIcon icon={shieldHalfOutline} className="text-amber-600 text-xl" />
                         </div>
                         <div className="space-y-v3-1 flex-1">
                             <h3
@@ -108,7 +112,7 @@ export const EscrowRecoveryHoldBanner = ({
 
                     {error && (
                         <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 className="text-red-400 text-lg mt-0.5 shrink-0"
                             />

@@ -7,10 +7,11 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { IonSkeletonText, IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { StyleSetEnum } from '../../theme/styles';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 /**
  * Maps each CredentialCategoryEnum value to the existing translated tile
@@ -146,9 +147,9 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                         )}
                         {loading ? (
                             <div className="relative w-full h-full rounded-full overflow-hidden">
-                                <IonSkeletonText className="h-full m-0" animated />
+                                <AppSkeletonText className="h-full m-0" animated />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         role="status"
                                         aria-label={m['common.loading']()}

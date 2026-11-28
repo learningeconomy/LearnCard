@@ -11,18 +11,6 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonFooter: ({
-        children,
-        mode: _mode,
-        ...props
-    }: React.PropsWithChildren<React.HTMLAttributes<HTMLElement> & { mode?: string }>) => (
-        <footer {...props}>{children}</footer>
-    ),
-    IonHeader: ({ children }: React.PropsWithChildren) => <header>{children}</header>,
-    IonToolbar: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
-
 vi.mock('qr-scanner', () => ({
     default: { scanImage: vi.fn() },
 }));
@@ -104,7 +92,7 @@ describe('PasteOrUploadClaimModal website continuation', () => {
     it('keeps the footer height cap while accounting for the bottom inset', () => {
         const { container } = render(<PasteOrUploadClaimModal mode="claim-link" />);
 
-        expect(container.querySelector('footer')).toHaveStyle({
+        expect(container.querySelector('[data-app-footer]')).toHaveStyle({
             maxHeight:
                 'calc(100px + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))',
         });

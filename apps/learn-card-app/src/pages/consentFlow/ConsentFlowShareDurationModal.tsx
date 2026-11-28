@@ -1,23 +1,16 @@
 import React from 'react';
 import moment from 'moment';
 
-import {
-    IonCol,
-    IonContent,
-    IonDatetime,
-    IonGrid,
-    IonHeader,
-    IonPage,
-    IonRow,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Calendar from '../../components/svgs/Calendar';
 import { RadioButton } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 
@@ -52,9 +45,9 @@ const ConsentFlowShareDurationModal: React.FC<{
         });
     };
 
-    const [presentDatePicker] = useIonModal(
+    const [presentDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     handleStateChange('customDuration', moment(e.detail.value).toISOString());
                     handleStateChange('oneTimeShare', false);
@@ -76,14 +69,14 @@ const ConsentFlowShareDurationModal: React.FC<{
     );
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
-                <IonHeader className="ion-no-border mt-[25px]">
-                    <IonToolbar className="ion-no-border" color="white">
-                        <IonGrid>
-                            <IonRow className="w-full flex flex-col items-center justify-center">
-                                <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                    <IonCol className="flex flex-1 justify-start items-center border-b-2 border-b-grayscale-200 pb-4">
+        <AppPage>
+            <AppContent fullscreen>
+                <AppHeader className="ion-no-border mt-[25px]">
+                    <AppToolbar className="ion-no-border" color="white">
+                        <AppGrid>
+                            <AppRow className="w-full flex flex-col items-center justify-center">
+                                <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                    <AppCol className="flex flex-1 justify-start items-center border-b-2 border-b-grayscale-200 pb-4">
                                         <button
                                             className="text-white p-0 mr-[10px]"
                                             aria-label="Back button"
@@ -94,21 +87,21 @@ const ConsentFlowShareDurationModal: React.FC<{
                                         <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
                                             {m['common.share']()}
                                         </h3>
-                                    </IonCol>
-                                </IonRow>
-                            </IonRow>
-                        </IonGrid>
-                    </IonToolbar>
-                </IonHeader>
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
+                                    </AppCol>
+                                </AppRow>
+                            </AppRow>
+                        </AppGrid>
+                    </AppToolbar>
+                </AppHeader>
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
                         <div
                             role="radiogroup"
                             aria-label={m['consentFlow.shareDuration']()}
                             className="w-full"
                         >
-                            <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
-                                <IonCol class="flex items-center justify-between w-full ion-padding">
+                            <AppRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
+                                <AppCol className="flex items-center justify-between w-full ion-padding">
                                     <p className="text-lg font-medium">
                                         {m['consentFlow.sync.liveSyncing']()}
                                     </p>
@@ -121,10 +114,10 @@ const ConsentFlowShareDurationModal: React.FC<{
                                             handleStateChange('customDuration', '');
                                         }}
                                     />
-                                </IonCol>
-                            </IonRow>
-                            <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
-                                <IonCol class="flex items-center justify-between w-full ion-padding">
+                                </AppCol>
+                            </AppRow>
+                            <AppRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
+                                <AppCol className="flex items-center justify-between w-full ion-padding">
                                     <p className="text-lg font-medium">
                                         {m['consentFlow.shareOneTimeOnly']()}
                                     </p>
@@ -137,10 +130,10 @@ const ConsentFlowShareDurationModal: React.FC<{
                                             handleStateChange('oneTimeShare', true);
                                         }}
                                     />
-                                </IonCol>
-                            </IonRow>
-                            <IonRow className="w-full flex flex-col items-center justify-center mt-2">
-                                <IonCol class="flex items-center justify-between w-full ion-padding">
+                                </AppCol>
+                            </AppRow>
+                            <AppRow className="w-full flex flex-col items-center justify-center mt-2">
+                                <AppCol className="flex items-center justify-between w-full ion-padding">
                                     <p className="text-lg font-medium">
                                         {m['consentFlow.customDuration']()}
                                     </p>
@@ -156,8 +149,8 @@ const ConsentFlowShareDurationModal: React.FC<{
                                             }
                                         }}
                                     />
-                                </IonCol>
-                            </IonRow>
+                                </AppCol>
+                            </AppRow>
                         </div>
                         <div className="flex flex-col items-center justify-center w-full mb-2 mt-4 px-4">
                             <p className="w-full text-left mb-2 pl-2">
@@ -181,10 +174,10 @@ const ConsentFlowShareDurationModal: React.FC<{
                                 <Calendar className="w-[30px] text-grayscale-700" />
                             </button>
                         </div>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

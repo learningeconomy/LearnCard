@@ -17,7 +17,7 @@ import {
     useNetworkConsentMutation,
 } from 'learn-card-base';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { ProfilePicture } from 'learn-card-base';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
@@ -213,12 +213,12 @@ export const JoinNetworkPrompt: React.FC<{
                     {step === 2 && (
                         <div className="flex flex-col items-center justify-center w-full px-4">
                             <div className="flex flex-col items-center justify-center max-w-[375px] w-full mb-4">
-                                <IonInput
+                                <AppInput
                                     autocapitalize="on"
                                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base text-left ${
                                         error || errors?.profileId ? 'login-input-email-error' : ''
                                     }`}
-                                    onIonInput={e => setProfileId(e.detail.value)}
+                                    onValueInput={value => setProfileId(value)}
                                     value={profileId}
                                     readonly={classlink}
                                     placeholder="User ID"

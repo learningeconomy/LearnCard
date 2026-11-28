@@ -3,7 +3,8 @@ import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -82,6 +83,7 @@ import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFra
 import * as m from '../../../paraglide/messages.js';
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {
@@ -614,7 +616,7 @@ const UpdateBoostCMS: React.FC = () => {
         );
     }
 
-    const [presentModal, dissmissModal] = useIonModal(BoostPreview, {
+    const [presentModal, dissmissModal] = useAppOverlayModal(BoostPreview, {
         credential: getBoostCredentialPreview(state),
         categoryType: state?.basicInfo?.type,
         handleCloseModal: () => {
@@ -810,7 +812,7 @@ const UpdateBoostCMS: React.FC = () => {
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {(isBoostLoading || isLoading || isSaveLoading || isPublishLoading) && (
                 <BoostLoader text={loadingText} darkBackground />
             )}
@@ -827,22 +829,22 @@ const UpdateBoostCMS: React.FC = () => {
                 isLoading={isLoading}
             />
 
-            <IonContent fullscreen color="grayscale-800">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4">
+            <AppContent fullscreen color="grayscale-800">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
-                </IonGrid>
+                </AppGrid>
 
                 {currentStep !== BoostCMSStepsEnum.confirmation && (
-                    <IonRow className="w-full flex items-center justify-center pb-[200px]">
-                        <IonCol className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center pb-[200px]">
+                        <AppCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
                                 {m['boost.cms.quit']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

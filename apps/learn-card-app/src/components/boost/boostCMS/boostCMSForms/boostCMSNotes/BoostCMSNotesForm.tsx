@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonTextarea } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
 
@@ -17,22 +18,22 @@ const BoostCMSNotesForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white">
                 <h1 className="font-poppins text-black text-xl p-0 m-0">
                     {m['boost.cms.notes.title']()}
                 </h1>
 
                 <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
-                    <IonTextarea
+                    <AppTextarea
                         autocapitalize="on"
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] px-[16px] py-[8px] font-medium tracking-widest text-base"
                         placeholder={m['boost.cms.notes.placeholder']()}
-                        onIonInput={e => handleStateChange(e.detail.value)}
+                        onValueInput={value => handleStateChange(value)}
                     />
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

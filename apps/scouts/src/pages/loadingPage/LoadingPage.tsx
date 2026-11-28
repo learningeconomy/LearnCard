@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 
-import { IonCol, IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
 import ScoutPassTextLogo from '../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
 import LoginLoadingPage from '../login/LoginPageLoader/LoginLoader';
@@ -16,24 +15,27 @@ import {
     useCurrentUser,
     useIsLoggedIn,
 } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const LoadingPage: React.FC = () => {
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 color="sp-purple-base"
                 className="flex items-center justify-center bg-sp-purple-base"
             >
-                <IonRow className="h-full w-full flex items-center justify-center">
-                    <IonCol className="w-full flex items-center justify-center flex-col">
+                <AppRow className="h-full w-full flex items-center justify-center">
+                    <AppCol className="w-full flex items-center justify-center flex-col">
                         <img src={ScoutPassLogo} alt="" className="w-[55px]" />
                         <img src={ScoutPassTextLogo} alt="" className="mt-4" />
-                        <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
-                    </IonCol>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                        <AppSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
+                    </AppCol>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -41,24 +43,25 @@ export default LoadingPage;
 
 export const LoadingPageDumb: React.FC = () => {
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 color="sp-purple-base"
                 className="flex items-center justify-center bg-sp-purple-base"
             >
-                <IonRow className="h-full w-full flex items-center justify-center">
-                    <IonCol className="w-full flex items-center justify-center flex-col">
+                <AppRow className="h-full w-full flex items-center justify-center">
+                    <AppCol className="w-full flex items-center justify-center flex-col">
                         <img src={ScoutPassLogo} alt="" className="w-[55px]" />
                         <img src={ScoutPassTextLogo} alt="" className="mt-4" />
-                        <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
-                    </IonCol>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                        <AppSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
+                    </AppCol>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 
+// eslint-disable-next-line react/display-name -- existing anonymous memo/forwardRef component; naming it is out of scope here
 export const LoadingPage2: React.FC = React.memo(() => {
     //let query = useQuery();
 

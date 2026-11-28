@@ -54,9 +54,6 @@ vi.mock('learn-card-base', () => ({
     },
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('@learncard/react', () => ({
     getVCDisplayCardVariant: () => 'certificate',
     VCDisplayCard2: ({

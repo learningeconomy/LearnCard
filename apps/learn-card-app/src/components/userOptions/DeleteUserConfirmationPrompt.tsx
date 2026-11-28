@@ -10,7 +10,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import WarningIcon from '../svgs/WarningIcon';
 import confirmationStore from 'learn-card-base/stores/confirmationStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
@@ -130,19 +130,19 @@ const DeleteUserConfirmationPrompt: React.FC<{
 
     return (
         <div>
-            <IonRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-6">
-                <IonRow className="flex flex-col items-center justify-center bg-white text-black delete-user-icon-wrap">
+            <AppRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-6">
+                <AppRow className="flex flex-col items-center justify-center bg-white text-black delete-user-icon-wrap">
                     <span aria-hidden="true">
                         <WarningIcon className="h-[48px] w-[48px]" />
                     </span>
-                </IonRow>
-                <IonRow className="flex flex-col items-center justify-center bg-white text-black">
+                </AppRow>
+                <AppRow className="flex flex-col items-center justify-center bg-white text-black">
                     <h1 className="ion-text-center mt-2 font-bold text-2xl tracking-wider bg-white">
                         {m['profile.delete.title']()}
                     </h1>
-                </IonRow>
-            </IonRow>
-            <IonRow className="flex flex-col items-center justify-center bg-white text-black">
+                </AppRow>
+            </AppRow>
+            <AppRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
                     <TransP
                         m={m['profile.delete.warning']}
@@ -164,8 +164,8 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     <br />
                     {m['profile.delete.below']()}
                 </p>
-            </IonRow>
-            <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
+            </AppRow>
+            <AppRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
                 <input
                     id="delete-account-confirmation"
                     autoCapitalize="on"
@@ -201,9 +201,9 @@ const DeleteUserConfirmationPrompt: React.FC<{
                         </button>
                     </p>
                 )}
-            </IonRow>
-            <IonRow className="w-full bg-white">
-                <IonCol
+            </AppRow>
+            <AppRow className="w-full bg-white">
+                <AppCol
                     size="12"
                     className="w-full flex items-center justify-center flex-col pt-2 pb-4"
                 >
@@ -220,8 +220,8 @@ const DeleteUserConfirmationPrompt: React.FC<{
                             ? m['profile.delete.loading']()
                             : m['profile.delete.deleteForever']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </div>
     );
 };

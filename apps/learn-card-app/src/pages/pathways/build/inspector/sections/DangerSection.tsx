@@ -11,7 +11,7 @@
 
 import React from 'react';
 
-import { trashOutline } from 'ionicons/icons';
+import { trashOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Pathway, PathwayNode } from '../../../types';
 import { removeNode as removeNodeOp } from '../../buildOps';

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ConsentFlowContractData, ConsentFlowContractDetails } from '@learncard/types';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import {
@@ -394,7 +394,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
 
             {contractLoading && (
                 <div className="w-full h-[120px] flex flex-col gap-[5px] items-center justify-center rounded-[20px] border border-grayscale-200 bg-grayscale-10">
-                    <IonSpinner color="dark" />
+                    <AppSpinner color="dark" />
                     <span className="text-sm text-grayscale-600">{m['common.loading']()}</span>
                 </div>
             )}
@@ -589,7 +589,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {visibleConsentRecordsLoading && <IonSpinner color="dark" />}
+                        {visibleConsentRecordsLoading && <AppSpinner color="dark" />}
                         <CaretDown
                             className={`h-[14px] w-[14px] text-grayscale-500 transition-transform duration-200 ${
                                 isConsentRecordsOpen ? 'rotate-180' : ''
@@ -682,7 +682,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     )}
                     {visibleConsentRecordsLoading && !visibleConsentRecords.length && (
                         <div className="w-full h-[120px] flex flex-col gap-[5px] items-center justify-center">
-                            <IonSpinner color="dark" />
+                            <AppSpinner color="dark" />
                             <span className="text-sm text-grayscale-600">
                                 {shouldFilterByDid ? 'Loading DID records...' : 'Loading...'}
                             </span>

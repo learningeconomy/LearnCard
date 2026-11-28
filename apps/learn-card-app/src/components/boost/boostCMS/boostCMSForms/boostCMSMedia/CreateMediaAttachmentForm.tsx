@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Updater } from 'use-immer';
 import { curriedStateSlice } from '@learncard/helpers';
 
-import { IonCol, IonRow, IonProgressBar } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
 import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
@@ -28,6 +28,7 @@ import {
 import * as m from '../../../../../paraglide/messages.js';
 
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
 
 type CreateMediaAttachmentFormProps = {
     initialState?: BoostCMSState;
@@ -79,8 +80,8 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
     const attachment = attachments?.[0];
 
     return (
-        <IonRow className="flex w-full pb-[20px]">
-            <IonCol className="flex items-center justify-center flex-wrap">
+        <AppRow className="flex w-full pb-[20px]">
+            <AppCol className="flex items-center justify-center flex-wrap">
                 {boostMediaOptions.map(({ id, type, title, color, Icon }) => {
                     let styles = '';
                     if (
@@ -146,8 +147,8 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                         </button>
                     );
                 })}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 
@@ -344,7 +345,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         <>
             {uploadProgress !== false && (
                 <div className="w-full px-4">
-                    <IonProgressBar
+                    <AppProgressBar
                         color="grayscale-800"
                         value={(uploadProgress as number) / 100}
                     />

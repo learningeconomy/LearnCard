@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import moment from 'moment';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -59,8 +61,8 @@ const BoostCMSMemberOptions: React.FC<{
     ];
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="text-black text-2xl p-0 m-0">
                     {m['boost.cms.privacy.memberOptions']()}
                 </h1>
@@ -71,18 +73,18 @@ const BoostCMSMemberOptions: React.FC<{
                         }`}
                     />
                 </button>
-            </IonCol>
+            </AppCol>
             {showAbout && (
                 <>
-                    <IonCol size="12" className="w-full bg-white">
+                    <AppCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
                             <p className="text-grayscale-900 font-medium w-10/12">
                                 {m['boost.cms.privacy.autoConnectMembers']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color={primaryColor}
-                                onIonChange={() => {
+                                onCheckedChange={() => {
                                     const expiresValue = !basicInfo?.credentialExpires;
                                     handleStateChange('credentialExpires', expiresValue);
                                     //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -96,8 +98,8 @@ const BoostCMSMemberOptions: React.FC<{
                         </div>
 
                         <div className="w-full h-[2px] bg-grayscale-100 mt-2 mb-2" />
-                    </IonCol>
-                    <IonCol
+                    </AppCol>
+                    <AppCol
                         size="12"
                         className="w-full bg-white flex flex-col items-center justify-between"
                     >
@@ -111,14 +113,14 @@ const BoostCMSMemberOptions: React.FC<{
                                     <p className="text-grayscale-900 font-medium w-10/12">
                                         {option?.text}
                                     </p>
-                                    <IonCheckbox />
+                                    <AppCheckbox />
                                 </div>
                             );
                         })}
-                    </IonCol>
+                    </AppCol>
                 </>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

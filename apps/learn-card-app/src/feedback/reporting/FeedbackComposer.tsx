@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { imageOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { imageOutline } from 'learn-card-base/icons/ionicons';
 
 import * as m from '../../paraglide/messages.js';
 import type { FeedbackDraft, FeedbackReport, FeedbackScreenshot } from './types';
@@ -242,7 +242,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                             </>
                         ) : (
                             <>
-                                <IonIcon
+                                <AppIcon
                                     icon={imageOutline}
                                     className="text-lg"
                                     aria-hidden="true"

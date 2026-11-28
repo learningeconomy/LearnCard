@@ -2,15 +2,6 @@ import React from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 
-import {
-    IonContent,
-    IonPage,
-    IonToolbar,
-    IonButtons,
-    IonHeader,
-    IonSpinner,
-    IonGrid,
-} from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -19,6 +10,10 @@ import useShareCredentials from 'learn-card-base/hooks/useShareCredentials';
 import { useGetCredentialsSharedWithApp } from 'learn-card-base/react-query/queries/vcQueries';
 import ConnectedAppInfo from './ConnectedAppInfo';
 import ShareCredentialCards from './ShareCredentialCards';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid } from 'learn-card-base/ui/layout';
 
 const ViewCredentialsSharedWithApp: React.FC = () => {
     const history = useHistory();
@@ -42,21 +37,21 @@ const ViewCredentialsSharedWithApp: React.FC = () => {
         (!trustedAppInfoLoading && !appRegistryInfo); // unknown app
 
     return (
-        <IonPage className="">
-            <IonHeader className="ion-no-border ion-fixed bg-white">
-                <IonToolbar className="ion-no-border" color="white">
-                    <IonButtons slot="start">
+        <AppPage className="">
+            <AppHeader className="ion-no-border ion-fixed bg-white">
+                <AppToolbar className="ion-no-border" color="white">
+                    <AppButtons slot="start">
                         <button
                             className="text-grayscale-600 bg-transparent"
                             onClick={() => history.push('/launchpad')}
                         >
                             <LeftArrow className="w-10 h-auto text-grayscale-600" />
                         </button>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="">
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px]">
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent className="">
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-medium leading-[21px]">
@@ -105,7 +100,7 @@ const ViewCredentialsSharedWithApp: React.FC = () => {
                             <div className="mt-[15px] text--[14px]">
                                 {!showCredentials && (
                                     <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                        <IonSpinner />
+                                        <AppSpinner />
                                         <p className="mt-[20px]">Fetching your credentials...</p>
                                     </div>
                                 )}
@@ -123,9 +118,9 @@ const ViewCredentialsSharedWithApp: React.FC = () => {
                             <ShareCredentialCards viewOnly />
                         </section>
                     </section>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

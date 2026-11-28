@@ -2,8 +2,6 @@ import React, { ReactElement, useEffect } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
-
 import WalletSquare from './WalletSquare';
 import MainHeader from '../../components/main-header/MainHeader';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
@@ -27,6 +25,8 @@ import ScoutsPledge2 from 'learn-card-base/svgs/ScoutsPledge2';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 import { getScoutPassCategoryCopy } from '../../components/category-descriptor/scoutPassCategoryCopy';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('wallet-page');
 
 const WalletPage: React.FC = () => {
@@ -139,21 +139,21 @@ const WalletPage: React.FC = () => {
     });
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader customClassName="bg-white" branding={BrandingEnum.scoutPass} />
-            <IonContent fullscreen>
-                <IonRow className="px-[20px] flex items-center justify-center">
+            <AppContent fullscreen>
+                <AppRow className="px-[20px] flex items-center justify-center">
                     <div className="w-full max-w-[380px] mx-auto">
                         <h2 className="text-grayscale-900 font-medium text-2xl tracking-[0.01rem]">
                             {m['wallet.title']()}
                         </h2>
                     </div>
-                </IonRow>
-                <IonRow className="wallet-squares-wrapper pb-10">
-                    <IonCol className="wallet-squares-container">{renderWalletList}</IonCol>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                </AppRow>
+                <AppRow className="wallet-squares-wrapper pb-10">
+                    <AppCol className="wallet-squares-container">{renderWalletList}</AppCol>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

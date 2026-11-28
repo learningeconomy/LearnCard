@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonToolbar, IonRow, IonCol, IonFooter, IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 
@@ -9,6 +9,8 @@ import * as m from '../../../../paraglide/messages.js';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const BoostCMSFooter: React.FC<{
     boostUserType: BoostUserTypeEnum;
@@ -31,7 +33,7 @@ const BoostCMSFooter: React.FC<{
     isSaveLoading,
     handleSubmit,
 }) => {
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const { color, IconComponent } = boostCategoryMetadata[selectedVCType];
 
     keyboardStore.store.subscribe(({ isOpen }) => {
@@ -44,18 +46,18 @@ const BoostCMSFooter: React.FC<{
     });
 
     return (
-        <IonFooter ref={bottomBarRef}>
-            <IonToolbar color={color} className="ion-no-border pt-5">
-                <IonRow className="w-full flex items-center justify-center">
+        <AppFooter ref={bottomBarRef}>
+            <AppToolbar color={color} className="ion-no-border pt-5">
+                <AppRow className="w-full flex items-center justify-center">
                     <div className="w-full max-w-[600px] flex items-center justify-center">
-                        <IonCol size="12" className="w-full flex items-center">
+                        <AppCol size="12" className="w-full flex items-center">
                             <button
                                 onClick={handleSaveAndQuit}
                                 className="flex items-center justify-center bg-white rounded-full px-[18px] py-[8px] text-grayscale-900 font-poppins text-xl shadow-lg normal tracking-wide mr-3 text-center boost-save-quit-btn"
                             >
                                 {isSaveLoading ? (
                                     <>
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1] mr-1"
@@ -106,7 +108,7 @@ const BoostCMSFooter: React.FC<{
                                 </div>
                                 {isLoading ? (
                                     <>
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1] mr-1"
@@ -121,11 +123,11 @@ const BoostCMSFooter: React.FC<{
                                     </p>
                                 )}
                             </button>
-                        </IonCol>
+                        </AppCol>
                     </div>
-                </IonRow>
-            </IonToolbar>
-        </IonFooter>
+                </AppRow>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

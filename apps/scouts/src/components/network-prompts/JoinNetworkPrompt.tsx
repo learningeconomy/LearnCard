@@ -16,16 +16,6 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 
-import {
-    IonHeader,
-    IonContent,
-    IonRow,
-    IonCol,
-    IonGrid,
-    IonPage,
-    IonToolbar,
-    IonInput,
-} from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import NetworkSettings from '../network-settings/NetworkSettings';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
@@ -38,6 +28,9 @@ import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificati
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('join-network-prompt');
 
 const StateValidator = z.object({
@@ -93,7 +86,9 @@ export const JoinNetworkPrompt: React.FC<{
         newSettingsModal(
             <NetworkSettings
                 handleCloseModal={closeSettingsModal}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 settings={settings as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleStateChange={handleStateChange as any}
             />
         );
@@ -137,6 +132,7 @@ export const JoinNetworkPrompt: React.FC<{
             try {
                 setLoading(true);
                 const wallet = await initWallet();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 const didWeb = await (wallet.invoke.createProfile as any)({
                     did: wallet.id.did(),
                     profileId: profileId || '',
@@ -164,6 +160,7 @@ export const JoinNetworkPrompt: React.FC<{
                         openNotificationPromptModal();
                     }
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             } catch (err: any) {
                 log.debug('createProfile::error', err);
                 setError(err?.message);
@@ -183,16 +180,16 @@ export const JoinNetworkPrompt: React.FC<{
 
     return (
         <>
-            <IonRow className="flex flex-col pb-4 w-full">
-                <IonCol className="w-full flex items-center justify-center pt-2">
+            <AppRow className="flex flex-col pb-4 w-full">
+                <AppCol className="w-full flex items-center justify-center pt-2">
                     <h6 className="tracking-[12px] text-base font-bold text-black">SCOUTPASS</h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+                </AppCol>
+                <AppCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-black text-xl font-medium">{networkPromptTitle}</h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
-            <IonRow className="flex items-center justify-center w-full">
+            <AppRow className="flex items-center justify-center w-full">
                 <div className="relative flex justify-between items-center bg-grayscale-100/40 rounded-[40px] p-0 m-0 pr-[10px] pb-[3px] pt-[3px] object-fill">
                     <ProfilePicture
                         customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px]"
@@ -200,9 +197,9 @@ export const JoinNetworkPrompt: React.FC<{
                         customSize={500}
                     />
                 </div>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="text-center">
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-800">
                         {m['networkPrompts.join.desc']()}
                     </p>
@@ -217,14 +214,14 @@ export const JoinNetworkPrompt: React.FC<{
                         </p>
                     )}
                     {step === 2 && (
-                        <IonRow className="flex flex-col items-center justify-center w-full px-4">
+                        <AppRow className="flex flex-col items-center justify-center w-full px-4">
                             <div className="flex flex-col items-center justify-center max-w-[375px] w-full mb-4">
-                                <IonInput
+                                <AppInput
                                     autocapitalize="on"
                                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base text-left ${
                                         error || errors?.profileId ? 'login-input-email-error' : ''
                                     }`}
-                                    onIonInput={e => setProfileId(e.detail.value)}
+                                    onValueInput={value => setProfileId(value)}
                                     value={profileId}
                                     placeholder={m['userProfile.userID']()}
                                     type="text"
@@ -240,7 +237,7 @@ export const JoinNetworkPrompt: React.FC<{
                                     </p>
                                 )}
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
                     <br />
                     {/* <button
@@ -249,10 +246,10 @@ export const JoinNetworkPrompt: React.FC<{
                             >
                                 Edit Access
                             </button> */}
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full flex items-center justify-center mt-6">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
+                </AppCol>
+            </AppRow>
+            <AppRow className="w-full flex items-center justify-center mt-6">
+                <AppCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     {step === 1 ? (
                         <button
                             onClick={handleNextStep}
@@ -284,20 +281,20 @@ export const JoinNetworkPrompt: React.FC<{
                             {m['networkPrompts.join.decline']()}
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                         {m['networkPrompts.dataOwn']()}
                         <br />
                         {m['networkPrompts.encrypted']()}
                     </p>
                     <button className="text-indigo-500 font-bold">{m['common.learnMore']()}</button>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="flex items-center justify-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="flex items-center justify-center">
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
                         {m['login.privacyPolicy']()}
                     </button>
@@ -307,8 +304,8 @@ export const JoinNetworkPrompt: React.FC<{
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
                         {m['login.termsOfService']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </>
     );
 };

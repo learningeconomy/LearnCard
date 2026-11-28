@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { peopleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { peopleOutline } from 'learn-card-base/icons/ionicons';
 import type { CampaignApi } from './types';
 import { Busy, Field, Notice, buttonClass, inputClass, primaryClass } from './ui';
 
@@ -107,7 +107,7 @@ export const CampaignMemberSearch: React.FC<Props> = ({
             className="flex min-w-0 flex-col gap-4 rounded-2xl border border-grayscale-200 p-5 md:col-span-2"
         >
             <div className="flex items-center gap-3">
-                <IonIcon
+                <AppIcon
                     icon={peopleOutline}
                     className="text-xl text-emerald-700"
                     aria-hidden="true"

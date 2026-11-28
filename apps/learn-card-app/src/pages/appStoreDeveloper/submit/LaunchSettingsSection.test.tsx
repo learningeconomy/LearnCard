@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { LaunchSettingsSection } from './LaunchSettingsSection';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('../components/LaunchConfigStep', () => ({
     LaunchConfigStep: ({ data }: { data: { launch_type: string } }) => (
         <div>Fields for {data.launch_type}</div>

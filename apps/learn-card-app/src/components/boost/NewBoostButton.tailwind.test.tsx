@@ -2,12 +2,6 @@ import React from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonRow: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div {...props}>{children}</div>
-    ),
-}));
 vi.mock('learn-card-base', () => ({ CredentialCategoryEnum: { socialBadge: 'Social Badge' } }));
 vi.mock('../EarnedAndManagedTabs/EarnedAndManagedTabs', () => ({
     BoostPageViewMode: { Card: 'card', List: 'list' },

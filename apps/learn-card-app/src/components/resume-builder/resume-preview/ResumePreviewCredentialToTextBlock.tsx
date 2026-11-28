@@ -1,15 +1,11 @@
 import React, { useEffect } from 'react';
-import { add } from 'ionicons/icons';
+import { add } from 'learn-card-base/icons/ionicons';
 import moment from 'moment';
 import type { UnsignedVC, VC } from '@learncard/types';
 
-import {
-    IonDatetime,
-    IonIcon,
-    IonReorder,
-    IonReorderGroup,
-    ReorderEndCustomEvent,
-} from '@ionic/react';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppReorder, AppReorderGroup } from 'learn-card-base/ui/reorder';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';
@@ -113,7 +109,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const openInlineDatePicker = (mode: 'start' | 'end') => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
-                <IonDatetime
+                <AppDatetime
                     onIonChange={e => {
                         if (e.detail.value) {
                             const formattedDate = moment(e.detail.value).format('YYYY-MM-DD');
@@ -255,10 +251,9 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                 {isEditing ? (
                     <>
                         <div data-pdf-screen-only>
-                            <IonReorderGroup
+                            <AppReorderGroup
                                 disabled={!isEditing}
-                                onIonReorderEnd={(e: ReorderEndCustomEvent) => {
-                                    e.stopPropagation();
+                                onIonReorderEnd={e => {
                                     const { from, to } = e.detail;
                                     const reordered = [...fields];
                                     const [moved] = reordered.splice(from, 1);
@@ -362,22 +357,22 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                     className="shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700"
                                                     title={metadataPlaceholder}
                                                 >
-                                                    <IonIcon icon={add} className="w-6 h-6" />
+                                                    <AppIcon icon={add} className="w-6 h-6" />
                                                 </button>
                                             ) : (
                                                 field.type === 'metadata' &&
                                                 metadataFields.length > 1 && (
                                                     <div className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] leading-none h-[32px] w-[32px] flex items-center justify-center">
-                                                        <IonReorder>
+                                                        <AppReorder>
                                                             <VerticalArrowsIcon />
-                                                        </IonReorder>
+                                                        </AppReorder>
                                                     </div>
                                                 )
                                             )}
                                         </div>
                                     );
                                 })}
-                            </IonReorderGroup>
+                            </AppReorderGroup>
                         </div>
 
                         <div

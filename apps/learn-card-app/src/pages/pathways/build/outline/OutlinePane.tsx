@@ -22,7 +22,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { Reorder } from 'framer-motion';
 import {
     addOutline,
@@ -31,7 +31,7 @@ import {
     cloudDownloadOutline,
     gitBranchOutline,
     warningOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import type { PathwayMap } from '../../core/composition';
 import { detectCollections } from '../../map/collectionDetection';
@@ -185,7 +185,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                     onClick={() => onDrillIn(parent.id)}
                     className="w-full inline-flex items-center gap-1.5 px-1 py-1 text-xs text-grayscale-500 hover:text-grayscale-900 transition-colors"
                 >
-                    <IonIcon icon={arrowBackOutline} aria-hidden className="text-sm" />
+                    <AppIcon icon={arrowBackOutline} aria-hidden className="text-sm" />
 
                     <span className="truncate">
                         Back to{' '}
@@ -247,7 +247,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                     onClick={onAddNode}
                     className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                    <IonIcon icon={addOutline} aria-hidden className="text-base" />
+                    <AppIcon icon={addOutline} aria-hidden className="text-base" />
                     Add step
                 </button>
 
@@ -256,7 +256,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                     onClick={onAddNestedPathway}
                     className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[20px] border border-grayscale-300 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors"
                 >
-                    <IonIcon icon={gitBranchOutline} aria-hidden className="text-base" />
+                    <AppIcon icon={gitBranchOutline} aria-hidden className="text-base" />
                     Nest a pathway
                 </button>
 
@@ -265,7 +265,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                     onClick={onOpenImport}
                     className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[20px] text-sm font-medium text-grayscale-600 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={cloudDownloadOutline}
                         aria-hidden
                         className="text-base"
@@ -309,7 +309,7 @@ const IssuePill: React.FC<{
             `}
             aria-label={`${labelN} ${isError ? 'error' : 'warning'}${labelSuffix}`}
         >
-            <IonIcon
+            <AppIcon
                 icon={isError ? alertCircleOutline : warningOutline}
                 aria-hidden
                 className="text-[11px]"

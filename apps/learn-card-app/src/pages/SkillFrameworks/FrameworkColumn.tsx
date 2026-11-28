@@ -25,7 +25,7 @@ import FrameworkSkillsCount from './FrameworkSkillsCount';
 import FrameworkOptionsModal from './FrameworkOptionsModal';
 import * as m from '../../paraglide/messages.js';
 import FrameworkSearchResults from './FrameworkSearchResults';
-import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
 
 import {
     FrameworkNodeRole,
@@ -39,6 +39,8 @@ import {
     convertApiSkillNodesToSkillFrameworkNodes,
 } from '../../helpers/skillFramework.helpers';
 import { SetState } from 'packages/shared-types/dist';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type FrameworkColumnProps = {
     nodes: SkillFrameworkNode[];
@@ -140,7 +142,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 }) => {
     const { newModal } = useModal();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
-    const inputRef = useRef<HTMLIonInputElement>(null);
+    const inputRef = useRef<AppInputHandle>(null);
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
     const isSingleColumnView = maxColumns === 1;
@@ -481,12 +483,12 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                 <div className="h-full flex flex-col gap-[10px] overflow-y-auto p-[15px] pb-[150px] bg-grayscale-10">
                     {isSingleColumnView && (
                         <div className="relative">
-                            <IonInput
+                            <AppInput
                                 ref={inputRef}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
                                 placeholder={m['skills.framework.searchPlaceholder']()}
                                 value={search}
-                                onIonInput={e => setSearch(e.detail.value)}
+                                onValueInput={value => setSearch(value)}
                             />
                             {search && (
                                 <button
@@ -505,7 +507,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
                     {search && searchLoading && !isApproveFlow && (
                         <div className="flex items-center justify-center mt-[100px]">
-                            <IonSpinner
+                            <AppSpinner
                                 color="dark"
                                 name="crescent"
                                 className="h-[40px] w-[40px]"
@@ -569,7 +571,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             <div role="presentation" ref={infiniteScrollRef} />
                             {effectiveIsLoadingMore && (
                                 <div className="w-full flex items-center justify-center py-4">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="h-[30px] w-[30px]"
@@ -607,7 +609,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
             </div>
 
             {isSingleColumnView && (
-                <IonFooter
+                <AppFooter
                     mode="ios"
                     className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
                 >
@@ -697,7 +699,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             </button>
                         )}
                     </div>
-                </IonFooter>
+                </AppFooter>
             )}
         </section>
     );

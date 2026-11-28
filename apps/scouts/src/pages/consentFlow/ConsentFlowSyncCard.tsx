@@ -5,7 +5,6 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonCol, IonLoading, IonRow, IonSkeletonText } from '@ionic/react';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -29,6 +28,9 @@ import {
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowEditAccess from './ConsentFlowEditAccess';
 import { getLogger } from 'learn-card-base';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppLoading } from 'learn-card-base/ui/overlays';
 const log = getLogger('consent-flow-sync-card');
 
 export type ConsentFlowWriteAccessType = {
@@ -292,7 +294,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 className="h-full w-full m-0 object-cover"
                             />
                         ) : (
-                            <IonSkeletonText animated className="h-full w-full m-0" />
+                            <AppSkeletonText animated className="h-full w-full m-0" />
                         )}
                     </div>
                     {contractDetails?.contract ? (
@@ -300,7 +302,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             {contractDetails?.name}
                         </h3>
                     ) : (
-                        <IonSkeletonText animated className="mt-2 w-64" />
+                        <AppSkeletonText animated className="mt-2 w-64" />
                     )}
                     {contractDetails?.contract ? (
                         <>
@@ -315,8 +317,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         </>
                     ) : (
                         <>
-                            <IonSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
-                            <IonSkeletonText animated className="w-[calc(100%-32px)]" />
+                            <AppSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
+                            <AppSkeletonText animated className="w-[calc(100%-32px)]" />
                         </>
                     )}
                 </div>
@@ -352,7 +354,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     >
                         {m[loading ? 'consentFlow.allowing' : 'consentFlow.allow']()}
                     </button>
-                    <IonLoading
+                    <AppLoading
                         isOpen={isPending}
                         message={m['consentFlow.consenting']()}
                         mode="ios"
@@ -368,13 +370,13 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     </button>
                 </div>
             </div>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal w-[90%] px-16 text-grayscale-600 border-t border-t-grayscale-200 pb-[30px] pt-[20px]">
                         {m['consentFlow.allConnEncrypted']()}
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </section>
     );
 };

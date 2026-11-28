@@ -1,20 +1,11 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-    IonModal,
-    useIonModal,
-} from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import X from 'learn-card-base/svgs/X';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const SubHeaderActionMenu: React.FC<{
     handleCloseModal: () => void;
@@ -37,22 +28,22 @@ const SubHeaderActionMenu: React.FC<{
     };
 
     return (
-        <IonPage>
-            {/* <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+        <AppPage>
+            {/* <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader> */}
-            <IonContent>
-                <IonGrid className="ion-padding">
-                    <IonCol className="w-full flex items-center justify-center mt-8">
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader> */}
+            <AppContent>
+                <AppGrid className="ion-padding">
+                    <AppCol className="w-full flex items-center justify-center mt-8">
                         {/* desktop */}
                         <button
                             onClick={handleCreateCredBundle}
@@ -67,8 +58,8 @@ const SubHeaderActionMenu: React.FC<{
                         >
                             Share Boosts
                         </button>
-                    </IonCol>
-                    <IonCol className="w-full flex items-center justify-center mt-1">
+                    </AppCol>
+                    <AppCol className="w-full flex items-center justify-center mt-1">
                         {/* desktop */}
                         <button
                             onClick={handleSelfIssueCredential}
@@ -83,7 +74,7 @@ const SubHeaderActionMenu: React.FC<{
                         >
                             View Shared Boosts
                         </button>
-                    </IonCol>
+                    </AppCol>
                     <div className="w-full flex items-center justify-center mt-8">
                         <button
                             onClick={() => handleCloseModal()}
@@ -92,9 +83,9 @@ const SubHeaderActionMenu: React.FC<{
                             Cancel
                         </button>
                     </div>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

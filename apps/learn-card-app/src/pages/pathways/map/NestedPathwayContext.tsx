@@ -31,8 +31,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { arrowBackOutline, sparklesOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { arrowBackOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'framer-motion';
 
 import type { Pathway, PathwayNode } from '../types';
@@ -88,7 +88,7 @@ const NestedPathwayContext: React.FC<NestedPathwayContextProps> = ({
             "
             aria-label={`Back to ${parent.title}`}
         >
-            <IonIcon
+            <AppIcon
                 icon={arrowBackOutline}
                 aria-hidden
                 className="shrink-0 text-sm text-grayscale-500"
@@ -96,9 +96,7 @@ const NestedPathwayContext: React.FC<NestedPathwayContextProps> = ({
 
             <span className="truncate">
                 <span className="text-grayscale-500">Back to</span>{' '}
-                <span className="font-semibold text-grayscale-900">
-                    {parent.title}
-                </span>
+                <span className="font-semibold text-grayscale-900">{parent.title}</span>
             </span>
         </button>
 
@@ -131,7 +129,7 @@ const NestedPathwayContext: React.FC<NestedPathwayContextProps> = ({
             "
             title={`Finishing this pathway unlocks "${parentNode.title}" in "${parent.title}"`}
         >
-            <IonIcon
+            <AppIcon
                 icon={sparklesOutline}
                 aria-hidden
                 className="shrink-0 text-sm text-emerald-600"
@@ -139,9 +137,7 @@ const NestedPathwayContext: React.FC<NestedPathwayContextProps> = ({
 
             <span className="truncate">
                 <span className="text-grayscale-500">Unlocks</span>{' '}
-                <span className="font-semibold text-grayscale-800">
-                    {parentNode.title}
-                </span>
+                <span className="font-semibold text-grayscale-800">{parentNode.title}</span>
             </span>
         </div>
     </motion.div>

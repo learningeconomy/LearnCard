@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonCol, IonSpinner } from '@ionic/react';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -20,6 +19,8 @@ import {
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import BoostManagedIDCard from './BoostManagedIDCard';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 type BoostManagedIDListProps = {
     category: CredentialCategoryEnum;
@@ -64,6 +65,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-100px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
@@ -110,6 +112,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
         try {
             await managedBoostsRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
@@ -164,7 +167,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
                                 {managedBoostsFetching && (
                                     <div className="w-full flex items-center justify-center">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="grayscale-900"
                                             className="scale-[2] mb-8 mt-6"
@@ -174,7 +177,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                             </section>
                         )}
                         {!isCardView && (
-                            <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
+                            <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                                 <div
                                     className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
@@ -184,14 +187,14 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
                                 {managedBoostsFetching && (
                                     <div className="w-full flex items-center justify-center">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="grayscale-900"
                                             className="scale-[2] mb-8 mt-6"
                                         />
                                     </div>
                                 )}
-                            </IonCol>
+                            </AppCol>
                         )}
                     </>
                 )}

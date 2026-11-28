@@ -54,41 +54,6 @@ vi.mock('./FrameworkSkillsCount', () => ({ default: () => null }));
 vi.mock('./SkillBreadcrumbText', () => ({ default: () => null }));
 vi.mock('./AlignmentToggle', () => ({ default: () => null }));
 vi.mock('../../i18n/TransP', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({
-    IonFooter: ({ children }: React.PropsWithChildren) => <footer>{children}</footer>,
-    IonInput: ({
-        value,
-        placeholder,
-        onIonInput,
-    }: {
-        value?: string;
-        placeholder?: string;
-        onIonInput: (event: { detail: { value: string } }) => void;
-    }) => (
-        <input
-            value={value ?? ''}
-            placeholder={placeholder}
-            onChange={event => onIonInput({ detail: { value: event.target.value } })}
-        />
-    ),
-    IonTextarea: ({
-        value,
-        placeholder,
-        onIonInput,
-    }: {
-        value?: string;
-        placeholder?: string;
-        onIonInput: (event: { detail: { value: string } }) => void;
-    }) => (
-        <textarea
-            value={value ?? ''}
-            placeholder={placeholder}
-            onChange={event => onIonInput({ detail: { value: event.target.value } })}
-        />
-    ),
-    IonSpinner: () => null,
-}));
-
 vi.mock('./CreateFrameworkModal', () => ({ default: () => null }));
 vi.mock('./ManageSkills', () => ({ default: () => null }));
 vi.mock('./ViewSkillFramework', () => ({ default: () => null }));

@@ -1,14 +1,5 @@
 import React from 'react';
 
-import {
-    IonHeader,
-    IonToolbar,
-    IonButtons,
-    IonButton,
-    IonContent,
-    IonRow,
-    IonCol,
-} from '@ionic/react';
 import { QRCodeCard } from '@learncard/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -18,6 +9,10 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { AppContent, AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
@@ -31,21 +26,21 @@ const QrCodeUserCard: React.FC<{
 
     return (
         <>
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="qr-code-user-card-toolbar ion-no-border">
-                    <IonButtons slot="start">
-                        <IonButton className="text-grayscale-600" onClick={handleQRCodeCardModal}>
+            <AppHeader className="ion-no-border">
+                <AppToolbar className="qr-code-user-card-toolbar ion-no-border">
+                    <AppButtons slot="start">
+                        <AppButton className="text-grayscale-600" onClick={handleQRCodeCardModal}>
                             <LeftArrow className="w-10 h-auto text-grayscale-600" />
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent
+                        </AppButton>
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent
                 className="flex items-center justify-center ion-padding qr-code-user-card-content"
                 color="grayscale-red-100"
             >
-                <IonRow className="flex items-center justify-center">
-                    <IonCol size="12" className="flex flex-col items-center justify-center w-full">
+                <AppRow className="flex items-center justify-center">
+                    <AppCol size="12" className="flex flex-col items-center justify-center w-full">
                         <ProfilePicture
                             customContainerClass="flex items-center justify-center rounded-full overflow-hidden h-16 w-16 object-contain text-white font-medium text-4xl"
                             customImageClass="w-full h-full"
@@ -75,16 +70,16 @@ const QrCodeUserCard: React.FC<{
                                 &nbsp;Logout
                             </button>
                         </div>
-                    </IonCol>
-                    <IonCol size="12" className="flex justify-center items-center w-full">
+                    </AppCol>
+                    <AppCol size="12" className="flex justify-center items-center w-full">
                         <QRCodeCard
                             userHandle={`@${currentUser?.name}`}
                             qrCodeValue="https://www.npmjs.com/package/@learncard/react"
                             className="mt-3 w-full"
                             text={brandingText}
                         />
-                    </IonCol>
-                    {/* <IonCol size="12" className="flex justify-center items-center w-full mt-4">
+                    </AppCol>
+                    {/* <AppCol size="12" className="flex justify-center items-center w-full mt-4">
                         <button className="w-[40%] flex items-center justify-center bg-grayscale-900 text-white  py-3 mr-3 font-bold text-lg rounded-[40px] shadow-2xl">
                             <QRCodeScanner className="h-[25px] mr-2" /> Scan
                         </button>
@@ -97,9 +92,9 @@ const QrCodeUserCard: React.FC<{
                         <button className="flex items-center justify-center rounded-full border-solid border-grayscale-900 border-2 p-2 mr-3 bg-white shadow-2xl">
                             <Share className="text-grayscale-900 w-8 h-auto" />
                         </button>
-                    </IonCol> */}
-                </IonRow>
-            </IonContent>
+                    </AppCol> */}
+                </AppRow>
+            </AppContent>
         </>
     );
 };

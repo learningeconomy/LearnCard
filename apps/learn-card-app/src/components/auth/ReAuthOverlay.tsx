@@ -15,8 +15,8 @@ const log = getLogger('re-auth-overlay');
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { authStore, SocialLoginTypes, useSignInAdapter, currentUserStore } from 'learn-card-base';
 
@@ -175,7 +175,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
         return (
             <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
                 <div className="flex justify-center">
-                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-4xl" />
+                    <AppIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-4xl" />
                 </div>
 
                 <h2 className="text-xl font-semibold text-grayscale-900">Session Restored</h2>
@@ -204,7 +204,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
     return (
         <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
             <div className="flex justify-center">
-                <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
+                <AppIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
             </div>
 
             <h2 className="text-xl font-semibold text-grayscale-900">Session Expired</h2>
@@ -217,7 +217,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
 
             {error && (
                 <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />

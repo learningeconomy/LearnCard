@@ -2,7 +2,7 @@ import React from 'react';
 
 import { BoostCategoryOptionsEnum, isCustomBoostType, useModal } from 'learn-card-base';
 
-import { IonRow, IonCol, IonToolbar } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import X from 'learn-card-base/svgs/X';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -184,15 +184,15 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
 
     return (
         <div className="ion-no-border bg-white pt-2">
-            <IonRow className="w-full bg-white px-3">
-                <IonCol className="w-full flex items-center justify-end">
+            <AppRow className="w-full bg-white px-3">
+                <AppCol className="w-full flex items-center justify-end">
                     {showCloseButton && (
                         <button onClick={closeModal}>
                             <X className="text-grayscale-600 h-8 w-8" />
                         </button>
                     )}
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="bg-white">
                 <div className="flex flex-col items-center justify-center w-full">
                     <div className={`w-full flex  ${headerContainerStyles}`}>

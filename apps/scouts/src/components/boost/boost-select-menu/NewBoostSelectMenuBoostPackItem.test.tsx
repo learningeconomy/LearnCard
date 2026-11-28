@@ -26,10 +26,6 @@ vi.mock('react-router-dom', async importOriginal => ({
     useHistory: () => ({ push: vi.fn() }),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-}));
-
 vi.mock('@learncard/react', () => ({
     BoostSmallCard: ({ customButtonComponent }: { customButtonComponent?: React.ReactNode }) => (
         <div>{customButtonComponent}</div>

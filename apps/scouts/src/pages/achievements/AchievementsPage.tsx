@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IonContent, IonPage, IonRow, IonCol, IonGrid } from '@ionic/react';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostManagedCard from '../../components/boost/boost-managed-card/BoostManagedCard';
@@ -27,6 +26,8 @@ import {
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const AchievementsPage: React.FC = () => {
     //Query gets 'earned' credentials
@@ -97,12 +98,13 @@ const AchievementsPage: React.FC = () => {
             await earnedBoostsRefetch?.();
             await managedBoostRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader
                     showBackButton
@@ -117,7 +119,7 @@ const AchievementsPage: React.FC = () => {
                         />
                     )}
                 </MainHeader>
-                <IonContent fullscreen className="achievements-page relative">
+                <AppContent fullscreen className="achievements-page relative">
                     <CurvedBackdropEl className="bg-spice-300" />
                     {credentialsLoading &&
                         activeTab === CredentialListTabEnum.Earned &&
@@ -128,12 +130,12 @@ const AchievementsPage: React.FC = () => {
                         credentials?.length > 0 &&
                         activeTab === CredentialListTabEnum.Earned && (
                             <>
-                                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
-                                    <IonGrid className="max-w-[600px]">
-                                        <IonRow>{renderCredentialList}</IonRow>
-                                    </IonGrid>
+                                <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                                    <AppGrid className="max-w-[600px]">
+                                        <AppRow>{renderCredentialList}</AppRow>
+                                    </AppGrid>
                                     <div className="bg-filler bg-spice-300 absolute h-full top-[0px] left-[0px] w-full mt-[110px]" />
-                                </IonCol>
+                                </AppCol>
                             </>
                         )}
                     {!credentialsLoading &&
@@ -160,12 +162,12 @@ const AchievementsPage: React.FC = () => {
                         boosts?.length > 0 &&
                         activeTab === CredentialListTabEnum.Managed && (
                             <>
-                                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
-                                    <IonGrid className="max-w-[600px]">
-                                        <IonRow>{renderBoostsList}</IonRow>
-                                    </IonGrid>
+                                <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                                    <AppGrid className="max-w-[600px]">
+                                        <AppRow>{renderBoostsList}</AppRow>
+                                    </AppGrid>
                                     <div className="bg-filler bg-spice-300 absolute h-full top-[0px] left-[0px] w-full mt-[110px]" />
-                                </IonCol>
+                                </AppCol>
                             </>
                         )}
                     {!boostsLoading &&
@@ -183,9 +185,9 @@ const AchievementsPage: React.FC = () => {
                             </section>
                         )}
                     {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

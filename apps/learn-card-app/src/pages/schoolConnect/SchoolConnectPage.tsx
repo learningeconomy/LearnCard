@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 
 import {
@@ -18,6 +17,7 @@ import MainHeader from '../../components/main-header/MainHeader';
 import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
 import { SchoolConnectView } from './SchoolConnectView';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 /** Holds every lca-api query, so it only mounts once the School Connect flags are on. */
 const SchoolConnectPageContent: React.FC = () => {
@@ -61,9 +61,9 @@ const SchoolConnectPageContent: React.FC = () => {
     };
 
     return (
-        <IonPage className="bg-grayscale-100 font-poppins">
+        <AppPage className="bg-grayscale-100 font-poppins">
             <MainHeader showBackButton customClassName="bg-grayscale-100" />
-            <IonContent fullscreen className="bg-grayscale-100" color="grayscale-100">
+            <AppContent fullscreen className="bg-grayscale-100" color="grayscale-100">
                 <div className="animate-fade-in-up pb-10">
                     <SchoolConnectView
                         connection={connection}
@@ -79,8 +79,8 @@ const SchoolConnectPageContent: React.FC = () => {
                         transcriptSlot={<TranscriptOptInCard source="school_connect" />}
                     />
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

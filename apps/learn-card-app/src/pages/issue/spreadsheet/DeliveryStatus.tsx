@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     checkmarkCircleOutline,
@@ -8,7 +8,7 @@ import {
     paperPlaneOutline,
     searchOutline,
     timeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import { recipientDisplayName, recipientKey } from '../components/recipientTypes';
 import { getFriendlyIssueError } from '../issueErrors';
@@ -108,7 +108,7 @@ export const DeliveryStatus: React.FC<{
         >
             <div className="mb-5 grid min-w-0 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_240px]">
                 <div className="relative min-w-0">
-                    <IonIcon
+                    <AppIcon
                         icon={searchOutline}
                         className="pointer-events-none absolute inset-s-4 top-4 text-grayscale-500"
                         aria-hidden="true"
@@ -187,7 +187,7 @@ export const DeliveryStatus: React.FC<{
                                 <span
                                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${state === 'sent' ? 'bg-emerald-50 text-emerald-700' : state === 'failed' ? 'bg-grayscale-100 text-red-700' : 'bg-grayscale-100 text-grayscale-700'}`}
                                 >
-                                    <IonIcon icon={STATUS_ICONS[state]} aria-hidden="true" />
+                                    <AppIcon icon={STATUS_ICONS[state]} aria-hidden="true" />
                                     {statusLabel(state)}
                                 </span>
                             </div>

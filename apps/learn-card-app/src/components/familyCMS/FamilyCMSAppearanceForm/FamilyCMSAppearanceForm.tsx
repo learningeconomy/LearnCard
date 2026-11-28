@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonToggle } from '@ionic/react';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import FamilyCMSWallpaperSelect from './FamilyCMSWallpaperSelect';
 import FamilyCMSThumbnailSelect from './FamilyCMSThumbnailSelect';
 import FamilyCMSColorPicker from './FamilyCMSColorPicker';
@@ -66,10 +66,10 @@ export const FamilyCMSAppearanceForm: React.FC<{
                             <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                 {m['family.appearance.fadeBackground']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 className="family-cms-toggle"
-                                onIonChange={e => {
+                                onCheckedChange={() => {
                                     setFadeBackground(!fadeBackground);
                                     handleSetState(
                                         'appearance',
@@ -87,10 +87,10 @@ export const FamilyCMSAppearanceForm: React.FC<{
                             <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                 {m['family.appearance.repeatBackground']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 className="family-cms-toggle"
-                                onIonChange={e => {
+                                onCheckedChange={() => {
                                     setRepeatBackground(!repeatBackground);
                                     handleSetState(
                                         'appearance',

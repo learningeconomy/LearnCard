@@ -4,7 +4,7 @@ import { TransP } from '../../../../i18n/TransP';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { useWallet } from 'learn-card-base';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
@@ -120,7 +120,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         className="flex items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[12px] text-white font-poppins text-[16px] w-full shadow-lg"
                     >
                         {loading ? (
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         ) : (
                             m['onboarding.consent.parentInvite.shareInvite']()
                         )}

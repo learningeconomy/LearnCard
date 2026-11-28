@@ -3,7 +3,8 @@ import { Keyboard } from '@capacitor/keyboard';
 import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
 
-import { IonCol, IonRow, IonInput } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
@@ -56,8 +57,8 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
 
     return (
         <>
-            <IonRow className="flex flex-col pb-4">
-                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+            <AppRow className="flex flex-col pb-4">
+                <AppCol className="w-full flex items-center justify-between mt-8 mb-2">
                     <Icon
                         version="outlined"
                         className={`text-grayscale-800 h-[40px] max-h-[40px] max-w-[40px] mr-2`}
@@ -65,22 +66,22 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
                         {title}
                     </h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state.videos?.[currentIndex]?.title || newLinkTitle}
-                    onIonInput={e => {
+                    onValueInput={value => {
                         const stateCopy = structuredClone(state.videos);
                         if (stateCopy[currentIndex]) {
-                            stateCopy[currentIndex].title = e.detail.value as string;
+                            stateCopy[currentIndex].title = value as string;
                             setState(stateCopy);
                         } else {
-                            setkNewLinkTitle(e.detail.value as string);
+                            setkNewLinkTitle(value as string);
                         }
                     }}
                     onKeyDown={e => {
@@ -89,19 +90,19 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                 />
             </div>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['boost.cms.media.pasteLink']()}
                     type="text"
                     value={state.videos?.[currentIndex]?.url || newLinkUrl}
-                    onIonInput={e => {
+                    onValueInput={value => {
                         const stateCopy = structuredClone(state.videos);
                         if (stateCopy[currentIndex]) {
-                            stateCopy[currentIndex].url = e.detail.value as string;
+                            stateCopy[currentIndex].url = value as string;
                             setState(stateCopy);
                         } else {
-                            setNewLinkUrl(e.detail.value as string);
+                            setNewLinkUrl(value as string);
                         }
                     }}
                     onKeyDown={e => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
-import { IonicSlides } from '@ionic/react';
+import { SwiperDefaults } from 'learn-card-base/swiper/swiperDefaults';
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInterface } from 'swiper/types';
@@ -15,7 +15,7 @@ import 'swiper/css';
 import 'swiper/css/keyboard';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
-import '@ionic/react/css/ionic-swiper.css';
+import 'learn-card-base/swiper/swiper-defaults.css';
 import '../../../assets/sass/learncard-page.scss';
 
 type OnboardingSwiperForSlidesProps = {
@@ -67,7 +67,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
         <div className="relative h-full w-full flex flex-col">
             <div className="flex-1 overflow-hidden">
                 <Swiper
-                    modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
+                    modules={[Keyboard, Pagination, Scrollbar, SwiperDefaults, Navigation]}
                     keyboard={true}
                     pagination={pagination}
                     grabCursor={true}

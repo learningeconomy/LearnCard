@@ -18,7 +18,7 @@ import {
     useGetBoostPermissions,
     useModal,
 } from 'learn-card-base';
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { m } from '../../../paraglide/messages.js';
 
 import { FamilyChildAccount, FamilyCMSEditorModeEnum } from '../familyCMSState';
@@ -46,7 +46,7 @@ export const FamilyActionMenu: React.FC<{
         boostUri || credential?.boostId
     );
 
-    const [showFamilyCMS, dismissFamilyCMS] = useIonModal(FamilyCMS, {
+    const [showFamilyCMS, dismissFamilyCMS] = useAppOverlayModal(FamilyCMS, {
         credential: credential,
         handleCloseModal: () => dismissFamilyCMS(),
         editorMode: FamilyCMSEditorModeEnum.edit,
@@ -60,7 +60,7 @@ export const FamilyActionMenu: React.FC<{
         });
     };
 
-    const [openGuardianInviteModal, dismissGuardianInviteModal] = useIonModal(
+    const [openGuardianInviteModal, dismissGuardianInviteModal] = useAppOverlayModal(
         FamilyInviteGuardian,
         {
             boostUri: credential?.boostId,

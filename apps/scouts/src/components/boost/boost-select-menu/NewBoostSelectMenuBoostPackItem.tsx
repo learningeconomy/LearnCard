@@ -3,7 +3,6 @@ import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { BoostSmallCard } from '@learncard/react';
 
-import { IonCol } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 
 import { boostCategoryOptions, BoostUserTypeEnum } from '../boost-options/boostOptions';
@@ -12,6 +11,7 @@ import { getDefaultAchievementTypeImage, getDefaultBoostTitle } from '../boostHe
 import { BoostCategoryOptionsEnum, ModalTypes, useModal } from 'learn-card-base';
 import BoostCMS from '../boostCMS/BoostCMS';
 import { getBoostPresetLocalization } from '../localizedPresetFields';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 export type NewBoostSelectMenuBoostPackItemProps = {
     stylePack: {
@@ -27,6 +27,7 @@ export type NewBoostSelectMenuBoostPackItemProps = {
         description?: string;
         criteria?: string;
         image?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         type: any;
     };
     parentUri?: string;
@@ -110,7 +111,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
     }
 
     return (
-        <IonCol
+        <AppCol
             size="6"
             size-sm={4}
             size-md={4}
@@ -147,7 +148,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
                 issueHistory={undefined}
                 type={category}
             />
-        </IonCol>
+        </AppCol>
     );
 };
 

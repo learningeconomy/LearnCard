@@ -1,4 +1,4 @@
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import React, { useState } from 'react';
 import { FamilyCMSState, MemberTitleTypes } from '../familyCMSState';
 import { m } from '../../../paraglide/messages.js';
@@ -85,9 +85,9 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     {m['family.titles.singular']()}
                 </h3>
 
-                <IonInput
+                <AppInput
                     value={guardianTitles.singular}
-                    onIonInput={e => handleSetState('guardians', 'singular', e.detail.value)}
+                    onValueInput={value => handleSetState('guardians', 'singular', value)}
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.guardians?.singular ? 'border-red-300 border-2' : ''
                     }`}
@@ -108,9 +108,9 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     {m['family.titles.plural']()}
                 </h3>
 
-                <IonInput
+                <AppInput
                     value={guardianTitles.plural}
-                    onIonInput={e => handleSetState('guardians', 'plural', e.detail.value)}
+                    onValueInput={value => handleSetState('guardians', 'plural', value)}
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.guardians?.plural ? 'border-red-300 border-2' : ''
                     }`}
@@ -140,9 +140,9 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     {m['family.titles.singular']()}
                 </h3>
 
-                <IonInput
+                <AppInput
                     value={dependentTitles.singular}
-                    onIonInput={e => handleSetState('dependents', 'singular', e.detail.value)}
+                    onValueInput={value => handleSetState('dependents', 'singular', value)}
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.dependents?.singular ? 'border-red-300 border-2' : ''
                     }`}
@@ -163,9 +163,9 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     {m['family.titles.plural']()}
                 </h3>
 
-                <IonInput
+                <AppInput
                     value={dependentTitles.plural}
-                    onIonInput={e => handleSetState('dependents', 'plural', e.detail.value)}
+                    onValueInput={value => handleSetState('dependents', 'plural', value)}
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.dependents?.plural ? 'border-red-300 border-2' : ''
                     }`}

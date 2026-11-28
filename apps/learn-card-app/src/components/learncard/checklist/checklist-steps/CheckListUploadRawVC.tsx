@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-upload-raw-v-c');
 
-import { IonHeader, IonTextarea, IonToolbar } from '@ionic/react';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
@@ -26,6 +26,7 @@ import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { useUploadVcFromText } from '../../../../hooks/useUploadVcFromText';
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export type RawVCFileType = {
     id: string;
@@ -218,8 +219,8 @@ export const CheckListUploadRawVC: React.FC = () => {
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
-                <IonToolbar color="light" className="text-white px-4 py-4!">
+            <AppHeader className="rounded-b-[30px] overflow-hidden shadow-md ">
+                <AppToolbar color="light" className="text-white px-4 py-4!">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center gap-[10px]">
                             <BulkImportWithPlusIcon className="w-[65px] h-[65px]" />
@@ -228,8 +229,8 @@ export const CheckListUploadRawVC: React.FC = () => {
                             </h5>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <section className="h-full bg-grayscale-100 ion-padding overflow-y-scroll pb-[200px]">
                 {(isSaving || checklistStore.get.isParsing().rawVC) && (
                     <ChecklistLoader fileType={UploadTypesEnum.RawVC} />
@@ -314,10 +315,10 @@ export const CheckListUploadRawVC: React.FC = () => {
                     <div className="w-full h-[1px] bg-grayscale-200" />
 
                     <div className="flex flex-col gap-[10px] w-full">
-                        <IonTextarea
+                        <AppTextarea
                             value={rawVcText}
-                            onIonInput={e => {
-                                setRawVcText(e.detail.value);
+                            onValueInput={value => {
+                                setRawVcText(value);
                             }}
                             className="ion-no-padding mb-0! h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
                             // For some reason placeholder-grayscale-400 doesn't work

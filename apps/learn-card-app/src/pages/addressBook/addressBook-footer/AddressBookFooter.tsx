@@ -8,17 +8,19 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import User from '../../../components/svgs/User';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
     const history = useHistory();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
@@ -32,18 +34,18 @@ export const AddressBookFooter: React.FC<{
         }
     });
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(AddressBookContactOptions, {
         handleCloseModal: () => dismissCenterModal(),
         showSearch,
         handleShowSearch,
     });
 
     return (
-        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
-            <IonToolbar className="ion-no-border" color="light">
-                <IonGrid className="bg-white">
-                    <IonRow className="w-full mt-4 flex items-center justify-center">
-                        <IonCol className="flex items-center justify-between max-w-[600px]">
+        <AppFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
+            <AppToolbar className="ion-no-border" color="light">
+                <AppGrid className="bg-white">
+                    <AppRow className="w-full mt-4 flex items-center justify-center">
+                        <AppCol className="flex items-center justify-between max-w-[600px]">
                             <button
                                 onClick={async () => {
                                     const { prompted } = await gate();
@@ -74,11 +76,11 @@ export const AddressBookFooter: React.FC<{
                                 Boost
                                 <GearPlusIcon className="ml-1 text-grayscale-800" />
                             </button>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonToolbar>
-        </IonFooter>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

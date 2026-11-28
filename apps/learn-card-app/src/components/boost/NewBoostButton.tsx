@@ -1,7 +1,7 @@
 import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import Plus from 'learn-card-base/svgs/Plus';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
@@ -39,11 +39,11 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
 
     if (viewMode === BoostPageViewMode.Card) {
         return (
-            <IonCol
+            <AppCol
                 size="6"
-                size-sm={4}
-                size-md={4}
-                size-lg={4}
+                sizeSm={4}
+                sizeMd={4}
+                sizeLg={4}
                 className="flex justify-center items-center relative z-10 pt-[20px]"
             >
                 <button
@@ -62,12 +62,12 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
                         <span>{newLabel}</span>
                     </div>
                 </button>
-            </IonCol>
+            </AppCol>
         );
     }
 
     return (
-        <IonRow
+        <AppRow
             className={`rounded-[15px] flex gap-[10px] items-center w-full z-[2] ${
                 isId ? 'px-[8px] py-[17px]' : 'p-[8px]'
             }`}
@@ -79,7 +79,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
                 <Plus className={`h-[20px] w-[20px]`} />
             </div>
             <span className={`text-[17px] ${headerTextColor}`}>{newLabel}</span>
-        </IonRow>
+        </AppRow>
     );
 };
 

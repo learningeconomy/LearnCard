@@ -1,5 +1,5 @@
 import { useHistory } from 'react-router-dom';
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 import TrustedAppRequestModal from 'learn-card-base/components/connected-applications/TrustedAppRequestModal';
 import UnknownAppRequestModal from 'learn-card-base/components/connected-applications/UnknownAppRequestModal';
@@ -14,7 +14,7 @@ export const useAppConnectModal = (profileId: string, challenge: string) => {
         a => a?.profileId?.toLowerCase() === profileId?.toLowerCase()
     );
 
-    const [presentConnectAppModal, dismissConnectAppModal] = useIonModal(
+    const [presentConnectAppModal, dismissConnectAppModal] = useAppOverlayModal(
         trustedAppInfo ? TrustedAppRequestModal : UnknownAppRequestModal,
         {
             appProfileId: profileId.toLowerCase(),

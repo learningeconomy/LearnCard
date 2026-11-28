@@ -2,19 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
-import {
-    IonContent,
-    IonRow,
-    IonHeader,
-    IonButton,
-    IonToolbar,
-    IonButtons,
-    IonCol,
-    IonSpinner,
-    IonPage,
-    IonFooter,
-    useIonModal,
-} from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import VCDisplayCardWrapper2 from './VCDisplayCardWrapper2';
 import X from 'learn-card-base/svgs/X';
@@ -30,6 +17,12 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, CredentialRecord } from '@learncard/types';
 import { useAcceptCredentialMutation } from 'learn-card-base/react-query/mutations/mutations';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays';
 
 export const LoadingVcCard: React.FC = () => {
     return (
@@ -37,7 +30,7 @@ export const LoadingVcCard: React.FC = () => {
             <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-full max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
                 <div className="w-full grow h-full flex items-center justify-center bg-white">
                     <section className="loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full opacity-50 ">
-                        <IonSpinner color="dark" />
+                        <AppSpinner color="dark" />
                     </section>
                 </div>
             </section>
@@ -179,14 +172,14 @@ export const VCClaim: React.FC<{
         !vc || getVCDisplayCardVariant(vc, getDefaultCategoryForCredential(vc)) !== 'ribbon';
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 className={`flex items-center justify-center ion-padding boost-cms-preview ${
                     shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
                 }`}
                 fullscreen
             >
-                <IonRow
+                <AppRow
                     className={`flex flex-col items-center justify-center ${
                         shouldUseHostCardPadding ? 'px-6' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''}`}
@@ -224,19 +217,19 @@ export const VCClaim: React.FC<{
                             <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-full max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
                                 <div className="w-full grow h-full flex items-center justify-center bg-white">
                                     <section className="loading-spinner-container flex flex-col items-center justify-center h-full w-full opacity-50 ">
-                                        <IonSpinner color="dark" />
+                                        <AppSpinner color="dark" />
                                     </section>
                                 </div>
                             </section>
                         </section>
                     )}
-                </IonRow>
-            </IonContent>
+                </AppRow>
+            </AppContent>
             {showFooter && !showBoostFooter && (
-                <IonFooter translucent className="ion-no-border w-full">
-                    <IonToolbar color="transparent" className="ion-no-border w-full">
-                        <IonRow className="flex flex-col items-center justify-center w-full">
-                            <IonCol size="12" className="flex justify-center items-center w-full">
+                <AppFooter translucent className="ion-no-border w-full">
+                    <AppToolbar color="transparent" className="ion-no-border w-full">
+                        <AppRow className="flex flex-col items-center justify-center w-full">
+                            <AppCol size="12" className="flex justify-center items-center w-full">
                                 {!vcAccepted && isLoggedIn && (
                                     <>
                                         <button
@@ -308,12 +301,12 @@ export const VCClaim: React.FC<{
                                         </button>
                                     </>
                                 )}
-                            </IonCol>
-                        </IonRow>
-                    </IonToolbar>
-                </IonFooter>
+                            </AppCol>
+                        </AppRow>
+                    </AppToolbar>
+                </AppFooter>
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 
@@ -365,14 +358,14 @@ export const VCModal = ({
         !credential || getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 className={`flex items-center justify-center ion-padding boost-cms-preview ${
                     shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
                 }`}
                 fullscreen
             >
-                <IonRow
+                <AppRow
                     className={`flex flex-col items-center justify-center ${
                         shouldUseHostCardPadding ? 'px-6' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''}`}
@@ -398,9 +391,9 @@ export const VCModal = ({
                             />
                         )}
                     </section>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

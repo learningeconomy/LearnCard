@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BoostCMSState, SkillFrameworkNode } from '../../../boost';
 import SelectFrameworkToManageModal from 'apps/scouts/src/pages/SkillFrameworks/SelectFrameworkToManageModal';
@@ -8,6 +7,7 @@ import BrowseFrameworkPage from 'apps/scouts/src/pages/SkillFrameworks/BrowseFra
 import BoostCMSSkillDisplay from './BoostCMSSkillDisplay';
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 /**
  * New framework-based skill selector for Scouts
@@ -71,8 +71,8 @@ export const BoostFrameworkSkillSelector: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="text-black text-xl p-0 m-0 font-notoSans">
                     {m['boostCMS.skills']()}
                 </h1>
@@ -85,7 +85,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
                 >
                     <Plus className="w-8 h-auto" />
                 </button>
-            </IonCol>
+            </AppCol>
 
             {selectedSkills.map(skill => (
                 <BoostCMSSkillDisplay
@@ -94,7 +94,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
                     handleRemoveSkill={handleRemoveSkill}
                 />
             ))}
-        </IonRow>
+        </AppRow>
     );
 };
 

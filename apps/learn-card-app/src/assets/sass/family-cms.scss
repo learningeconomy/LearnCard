@@ -8,13 +8,13 @@
     }
 }
 
-ion-toggle.family-cms-toggle-disabled {
+.app-toggle.family-cms-toggle-disabled {
     --track-background: #a8acbd !important;
     --track-background-checked: #a8acbd !important;
     opacity: 1;
 }
 
-ion-toggle.family-cms-toggle {
+.app-toggle.family-cms-toggle {
     --track-background: #52597a !important;
     --track-background-checked: #00ba88 !important;
 }

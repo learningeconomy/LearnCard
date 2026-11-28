@@ -4,7 +4,7 @@ import { Autoplay } from 'swiper/modules';
 
 import { m } from '../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
@@ -131,7 +131,7 @@ const AiSessionLoader: React.FC<{
                     )}
 
                     <img src={Sparkles} className="absolute h-[182px] w-[182px] z-20" />
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         style={{
                             color: '#6366F1',

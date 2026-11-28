@@ -14,7 +14,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonPage, useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import BoostShareableQRCode from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableQRCode';
@@ -33,6 +33,7 @@ import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { BoostCMSIssueTo, ShortBoostState } from '../../../boost/boost';
 import * as m from '../../../../paraglide/messages.js';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type FamilyInviteGuardianProps = {
     boostUri: string;
@@ -232,7 +233,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         },
     };
 
-    const [presentClaimQRCode, dismissClaimQRCode] = useIonModal(BoostShareableQRCode, {
+    const [presentClaimQRCode, dismissClaimQRCode] = useAppOverlayModal(BoostShareableQRCode, {
         state: shareableCodeState,
         handleCloseModal: () => dismissClaimQRCode(),
         showCloseButton: true,
@@ -240,7 +241,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         text: 'Scan Code to Join Family',
     });
 
-    const [presentIssueTo, dismissIssueTo] = useIonModal(FamilyGuardianIssueToList, {
+    const [presentIssueTo, dismissIssueTo] = useAppOverlayModal(FamilyGuardianIssueToList, {
         state: state,
         setState: setState,
         handleCloseModal: () => dismissIssueTo(),
@@ -250,7 +251,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         boostUri: boostUri,
     });
 
-    const [presentSearchContacts, dismissSearchContacts] = useIonModal(BoostSearch, {
+    const [presentSearchContacts, dismissSearchContacts] = useAppOverlayModal(BoostSearch, {
         state: state,
         setState: setState,
         handleCloseModal: () => {
@@ -266,7 +267,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     }, []);
 
     return (
-        <IonPage>
+        <AppPage>
             <ModalLayout handleOnClick={handleCloseModal} containerClass="pt-6!">
                 <div className="w-full">
                     <FamilyCrest
@@ -378,7 +379,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                     </div>
                 </div>
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

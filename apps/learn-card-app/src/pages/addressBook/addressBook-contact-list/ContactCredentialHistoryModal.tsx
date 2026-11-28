@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { LCNProfile } from '@learncard/types';
 import X from 'learn-card-base/svgs/X';
@@ -13,6 +13,7 @@ import {
     type ContactCredentialHistoryItem,
     useContactCredentialHistory,
 } from './useContactCredentialHistory';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ContactCredentialHistoryModalProps = {
     contact: Pick<LCNProfile, 'profileId' | 'displayName'>;
@@ -120,14 +121,14 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
                 {isLoading && (
                     <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 text-sm text-grayscale-600">
-                        <IonSpinner className="h-6 w-6" />
+                        <AppSpinner className="h-6 w-6" />
                         {m['contacts.credentialHistory.loading']()}
                     </div>
                 )}
 
                 {isError && (
                     <div className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="mt-0.5 shrink-0 text-lg text-red-400"
                         />

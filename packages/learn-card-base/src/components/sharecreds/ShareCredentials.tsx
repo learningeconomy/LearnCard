@@ -9,10 +9,14 @@ import useShareCredentials from 'learn-card-base/hooks/useShareCredentials';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
-import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
 import 'swiper/css/navigation';
 import ShareCredentialCards from './ShareCredentialCards';
 import { getLogger } from '../../logging/logger';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('share-credentials');
 
 type ShareCredentialsProps = {
@@ -22,7 +26,7 @@ type ShareCredentialsProps = {
 
 const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'boost' }) => {
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [isSharing, setIsSharing] = useState(false);
 
@@ -63,9 +67,9 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
     };
 
     return (
-        <IonPage>
-            <IonContent>
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
+        <AppPage>
+            <AppContent>
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-medium leading-[21px]">
@@ -102,7 +106,7 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
                             <div className="mt-[15px] text--[14px]">
                                 {credentialsLoading && (
                                     <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                        <IonSpinner />
+                                        <AppSpinner />
                                         <p className="mt-[20px]">Fetching your earned boosts...</p>
                                     </div>
                                 )}
@@ -140,8 +144,7 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
                                     <span className="mr-[10px] text-[14px] font-semibold">
                                         Share all {name}s
                                     </span>
-                                    <IonToggle
-                                        slot="end"
+                                    <AppToggle
                                         checked={allSelected}
                                         onClick={() => handleToggleSelectAll()}
                                     />
@@ -151,7 +154,7 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
                             <ShareCredentialCards />
                         </section>
                     </section>
-                </IonGrid>
+                </AppGrid>
                 {!credentialsLoading && (
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button
@@ -166,8 +169,8 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
                         </button>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

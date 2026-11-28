@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { IonIcon, IonSpinner, useIonAlert } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInstance } from 'swiper';
 import {
@@ -13,7 +14,7 @@ import {
     personAddOutline,
     ribbonOutline,
     trashOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import moment from 'moment';
 
 import type { LCNProfile, VC } from '@learncard/types';
@@ -52,6 +53,7 @@ import { ThreeDotVertical } from '@learncard/react';
 import X from 'learn-card-base/svgs/X';
 
 import 'swiper/css';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ContactWithRelationship = LCNProfile & {
     connectedAt?: string;
@@ -191,7 +193,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const { gate } = useLCNGatedAction();
     const overflowRef = useRef<HTMLDivElement>(null);
     const credentialSwiperRef = useRef<SwiperInstance | null>(null);
@@ -404,7 +406,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         onClick={handleSendCredential}
                     >
                         {loadingAction === 'send' ? (
-                            <IonSpinner className="h-4 w-4 text-grayscale-900" />
+                            <AppSpinner className="h-4 w-4 text-grayscale-900" />
                         ) : (
                             <CredentialGeneralIcon className="text-lg text-grayscale-900" />
                         )}
@@ -469,7 +471,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         onClick={copyLearnCardNumber}
                                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
                                     >
-                                        <IonIcon icon={copyOutline} className="text-lg" />
+                                        <AppIcon icon={copyOutline} className="text-lg" />
                                         {m['contacts.copyLearnCardNumber']()}
                                     </button>
                                 )}
@@ -487,7 +489,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         }}
                                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-red-700 transition-colors hover:bg-red-50"
                                     >
-                                        <IonIcon icon={trashOutline} className="text-lg" />
+                                        <AppIcon icon={trashOutline} className="text-lg" />
                                         {m['contacts.removeContact']()}
                                     </button>
                                 )}
@@ -513,9 +515,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-40"
                                     >
                                         {loadingAction === 'block' ? (
-                                            <IonSpinner className="h-[18px] w-[18px]" />
+                                            <AppSpinner className="h-[18px] w-[18px]" />
                                         ) : (
-                                            <IonIcon icon={banOutline} className="text-lg" />
+                                            <AppIcon icon={banOutline} className="text-lg" />
                                         )}
                                         {m['contacts.blockContact']()}
                                     </button>
@@ -560,14 +562,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
                             {isLoading && (
                                 <div className="flex min-h-[150px] items-center justify-center gap-2 rounded-2xl border border-grayscale-200 bg-white text-sm text-grayscale-600">
-                                    <IonSpinner className="h-5 w-5" />
+                                    <AppSpinner className="h-5 w-5" />
                                     {m['contacts.credentialHistory.loadingPreview']()}
                                 </div>
                             )}
 
                             {isError && (
                                 <div className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={alertCircleOutline}
                                         className="mt-0.5 shrink-0 text-lg text-red-400"
                                     />
@@ -579,7 +581,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
                             {!isLoading && !isError && credentialHistory?.items.length === 0 && (
                                 <div className="flex min-h-[150px] flex-col items-center justify-center rounded-2xl border border-grayscale-200 bg-white px-6 text-center">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={documentTextOutline}
                                         className="mb-3 text-3xl text-grayscale-400"
                                     />
@@ -664,7 +666,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             </div>
 
                             <div className="flex min-h-[150px] flex-col items-center justify-center rounded-2xl border border-grayscale-200 bg-white px-6 text-center">
-                                <IonIcon
+                                <AppIcon
                                     icon={personAddOutline}
                                     className="mb-3 text-3xl text-grayscale-400"
                                 />

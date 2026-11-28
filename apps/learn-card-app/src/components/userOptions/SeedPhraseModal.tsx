@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import KeyIcon from 'learn-card-base/svgs/KeyIcon';
 import { useModal, useCurrentUser } from 'learn-card-base';
 import CopyStack from '../svgs/CopyStack';
@@ -67,8 +67,8 @@ const SeedPhraseModal: React.FC<{}> = () => {
                 <h1 id="seed-phrase-label" className="flex text-[16px] font-semibold">
                     {m['profile.seed.yourSeedPhrase']()}
                 </h1>
-                <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
-                    <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
+                <AppRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
+                    <AppCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                         <div className="w-[90%] flex justify-start items-center text-left">
                             <textarea
                                 className="flex items-center w-full resize-none bg-grayscale-100 rounded-[10px] px-[10px] text-[15px] text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
@@ -91,8 +91,8 @@ const SeedPhraseModal: React.FC<{}> = () => {
                                 <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                             </span>
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
                 <a
                     className={`text-center mt-[5px] line-clamp-1 text-${primaryColor} text-[14px] font-semibold`}
                     target="_blank"

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import moment from 'moment';
-import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
@@ -33,6 +32,7 @@ import {
     getCredentialExpirationDate,
     hasCredentialExpired,
 } from '../../helpers/credentialExpiration';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 const DISPLAY_TYPE_KEYS: Record<string, string> = {
     Badge: 'badge',
@@ -246,7 +246,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
 
     if (loading) {
         return (
-            <IonRow
+            <AppRow
                 className={`rounded-[15px] p-[8px] w-full flex gap-[10px] items-center ${backgroundColor}`}
                 data-testid="boost-list-item-loading"
             >
@@ -271,7 +271,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         skeletonStyles={{ width: '100%' }}
                     />
                 </div>
-            </IonRow>
+            </AppRow>
         );
     }
 
@@ -298,7 +298,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     };
 
     return (
-        <IonRow
+        <AppRow
             className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 onClick ? 'cursor-pointer' : ''
             }`}
@@ -476,7 +476,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     </span>
                 </div>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

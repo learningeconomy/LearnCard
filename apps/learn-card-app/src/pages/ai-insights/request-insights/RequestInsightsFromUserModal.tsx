@@ -9,7 +9,7 @@ import { TransP } from '../../../i18n/TransP';
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
-import { IonFooter, IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import X from 'learn-card-base/svgs/X';
 
 import {
@@ -30,7 +30,8 @@ import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 import { RequestInsightStatusEnum } from './request-insights.helpers';
-import { person } from 'ionicons/icons';
+import { person } from 'learn-card-base/icons/ionicons';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const RequestInsightsFromUserModal: React.FC<{
     profile: LCNProfile;
@@ -105,7 +106,7 @@ export const RequestInsightsFromUserModal: React.FC<{
                             />
                         ) : (
                             <div className="bg-grayscale-200 text-grayscale-700 h-[64px] w-[64px] min-h-[64px] min-w-[64px] rounded-full flex items-center justify-center text-sm font-semibold">
-                                <IonIcon icon={person} className="h-4 w-4" />
+                                <AppIcon icon={person} className="h-4 w-4" />
                             </div>
                         )}
 
@@ -139,7 +140,7 @@ export const RequestInsightsFromUserModal: React.FC<{
                 </div>
             </div>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50/60 max-h-[100px]!"
             >
@@ -170,7 +171,7 @@ export const RequestInsightsFromUserModal: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

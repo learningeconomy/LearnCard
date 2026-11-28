@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConsentFlowTerm } from '@learncard/types';
-import { IonRippleEffect } from '@ionic/react';
+import { AppRippleEffect } from 'learn-card-base/ui/widgets';
 import * as m from '../../paraglide/messages.js';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
@@ -124,7 +124,7 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
                     </section>
                 </div>
 
-                <IonRippleEffect />
+                <AppRippleEffect />
             </button>
         </li>
     );

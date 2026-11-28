@@ -18,15 +18,6 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonApp: ({ children }: { children: React.ReactNode }) => children,
-    setupIonicReact: vi.fn(),
-}));
-
-vi.mock('@ionic/react-router', () => ({
-    IonReactRouter: ({ children }: { children: React.ReactNode }) => children,
-}));
-
 vi.mock('learn-card-base', () => ({
     SCOUTPASS_API_ENDPOINT: '',
     SCOUTPASS_NETWORK_URL: '',

@@ -3,7 +3,7 @@ import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from 'learn-card-base/ui/layout';
 import SeedPhraseModal from './SeedPhraseModal';
 
 import { openToS, openPP, openLCwebsite } from '../../helpers/externalLinkHelpers';
@@ -31,7 +31,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     return (
         <div className="w-full flex items-center justify-center pb-[20px]">
             <div className="w-full flex items-center justify-center flex-col max-w-[400px]">
-                <IonCol
+                <AppCol
                     size="12"
                     className="w-full flex flex-wrap items-center justify-center p-0 mt-2 gap-x-[15px] gap-y-[8px]"
                 >
@@ -81,9 +81,9 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                     >
                         {m['login.footer.explorePathways']()}
                     </button>
-                </IonCol>
+                </AppCol>
                 {!hideSelfCustodialLogin && (
-                    <IonCol
+                    <AppCol
                         size="12"
                         className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-v3-[4px] "
                     >
@@ -108,7 +108,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 ]}
                             />
                         </p>
-                    </IonCol>
+                    </AppCol>
                 )}
             </div>
         </div>

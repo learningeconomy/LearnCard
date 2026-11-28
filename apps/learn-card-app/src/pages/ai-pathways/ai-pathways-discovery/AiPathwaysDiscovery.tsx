@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import AiPathwaysDiscoverySearch from './AiPathwaysDiscoverySearch';
 import MainHeader from '../../../components/main-header/MainHeader';
@@ -24,6 +23,7 @@ import {
 import { normalizeSchoolPrograms } from '../ai-pathway-courses/ai-pathway-courses.helpers';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const AiPathwaysDiscovery: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -53,9 +53,9 @@ const AiPathwaysDiscovery: React.FC = () => {
     const emptyPathways = !isLoading && !occupations && schoolPrograms.length === 0;
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color={backgroundSecondaryColor}>
+                <AppContent fullscreen color={backgroundSecondaryColor}>
                     <MainHeader
                         category={CredentialCategoryEnum.aiPathway}
                         showBackButton
@@ -112,9 +112,9 @@ const AiPathwaysDiscovery: React.FC = () => {
                             )}
                         </div>
                     </AiFeatureGate>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import PaperPlane from 'learn-card-base/svgs/PaperPlane';
 
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
@@ -40,8 +40,8 @@ export const AssessmentAnswerInput: React.FC<{
                 isDesktop ? 'bg-white rounded-[20px] shadow-box-bottom' : 'bg-cyan-50'
             }`}
         >
-            <IonInput
-                onIonInput={e => setAnswer(e.detail.value)}
+            <AppInput
+                onValueInput={value => setAnswer(value)}
                 className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] px-4!  ${
                     isDesktop ? '' : 'border-solid border border-grayscale-200'
                 }`}

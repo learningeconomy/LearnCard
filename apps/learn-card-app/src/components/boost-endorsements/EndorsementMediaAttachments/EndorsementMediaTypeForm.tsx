@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
 
-import { IonCol, IonRow, IonInput } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 
@@ -78,8 +79,8 @@ const EndorsementMediaTypeForm: React.FC<{
 
     return (
         <div className="px-4 py-4">
-            <IonRow className="flex flex-col pb-4">
-                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+            <AppRow className="flex flex-col pb-4">
+                <AppCol className="w-full flex items-center justify-between mt-8 mb-2">
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
                         {handleGoBack && (
                             <button
@@ -94,8 +95,8 @@ const EndorsementMediaTypeForm: React.FC<{
                     {Icon && (
                         <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                     )}
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="flex flex-col items-center justify-center w-full mb-4">
                 {isPhoto && (
                     <div className="image-preview max-h-[250px] mb-[20px]">
@@ -110,13 +111,13 @@ const EndorsementMediaTypeForm: React.FC<{
                     </div>
                 )}
 
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['endorsement.media.titlePlaceholder']()}
                     type="text"
                     value={mediaTitle}
-                    onIonInput={e => setMediaTitle(e.detail.value!)}
+                    onValueInput={value => setMediaTitle(value)}
                     onKeyDown={e => {
                         if (e.key === 'Enter') {
                             Keyboard.hide();
@@ -125,13 +126,13 @@ const EndorsementMediaTypeForm: React.FC<{
                 />
 
                 {(isLink || isVideo) && (
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mt-4`}
                         placeholder={m['endorsement.media.pasteLink']()}
                         type="text"
                         value={mediaUrl}
-                        onIonInput={e => setMediaUrl(e.detail.value!)}
+                        onValueInput={value => setMediaUrl(value)}
                         onKeyDown={e => {
                             if (e.key === 'Enter') {
                                 Keyboard.hide();

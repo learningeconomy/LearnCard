@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonFooter, IonCol, IonGrid, IonRow, IonInput } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostEarnedCard from '../boost-earned-card/BoostEarnedCard';
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
@@ -28,6 +29,7 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const BoostLinkedCredentialsModal: React.FC<{
     credential: VC;
@@ -44,7 +46,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
     defaultImg,
     displayType,
 }) => {
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
 
@@ -188,12 +190,12 @@ export const BoostLinkedCredentialsModal: React.FC<{
                             version="1"
                             className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-600"
                         />
-                        <IonInput
+                        <AppInput
                             autocapitalize="on"
                             placeholder="Credentials..."
                             value={search}
                             className="pl-10! text-grayscale-800 text-[17px] font-notoSans py-1! w-full"
-                            onIonInput={e => setSearch(e.detail.value ?? '')}
+                            onValueInput={value => setSearch(value)}
                             type="text"
                         />
                     </div>
@@ -237,11 +239,11 @@ export const BoostLinkedCredentialsModal: React.FC<{
                     </div>
                 )}
 
-                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                     {isCardView && (
-                        <IonGrid className="max-w-[600px] pt-[25px]">
-                            <IonRow>{credentials}</IonRow>
-                        </IonGrid>
+                        <AppGrid className="max-w-[600px] pt-[25px]">
+                            <AppRow>{credentials}</AppRow>
+                        </AppGrid>
                     )}
                     {!isCardView && (
                         <>
@@ -250,10 +252,10 @@ export const BoostLinkedCredentialsModal: React.FC<{
                             </div>
                         </>
                     )}
-                </IonCol>
+                </AppCol>
             </div>
 
-            <IonFooter
+            <AppFooter
                 ref={bottomBarRef}
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! z-9999"
@@ -268,7 +270,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </section>
     );
 };

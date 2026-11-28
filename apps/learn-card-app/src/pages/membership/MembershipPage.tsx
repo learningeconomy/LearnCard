@@ -4,7 +4,6 @@ import BoostErrorsDisplay, {
     ErrorBoundaryFallback,
 } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
-import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import { categoryMetadata, useGetBoosts, usePathQuery } from 'learn-card-base';
@@ -23,6 +22,7 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
 import BoostManagedIDCard from '../../components/boost/boost-managed-card/BoostManagedIDCard';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const MembershipPage: React.FC = () => {
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
@@ -111,7 +111,7 @@ const MembershipPage: React.FC = () => {
     };
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader showBackButton subheaderType={SubheaderTypeEnum.Membership}>
                     {currentLCNUser && (
@@ -125,7 +125,7 @@ const MembershipPage: React.FC = () => {
                         />
                     )}
                 </MainHeader>
-                <IonContent fullscreen color={'teal-400'}>
+                <AppContent fullscreen color={'teal-400'}>
                     <CurvedBackdropEl className="bg-teal-300" />
                     <div className="w-full flex items-center justify-center mt-8">
                         {credentialsLoading &&
@@ -178,9 +178,9 @@ const MembershipPage: React.FC = () => {
                             )}
                         {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}
                     </div>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -44,12 +44,6 @@ vi.mock('../../helpers/contract.helpers', () => ({
     }),
 }));
 vi.mock('./ConsentFlowEditAccess', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({
-    IonCol: () => null,
-    IonRow: () => null,
-    IonLoading: () => null,
-    IonSkeletonText: () => null,
-}));
 vi.mock('react-router-dom', () => ({
     useHistory: () => ({ push: state.push }),
     useLocation: () => ({ search: '' }),

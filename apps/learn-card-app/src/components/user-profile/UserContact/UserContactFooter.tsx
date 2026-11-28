@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 
-import { IonFooter } from '@ionic/react';
-
 import { useModal, useWallet } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const UserContactFooter: React.FC = () => {
     const { initWallet } = useWallet();
     const { closeModal } = useModal();
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -32,7 +31,7 @@ const UserContactFooter: React.FC = () => {
                     </button>
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

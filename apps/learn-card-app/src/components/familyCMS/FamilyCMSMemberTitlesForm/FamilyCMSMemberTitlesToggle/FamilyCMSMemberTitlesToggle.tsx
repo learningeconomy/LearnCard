@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-import { useIonModal } from '@ionic/react';
 import CaretDown from '../../../svgs/CaretDown';
 import FamilyCMSMemberTitlesOptionsList from './FamilyCMSMemberTitlesOptionsList';
 

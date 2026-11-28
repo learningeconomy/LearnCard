@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
 import TrashBin from '../../../svgs/TrashBin';
-import { IonInput } from '@ionic/react';
 import * as m from '../../../../paraglide/messages.js';
 
 import { BoostCMSIssueTo, UserProfilePicture } from 'learn-card-base';
 import { formatLocaleCount } from '../../../../i18n/formatters';
 import { TroopsCMSState } from '../../troopCMSState';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 export enum TroopIDUserListTabsEnum {
     all = 'all',
@@ -68,16 +68,19 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
+                // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                 [key]: [...prevState?.[key]?.filter(user => user?.profileId !== profileId)],
             };
         });
 
         if (key === 'admins') {
+            // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
             setAdmins?.(prevState => [...prevState?.filter(user => user?.profileId !== profileId)]);
         }
 
         if (key === 'issueTo') {
             setMembers?.(prevState => [
+                // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                 ...prevState?.filter(user => user?.profileId !== profileId),
             ]);
         }
@@ -162,11 +165,11 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                             )}
                         </div>
                     )}
-                    <IonInput
+                    <AppInput
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
                         placeholder={m['boost.searchPlaceholder']()}
                         value={search}
-                        onIonInput={e => setSearch(e.detail.value ?? '')}
+                        onValueInput={value => setSearch(value ?? '')}
                     />
                 </div>
             )}

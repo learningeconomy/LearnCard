@@ -20,7 +20,7 @@ import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import {
@@ -28,6 +28,7 @@ import {
     isOpenSaltFramework,
     isOpenSaltRef,
 } from '../../helpers/opensalt.helpers';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SelectFrameworkToManageModalProps = {
     onFrameworkSelectOverride?: (framework: ApiFrameworkInfo) => void;
@@ -259,7 +260,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
                 {isLoadingFrameworks && (
                     <div className="flex items-center justify-center py-[111px] text-grayscale-900">
-                        <IonSpinner />
+                        <AppSpinner />
                     </div>
                 )}
 
@@ -281,7 +282,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                                 title="Sync framework"
                             >
                                 {syncingFrameworkId === framework.id ? (
-                                    <IonSpinner name="lines" className="w-[20px] h-[20px]" />
+                                    <AppSpinner name="lines" className="w-[20px] h-[20px]" />
                                 ) : (
                                     <RefreshIcon className="w-[20px] h-[20px]" />
                                 )}
@@ -301,7 +302,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
                         {isLoadingAvailableFrameworks && (
                             <div className="flex items-center justify-center py-[20px] text-grayscale-900">
-                                <IonSpinner />
+                                <AppSpinner />
                             </div>
                         )}
 
@@ -328,9 +329,9 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                     <h3 className="font-poppins text-[16px] font-[600] text-grayscale-900">
                         Import OpenSALT Framework
                     </h3>
-                    <IonInput
+                    <AppInput
                         value={openSaltRef}
-                        onIonInput={event => setOpenSaltRef(event.detail.value ?? '')}
+                        onValueInput={value => setOpenSaltRef(value)}
                         placeholder="Paste an OpenSALT framework link"
                         className="bg-grayscale-100 rounded-[12px] px-[12px]! text-[14px] font-poppins text-grayscale-900! placeholder:text-grayscale-500"
                     />

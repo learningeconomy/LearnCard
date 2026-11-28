@@ -2,9 +2,9 @@ import React from 'react';
 
 import { useScreenWidth } from 'learn-card-base';
 
-import { IonContent, IonRow, IonCol } from '@ionic/react';
-
 import { useT } from '../../../i18n';
+import { AppContent } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?: string }> = ({
     handleOnClick,
@@ -12,16 +12,16 @@ const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?
 }) => {
     const t = useT();
     return (
-        <IonRow className="flex w-full items-center justify-center">
-            <IonCol className="mt-2 flex w-full max-w-[400px] items-center justify-center rounded-[20px] bg-white">
+        <AppRow className="flex w-full items-center justify-center">
+            <AppCol className="mt-2 flex w-full max-w-[400px] items-center justify-center rounded-[20px] bg-white">
                 <button
                     onClick={handleOnClick}
                     className="text-grayscale-900 flex flex-1 items-center justify-center py-1 text-lg font-notoSans"
                 >
                     {buttonText ?? t('common.close')}
                 </button>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 
@@ -46,9 +46,9 @@ const ModalLayout: React.FC<{
 
     if (allowScroll) {
         return (
-            <IonContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
-                <IonRow className="flex h-full flex-col items-center justify-center">
-                    <IonCol
+            <AppContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
+                <AppRow className="flex h-full flex-col items-center justify-center">
+                    <AppCol
                         size="12"
                         className={`flex w-full flex-col items-center ${containerStyles}`}
                     >
@@ -62,16 +62,16 @@ const ModalLayout: React.FC<{
                             handleOnClick={handleOnClick}
                             buttonText={buttonText}
                         />
-                    </IonCol>
-                </IonRow>
-            </IonContent>
+                    </AppCol>
+                </AppRow>
+            </AppContent>
         );
     }
 
     return (
-        <IonContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
-            <IonRow className="flex h-full flex-col items-center justify-center">
-                <IonCol
+        <AppContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
+            <AppRow className="flex h-full flex-col items-center justify-center">
+                <AppCol
                     size="12"
                     className={`flex w-full flex-col items-center ${containerStyles}`}
                 >
@@ -86,9 +86,9 @@ const ModalLayout: React.FC<{
                         handleOnClick={handleOnClick}
                         buttonText={buttonText}
                     />
-                </IonCol>
-            </IonRow>
-        </IonContent>
+                </AppCol>
+            </AppRow>
+        </AppContent>
     );
 };
 

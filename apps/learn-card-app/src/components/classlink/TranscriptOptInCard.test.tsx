@@ -74,7 +74,6 @@ const render = (ui: React.ReactElement) =>
             <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
         ),
     });
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useTranscriptStatus: (enabled: boolean) => {
         mocks.useTranscriptStatus(enabled);

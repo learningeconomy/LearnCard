@@ -72,7 +72,9 @@ test.describe('Apps browse layout @mocked', () => {
             );
 
             const list = page.getByText('All Apps', { exact: true }).locator('../..');
-            await expect(list.locator('ion-skeleton-text')).toHaveCount(0, { timeout: 30_000 });
+            await expect(list.locator('ion-skeleton-text, .app-skeleton-text')).toHaveCount(0, {
+                timeout: 30_000,
+            });
             await expect(list).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
             const firstCard = list.locator(':scope > *').filter({ hasText: 'Example Learning' });
             const secondCard = list.locator(':scope > *').filter({ hasText: 'Example Tools' });

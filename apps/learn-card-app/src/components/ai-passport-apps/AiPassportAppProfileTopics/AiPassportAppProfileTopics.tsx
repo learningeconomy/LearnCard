@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import TopicsItem from './TopicsItem';
 import TopicsItemSkeleton from './TopicsItemSkeleton';
 import { LaunchPadAppListItem, useGetCredentialList } from 'learn-card-base';
@@ -38,7 +38,7 @@ export const AiPassportAppProfileTopics: React.FC<{ app: LaunchPadAppListItem }>
                     <p className="text-grayscale-700 font-poppins font-semibold text-[17px] flex items-center justify-center">
                         AI Sessions<span className="text-2xl">&nbsp;&middot;&nbsp;</span>
                         {isLoading ? (
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                         ) : (
                             topicsCount
                         )}{' '}

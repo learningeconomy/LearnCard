@@ -36,7 +36,7 @@ import {
     ribbonOutline,
     sparklesOutline,
     trophyOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import type { NodeRequirement } from '../../types';
 

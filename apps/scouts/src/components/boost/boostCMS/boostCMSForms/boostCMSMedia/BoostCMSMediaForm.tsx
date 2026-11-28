@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonCol, IonRow } from '@ionic/react';
 
 import * as m from '../../../../../paraglide/messages.js';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -11,6 +10,7 @@ import BoostMediaCMSFormDocumentItem from './BoostMediaCMSFormDocumentItem';
 import BoostMediaCMSFormVideoItem from './BoostMediaCMSFormVideoItem';
 import BoostMediaCMSFormLinkItem from './BoostMediaCMSFormLinkItem';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export type BoostMediaCMSFormItemProps = {
     index: number;
@@ -89,8 +89,8 @@ export const BoostCMSMediaForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white rounded-[20px]">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white rounded-[20px]">
                 <button
                     className="flex items-center justify-between w-full ion-padding"
                     onClick={() => {
@@ -173,8 +173,8 @@ export const BoostCMSMediaForm: React.FC<{
                         ))}
                     </div>
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

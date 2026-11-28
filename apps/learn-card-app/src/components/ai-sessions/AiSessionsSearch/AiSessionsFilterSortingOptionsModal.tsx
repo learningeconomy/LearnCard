@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonItem, IonList } from '@ionic/react';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import { Checkmark } from '@learncard/react';
 
 import {
@@ -35,14 +35,14 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
 
     return (
         <>
-            <IonList className="py-4 rounded-[20px] bg-white">
+            <AppList className="py-4 rounded-[20px] bg-white">
                 {AI_SESSIONS_SORT_OPTIONS.map(option => {
                     if (filteringType === AiFilteringTypes.sessions) {
                         if (option.type === AiSessionsSortOptionsEnum.mostSessions) return <></>;
                     }
 
                     return (
-                        <IonItem
+                        <AppItem
                             className="font-notoSans text-sm flex items-center justify-start text-left"
                             key={option.id}
                             lines="none"
@@ -56,7 +56,7 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
                                 <div className="w-[24px] h-[24px] mr-1" />
                             )}
                             {m['ai.sortBy']()} {option.title}
-                        </IonItem>
+                        </AppItem>
                     );
                 })}
                 {showFilteringOptions && (
@@ -67,7 +67,7 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
                 {showFilteringOptions &&
                     AI_SESSIONS_FILTER_OPTIONS.map(option => {
                         return (
-                            <IonItem
+                            <AppItem
                                 className="font-notoSans text-sm flex items-center justify-start text-left"
                                 key={option.id}
                                 lines="none"
@@ -81,10 +81,10 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
                                     <div className="w-[24px] h-[24px] mr-1" />
                                 )}
                                 {option.title}
-                            </IonItem>
+                            </AppItem>
                         );
                     })}
-            </IonList>
+            </AppList>
             <div className="w-full flex items-center justify-center mt-4">
                 <button
                     onClick={handleSetState}

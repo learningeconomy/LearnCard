@@ -13,10 +13,6 @@ vi.mock('react-router-dom', () => ({
     useHistory: () => ({ push: vi.fn() }),
     useLocation: () => ({ search: '?request=https://verifier.example/request' }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
     useIsLoggedIn: () => true,

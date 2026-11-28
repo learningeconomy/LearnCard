@@ -12,7 +12,6 @@ import {
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
@@ -34,6 +33,8 @@ import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from '@learncard/helpers';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 import { StylePackCategoryModal } from './StylePackCategoryModal';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export enum StylePackCategories {
     all = 'All',
@@ -98,6 +99,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     const [photo, setPhoto] = useState<string>(state?.appearance?.badgeThumbnail ?? '');
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (propName: string, value: any) => {
         setState({
             ...state,
@@ -151,6 +153,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         );
     };
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let categoryButton = null;
     if (activeStylePackCategory === StylePackCategories.all) {
         categoryButton = (
@@ -180,8 +183,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     }
 
     return (
-        <IonRow className="flex w-full">
-            <IonCol className="boost-cms-badge-container">
+        <AppRow className="flex w-full">
+            <AppCol className="boost-cms-badge-container">
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
@@ -217,7 +220,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 />
                                 {imageUploadLoading && (
                                     <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1.75]"
@@ -242,7 +245,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                     alt=""
                                 />
                                 <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1.75]"
@@ -276,8 +279,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                         })}
                     </div>
                 )}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

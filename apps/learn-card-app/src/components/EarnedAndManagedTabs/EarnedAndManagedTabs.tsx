@@ -7,7 +7,7 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
 import GridIcon from 'learn-card-base/svgs/GridIcon';
 import Search from 'learn-card-base/svgs/Search';
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -92,10 +92,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     if (showEarnedAndManaged !== undefined) showEarnedManaged = showEarnedAndManaged; // override the show earned and managed behavior
 
     return (
-        <IonRow
+        <AppRow
             className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto ${containerClassName}`}
         >
-            <IonCol className="flex flex-wrap items-center justify-between gap-y-2 w-full p-0 min-w-0">
+            <AppCol className="flex flex-wrap items-center justify-between gap-y-2 w-full p-0 min-w-0">
                 {!isSearchActive && (
                     <div
                         className="flex shrink-0 sm:pl-6"
@@ -228,8 +228,8 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                         </button>
                     )}
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

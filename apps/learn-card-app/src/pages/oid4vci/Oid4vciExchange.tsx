@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
-import { IonContent, IonPage } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('oid4vci-exchange');
 
@@ -48,6 +47,7 @@ import {
 } from '../../helpers/oid4vc-resilience/resilientVci';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const PRE_AUTH_GRANT_KEY = 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
@@ -436,8 +436,8 @@ const Oid4vciExchange: React.FC = () => {
 
     if (!offer && !code) {
         return (
-            <IonPage>
-                <IonContent>
+            <AppPage>
+                <AppContent>
                     <ExchangeErrorDisplay
                         friendly={{
                             kind: 'request_invalid',
@@ -449,14 +449,14 @@ const Oid4vciExchange: React.FC = () => {
                         }}
                         onCancel={() => history.push('/')}
                     />
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 {phase.kind === 'loading' && <OfferLoading />}
 
                 {phase.kind === 'authReturn' && <OfferStoring message="Finishing sign-in..." />}
@@ -531,12 +531,12 @@ const Oid4vciExchange: React.FC = () => {
                         onCancel={() => history.push('/')}
                     />
                 )}
-            </IonContent>
+            </AppContent>
             <RecoveryPromptModal
                 prompt={resilience.pendingPrompt}
                 onResolve={resilience.resolvePrompt}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 
 import TroopIDTypeSelectorListItem from './TroopIDTypeSelectorListItem';
@@ -11,6 +10,7 @@ import { troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSSta
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const TroopIDTypeSelectorModal: React.FC<{
     handleCloseModal: () => void;
@@ -49,7 +49,7 @@ const TroopIDTypeSelectorModal: React.FC<{
             <div className="w-full">
                 {isLoading ? (
                     <div className="w-full flex flex-col items-center justify-center ion-padding">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             color="grayscale-900"
                             className="scale-[2] mb-8 mt-6"

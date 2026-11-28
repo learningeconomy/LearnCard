@@ -6,7 +6,6 @@ import BoostErrorsDisplay, {
     ErrorBoundaryFallback,
 } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
-import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import { BrandingEnum, categoryMetadata, usePathQuery } from 'learn-card-base';
@@ -25,6 +24,7 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
 import BoostManagedIDCard from '../../components/boost/boost-managed-card/BoostManagedIDCard';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const IdsPage: React.FC = () => {
     const query = usePathQuery();
@@ -94,12 +94,13 @@ const IdsPage: React.FC = () => {
             await earnedBoostsRefetch?.();
             await managedBoostRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader
                     showBackButton
@@ -114,7 +115,7 @@ const IdsPage: React.FC = () => {
                         />
                     )}
                 </MainHeader>
-                <IonContent fullscreen className="wallet-ids-page" color={'sp-green-base'}>
+                <AppContent fullscreen className="wallet-ids-page" color={'sp-green-base'}>
                     <CurvedBackdropEl className="bg-sp-green-light" />
                     <div className="w-full flex items-center justify-center mt-8">
                         {credentialsLoading &&
@@ -166,9 +167,9 @@ const IdsPage: React.FC = () => {
                             )}
                         {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}
                     </div>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

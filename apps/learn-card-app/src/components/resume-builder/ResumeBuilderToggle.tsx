@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonToggle } from '@ionic/react';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import HiddenIcon from '../svgs/HiddenIcon';
 
 type ResumeBuilderToggleProps = {
@@ -20,13 +20,13 @@ const ResumeBuilderToggle: React.FC<ResumeBuilderToggleProps> = ({
 
     return (
         <div className={`flex items-center justify-center relative rounded-full ${className}`}>
-            <IonToggle
+            <AppToggle
                 checked={checked}
                 disabled={disabled}
                 mode="ios"
                 color="emerald-500"
                 className={`family-cms-toggle rounded-full ${disabled ? 'opacity-50' : ''}`}
-                onIonChange={e => onChange(e.detail.checked)}
+                onCheckedChange={nextChecked => onChange(nextChecked)}
             />
             {!checked && (
                 <HiddenIcon

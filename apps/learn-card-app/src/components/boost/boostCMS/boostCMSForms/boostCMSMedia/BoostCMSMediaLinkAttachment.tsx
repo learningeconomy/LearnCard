@@ -5,7 +5,8 @@ import { Keyboard } from '@capacitor/keyboard';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
-import { IonCol, IonRow, IonInput } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
@@ -56,8 +57,8 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
 
     return (
         <>
-            <IonRow className="flex flex-col pb-4">
-                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+            <AppRow className="flex flex-col pb-4">
+                <AppCol className="w-full flex items-center justify-between mt-8 mb-2">
                     <Icon
                         version="outlined"
                         className={`text-grayscale-800 h-[30px] max-h-[30px] max-w-[30px] mr-2`}
@@ -65,22 +66,22 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
                         {title}
                     </h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state.links?.[currentIndex]?.title || newLinkTitle}
-                    onIonInput={e => {
+                    onValueInput={value => {
                         const stateCopy = structuredClone(state.links);
                         if (stateCopy[currentIndex]) {
-                            stateCopy[currentIndex].title = e.detail.value as string;
+                            stateCopy[currentIndex].title = value as string;
                             setState(stateCopy);
                         } else {
-                            setkNewLinkTitle(e.detail.value as string);
+                            setkNewLinkTitle(value as string);
                         }
                     }}
                     onKeyDown={e => {
@@ -89,19 +90,19 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                 />
             </div>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['boost.cms.media.pasteLink']()}
                     type="text"
                     value={state.links?.[currentIndex]?.url || newLinkUrl}
-                    onIonInput={e => {
+                    onValueInput={value => {
                         const stateCopy = structuredClone(state.links);
                         if (stateCopy[currentIndex]) {
-                            stateCopy[currentIndex].url = e.detail.value as string;
+                            stateCopy[currentIndex].url = value as string;
                             setState(stateCopy);
                         } else {
-                            setNewLinkUrl(e.detail.value as string);
+                            setNewLinkUrl(value as string);
                         }
                     }}
                     onKeyDown={e => {

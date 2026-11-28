@@ -3,9 +3,9 @@ import numeral from 'numeral';
 
 import { SkillsArchIcon } from 'learn-card-base/svgs/SkillsArchIcon';
 import SkillsIcon from 'learn-card-base/svgs/wallet/SkillsIcon';
-import { IonHeader, IonToolbar } from '@ionic/react';
 
 import { BoostCMSSKillsCategoryEnum } from '../../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostGroupedBySkillsModalProps = {
     category: BoostCMSSKillsCategoryEnum;
@@ -19,8 +19,8 @@ const BoostGroupedBySkillsModalHeader: React.FC<BoostGroupedBySkillsModalProps> 
     const { IconComponent } = category;
 
     return (
-        <IonHeader color="violet-600" className="rounded-b-[30px] overflow-hidden shadow-md ">
-            <IonToolbar color="violet-600" className="text-white px-4 pt-8!">
+        <AppHeader color="violet-600" className="rounded-b-[30px] overflow-hidden shadow-md ">
+            <AppToolbar color="violet-600" className="text-white px-4 pt-8!">
                 <div className="w-full flex">
                     {/* Left Column */}
                     <div className="relative flex flex-col items-center justify-start mb-[-10px] ml-4">
@@ -48,8 +48,8 @@ const BoostGroupedBySkillsModalHeader: React.FC<BoostGroupedBySkillsModalProps> 
                         </p>
                     </div>
                 </div>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

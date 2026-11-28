@@ -11,13 +11,6 @@ vi.mock('react-router-dom', () => ({
     useLocation: () => ({ pathname: '/wallet' }),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonSegment: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonSegmentButton: ({ children }: React.PropsWithChildren) => <button>{children}</button>,
-    IonLabel: ({ children }: React.PropsWithChildren) => <span>{children}</span>,
-}));
 const mocks = vi.hoisted(() => ({ isSearchActive: false }));
 
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({

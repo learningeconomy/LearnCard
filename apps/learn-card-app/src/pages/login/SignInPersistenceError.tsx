@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { useSignInPersistence } from '../../auth/signInPersistence';
 
 export const SignInPersistenceError = (): React.ReactElement | null => {
@@ -11,7 +11,7 @@ export const SignInPersistenceError = (): React.ReactElement | null => {
             role="alert"
             className="font-poppins mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
         >
-            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <AppIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
             <span className="text-sm text-red-700 leading-relaxed">{error}</span>
         </div>
     );

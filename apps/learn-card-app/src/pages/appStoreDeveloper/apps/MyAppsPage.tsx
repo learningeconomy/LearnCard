@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     alertCircleOutline,
     arrowForwardOutline,
     chevronForwardOutline,
     rocketOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
@@ -20,6 +20,8 @@ import { LAUNCH_TYPE_LABELS } from '../submit/launchSettings';
 import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 import { DeleteAppMenu } from './DeleteAppMenu';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const PILL_CLASS: Record<ListingMode, string> = {
     'draft': 'bg-grayscale-100 text-grayscale-700',
@@ -79,7 +81,7 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
                                 displayName={listing.display_name}
                                 mode={mode}
                             />
-                            <IonIcon
+                            <AppIcon
                                 icon={chevronForwardOutline}
                                 className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors"
                             />
@@ -111,7 +113,7 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
             {nudge && (
                 <p className="mt-3 text-xs font-medium text-grayscale-700 flex items-center gap-1">
                     {nudge}
-                    <IonIcon icon={arrowForwardOutline} />
+                    <AppIcon icon={arrowForwardOutline} />
                 </p>
             )}
         </div>
@@ -132,9 +134,9 @@ const MyAppsPage: React.FC = () => {
     const loading = isLoadingIntegrations || isLoading;
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Your Apps" />
-            <IonContent>
+            <AppContent>
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 font-poppins">
                     <div className="mb-8 flex items-start justify-between gap-4">
                         <div>
@@ -149,7 +151,7 @@ const MyAppsPage: React.FC = () => {
                                 onClick={openNewApp}
                                 className="shrink-0 flex items-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
-                                <IonIcon icon={addOutline} className="text-base" />
+                                <AppIcon icon={addOutline} className="text-base" />
                                 New App
                             </button>
                         )}
@@ -157,11 +159,11 @@ const MyAppsPage: React.FC = () => {
 
                     {loading ? (
                         <div className="flex justify-center py-20">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : isError ? (
                         <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 className="text-red-400 text-lg mt-0.5 shrink-0"
                             />
@@ -179,7 +181,7 @@ const MyAppsPage: React.FC = () => {
                     ) : apps.length === 0 ? (
                         <div className="bg-white rounded-[20px] border border-grayscale-200 p-10 text-center animate-fade-in-up">
                             <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mx-auto mb-4">
-                                <IonIcon
+                                <AppIcon
                                     icon={rocketOutline}
                                     className="text-3xl text-grayscale-700"
                                 />
@@ -224,8 +226,8 @@ const MyAppsPage: React.FC = () => {
                         />
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

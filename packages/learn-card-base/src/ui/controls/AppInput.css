@@ -1,0 +1,291 @@
+/*
+ * AppInput: ported from @ionic/core 8.7.2 ion-input (scoped, light DOM) for the props the app
+ * uses. Cascade, as for AppTextarea in controls.css:
+ * - ion-input's host rules (`.sc-ion-input-*-h`, 0,1,0) were unlayered and inserted before every
+ *   app stylesheet, so they lost every tie to later app classes (`.ion-padding`, Tailwind
+ *   utilities, inline style). `div:where(.app-input…)` (0,0,1) reproduces that regardless of
+ *   stylesheet order; compound host rules (0,2,0) become (0,1,1).
+ * - The host's `padding: 0 !important` is kept: `.ion-padding` and `px-*` therefore only pad
+ *   through the `--padding-*` custom properties ion-padding also sets, and `px-4!`-style
+ *   important utilities (0,1,0) still win, as before.
+ * - Inner-element rules were two-class (0,2,0) and beat the global focus ring and the element
+ *   resets; they stay two-class here.
+ * `--ion-color-step-*` are not defined by the app (only in commented-out dark blocks of
+ * variables.css), so Ionic's literal fallbacks are used; the error color is `--app-color-danger`.
+ * The md `.input-highlight` bar is not rendered: variables.css neutralised it on every ion-input
+ * (`--highlight-height: none`), which also made the focused caret / stacked label color a no-op.
+ */
+
+/* ---------------------------------------------------------------- host */
+div:where(.app-input) {
+    --placeholder-color: initial;
+    --placeholder-font-style: initial;
+    --placeholder-font-weight: initial;
+    /* Ionic: var(--ion-placeholder-opacity, 0.6); the app does not define it. */
+    --placeholder-opacity: 0.6;
+    --padding-top: 0px;
+    --padding-end: 0px;
+    --padding-bottom: 0px;
+    --padding-start: 0px;
+    --background: transparent;
+    --color: initial;
+    --border-style: solid;
+    display: block;
+    position: relative;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 !important;
+    /* `--color: initial` makes this `unset`, i.e. inherited, unless a call-site class sets color. */
+    color: var(--color);
+    /* core.css's platform font (`html.md`: Roboto; `html.ios`: -apple-system), as before. */
+    font-family: var(--ion-font-family, inherit);
+    z-index: 2;
+}
+
+div:where(.app-input.ios) {
+    --border-width: 0.55px;
+    --border-color: #c8c7cc;
+    font-size: inherit;
+}
+
+div:where(.app-input.md) {
+    --border-width: 1px;
+    --border-color: rgba(0, 0, 0, 0.13);
+    font-size: inherit;
+}
+
+/* `.ion-touched.ion-invalid` (call-site classes): the bottom row's border turns the error color. */
+div.ion-touched.ion-invalid:where(.app-input) {
+    --border-color: var(--app-color-danger);
+}
+
+div.app-input-label-stacked:where(.app-input) {
+    min-height: 56px;
+}
+
+div.app-input-disabled:where(.app-input.ios) {
+    opacity: 0.3;
+}
+
+div.app-input-disabled:where(.app-input.md) {
+    opacity: 0.38;
+}
+
+/* ---------------------------------------------------------------- label row */
+.app-input .app-input-wrapper {
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    border-radius: var(--border-radius);
+    display: flex;
+    position: relative;
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: stretch;
+    height: inherit;
+    min-height: inherit;
+    transition: background-color 15ms linear;
+    background: var(--background);
+    line-height: normal;
+}
+
+.app-input.app-input-label-stacked .app-input-wrapper {
+    flex-direction: column;
+    align-items: start;
+}
+
+.app-input .app-input-label-wrapper {
+    display: flex;
+    align-items: center;
+    max-width: 200px;
+    margin-inline: 0 16px;
+    margin-block: 0;
+    transition:
+        color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+/* Stacked labels always "float": scaled to 75% above the input. */
+.app-input.app-input-label-stacked .app-input-label-wrapper {
+    margin: 0;
+    transform-origin: left top;
+    transform: translateY(50%) scale(0.75);
+    max-width: calc(100% / 0.75);
+    z-index: 2;
+}
+
+.app-input.app-input-label-stacked .app-input-label-wrapper:dir(rtl) {
+    transform-origin: right top;
+}
+
+.app-input.md.app-input-label-stacked.ion-touched.ion-invalid .app-input-label-wrapper {
+    color: var(--app-color-danger);
+}
+
+.app-input .app-input-label-text {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.app-input .app-input-native-wrapper {
+    display: flex;
+    position: relative;
+    flex-grow: 1;
+    align-items: center;
+    width: 100%;
+}
+
+/* ---------------------------------------------------------------- native input */
+.app-input .app-input-native {
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-decoration: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    color: inherit;
+    display: inline-block;
+    position: relative;
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border: 0;
+    outline: none;
+    background: transparent;
+    box-sizing: border-box;
+    appearance: none;
+    z-index: 1;
+    transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-input.app-input-label-stacked .app-input-native {
+    margin: 1px 0 0;
+}
+
+.app-input .app-input-native::placeholder {
+    /* `initial` custom properties make these `unset`: the input's own color / font style. */
+    color: var(--placeholder-color);
+    font-family: inherit;
+    font-style: var(--placeholder-font-style);
+    font-weight: var(--placeholder-font-weight);
+    opacity: var(--placeholder-opacity);
+}
+
+.app-input .app-input-native:-webkit-autofill {
+    background-color: transparent;
+}
+
+.app-input .app-input-native:invalid {
+    box-shadow: none;
+}
+
+.app-input input::-webkit-date-and-time-value {
+    text-align: start;
+}
+
+/* ---------------------------------------------------------------- clear button and end content */
+.app-input .app-input-clear {
+    margin: auto;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    outline: none;
+    background-color: transparent;
+    color: #666666;
+    visibility: hidden;
+    appearance: none;
+}
+
+.app-input .app-input-clear:focus {
+    opacity: 0.5;
+}
+
+.app-input.app-input-has-value .app-input-clear {
+    visibility: visible;
+}
+
+/* ion-icon host + ionicons' `.ionicon` rules. */
+.app-input .app-input-clear-icon {
+    display: block;
+    flex-shrink: 0;
+    fill: currentColor;
+    stroke: currentColor;
+    box-sizing: content-box;
+}
+
+.app-input.ios .app-input-clear-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.app-input.md .app-input-clear-icon {
+    width: 22px;
+    height: 22px;
+}
+
+/* `::slotted([slot=end]:first-of-type)`. */
+.app-input .app-input-end {
+    display: contents;
+}
+
+.app-input .app-input-end > :first-child {
+    margin-inline: 16px 0;
+}
+
+/* ---------------------------------------------------------------- helper / error / counter row */
+.app-input .app-input-bottom {
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: 5px;
+    padding-bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    border-top: var(--border-width) var(--border-style) var(--border-color);
+    font-size: 0.75rem;
+    white-space: normal;
+}
+
+.app-input .app-input-helper {
+    display: block;
+    color: #4d4d4d;
+}
+
+.app-input .app-input-error {
+    display: none;
+    color: var(--app-color-danger);
+}
+
+.app-input.ion-touched.ion-invalid .app-input-helper {
+    display: none;
+}
+
+.app-input.ion-touched.ion-invalid .app-input-error {
+    display: block;
+}
+
+.app-input .app-input-counter {
+    margin-inline-start: auto;
+    color: #4d4d4d;
+    white-space: nowrap;
+    padding-inline-start: 16px;
+}
+
+.app-input.md .app-input-counter {
+    letter-spacing: 0.0333333333em;
+}

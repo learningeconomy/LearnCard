@@ -2,7 +2,6 @@ import React, { useEffect, useContext } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
 import { AuthContext, IAuthContext } from 'react-oauth2-code-pkce';
-import { IonSkeletonText } from '@ionic/react';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import LoadingIcon from 'learn-card-base/svgs/LoadingIcon';
@@ -13,6 +12,7 @@ import { useSyncDataSource } from '../../hooks/useSyncDataSource';
 import DataSourceDisconnectModal from './DataSourceDisconnectModal';
 import { RegistryEntry, useModal, ModalTypes } from 'learn-card-base';
 import { useRegistryEntryState, SYNC_STATE } from '../../hooks/useRegistryEntryState';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 type ConsentFlowSyncButtonProps = {
     preLogin?: () => void;
@@ -44,7 +44,7 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     if (state === SYNC_STATE.hidden) {
         // Show a loader if there is ONE specific one being loaded. Otherwise, show nothing.
         if (dataSource) {
-            return <IonSkeletonText animated className="h-[45px] w-full rounded-[25px]" />;
+            return <AppSkeletonText animated className="h-[45px] w-full rounded-[25px]" />;
         } else {
             return <></>;
         }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 
@@ -12,8 +12,8 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
     setActiveMediaType,
 }) => {
     return (
-        <IonRow className="flex w-full">
-            <IonCol className="flex items-center justify-center flex-wrap">
+        <AppRow className="flex w-full">
+            <AppCol className="flex items-center justify-center flex-wrap">
                 {boostMediaOptions.map(({ id, type, title, color, Icon }) => {
                     return (
                         <button
@@ -22,12 +22,14 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                             onClick={() => setActiveMediaType(type)}
                         >
                             <Icon className="h-[40px] text-white max-h-[40px] max-w-[40px]" />
-                            <p className="font-poppins text-white text-xl tracking-wider">{title}</p>
+                            <p className="font-poppins text-white text-xl tracking-wider">
+                                {title}
+                            </p>
                         </button>
                     );
                 })}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

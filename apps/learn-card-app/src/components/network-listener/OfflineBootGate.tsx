@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Overlay } from 'learn-card-base';
-import { IonIcon } from '@ionic/react';
-import { cloudOfflineOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { cloudOfflineOutline } from 'learn-card-base/icons/ionicons';
 import * as m from '../../paraglide/messages.js';
 
 import { requestConnectivityCheck } from './connectivity';
@@ -34,7 +34,7 @@ export const OfflineBootGate: React.FC = () => {
         <Overlay>
             <div className="p-8 text-center space-y-v3-5">
                 <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-6">
-                    <IonIcon icon={cloudOfflineOutline} className="text-amber-500 text-3xl" />
+                    <AppIcon icon={cloudOfflineOutline} className="text-amber-500 text-3xl" />
                 </div>
 
                 <div className="space-y-v3-1 mb-6">

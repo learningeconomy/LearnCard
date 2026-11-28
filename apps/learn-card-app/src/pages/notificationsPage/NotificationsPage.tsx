@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonContent, IonPage, IonCol } from '@ionic/react';
+import { AppCol } from 'learn-card-base/ui/layout';
 import { useHistory, useLocation } from 'react-router-dom';
 import { getLogger, useWallet } from 'learn-card-base';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -11,6 +11,7 @@ import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary'
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { useForceRefreshLearnCloudCredential } from '../../components/credential-refresh-listener/CredentialRefreshListener';
 import { locateCredentialRefreshRecord } from '../../components/notifications/notificationsV2/NotificationCredentialRefreshedCard';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const log = getLogger('notifications-page');
 
@@ -57,7 +58,7 @@ const NotificationsPage: React.FC = () => {
     }, [forceRefresh, history, initWallet, location]);
 
     return (
-        <IonPage className="bg-white h-full">
+        <AppPage className="bg-white h-full">
             <MainHeader
                 showBackButton={false}
                 customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
@@ -65,22 +66,22 @@ const NotificationsPage: React.FC = () => {
                 <NotificationsSubHeader isEmptyState={isEmptyState} tab={tab} setTab={setTab} />
             </MainHeader>
             <GenericErrorBoundary>
-                <IonContent
+                <AppContent
                     fullscreen
                     className="bg-white h-full w-full"
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                 >
-                    <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
+                    <AppCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
                         <NotificationsListView
                             isEmptyState={isEmptyState}
                             setIsEmptyState={setIsEmptyState}
                             tab={tab}
                         />
-                    </IonCol>
-                </IonContent>
+                    </AppCol>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

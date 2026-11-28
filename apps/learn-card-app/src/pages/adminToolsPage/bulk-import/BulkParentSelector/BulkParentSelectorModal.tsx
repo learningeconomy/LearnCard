@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import BulkParentSelectorCredentialList from './BulkParentSelectorCredentialList';
@@ -98,11 +98,11 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-[5]">
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                     </div>
-                    <IonInput
+                    <AppInput
                         type="text"
                         value={searchInput}
                         placeholder="Browse Credentials"
-                        onIonInput={e => setSearchInput(e.detail.value)}
+                        onValueInput={value => setSearchInput(value)}
                         className="bg-white text-grayscale-800 rounded-[15px] py-[4px]! font-normal !font-notoSans text-[17px] pl-[48px]!"
                     />
                 </div>

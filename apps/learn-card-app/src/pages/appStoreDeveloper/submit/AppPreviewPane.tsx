@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { playOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { playOutline } from 'learn-card-base/icons/ionicons';
 
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
 import type { LaunchConfig } from '../types';
@@ -108,7 +108,7 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
                             onClick={() => setIsRunning(true)}
                             className="flex items-center gap-2 py-3 px-6 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            <IonIcon icon={playOutline} />
+                            <AppIcon icon={playOutline} />
                             Start
                         </button>
                     </div>

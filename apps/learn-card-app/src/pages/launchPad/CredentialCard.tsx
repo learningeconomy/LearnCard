@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { formatLocaleDate } from '../../i18n/formatters';
 
 import { Hourglass, Check } from 'lucide-react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { BoostPageViewMode, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { CredentialRecord } from './AppCredentialDashboard';
 
@@ -124,7 +124,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
                             />
                         ) : (
                             <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <IonSpinner name="crescent" className="w-6 h-6 text-indigo-400" />
+                                <AppSpinner name="crescent" className="w-6 h-6 text-indigo-400" />
                             </div>
                         )}
                     </div>

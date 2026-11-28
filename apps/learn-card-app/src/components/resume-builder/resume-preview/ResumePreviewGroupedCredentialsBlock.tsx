@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { VC } from '@learncard/types';
 
-import { IonIcon, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
-import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppReorderGroup } from 'learn-card-base/ui/reorder';
+import { chevronDownOutline, chevronUpOutline } from 'learn-card-base/icons/ionicons';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewCredentialActionRail from './ResumePreviewCredentialActionRail';
 import ResumePreviewCurrentJobSelector from './ResumePreviewCurrentJobSelector';
@@ -54,7 +55,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
             <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500">
                 {getSectionLabel(sectionKey)}
             </h2>
-            <IonIcon
+            <AppIcon
                 icon={isCollapsed ? chevronDownOutline : chevronUpOutline}
                 className="text-grayscale-500 h-4 w-4 shrink-0"
             />
@@ -152,10 +153,9 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                     ))}
                 </div>
             ) : (
-                <IonReorderGroup
+                <AppReorderGroup
                     disabled={false}
-                    onIonReorderEnd={(e: ReorderEndCustomEvent) => {
-                        e.stopPropagation();
+                    onIonReorderEnd={e => {
                         const { from, to } = e.detail;
                         const reordered = [...entries];
                         const [moved] = reordered.splice(from, 1);
@@ -213,7 +213,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                             </div>
                         );
                     })}
-                </IonReorderGroup>
+                </AppReorderGroup>
             )}
         </div>
     );

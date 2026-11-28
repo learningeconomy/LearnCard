@@ -2,7 +2,7 @@ import { ShareCredentialPicker } from './ShareCredentialPicker';
 import { downloadSharePdf } from './sharePdf';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowBackOutline,
     arrowForwardOutline,
@@ -14,7 +14,7 @@ import {
     eyeOutline,
     lockClosedOutline,
     notificationsOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -591,7 +591,7 @@ export const ShareLinkCreate = ({
                     aria-label={m['shareLinks.close']()}
                     onClick={onDismiss}
                 >
-                    <IonIcon icon={closeOutline} className="w-6 h-6" />
+                    <AppIcon icon={closeOutline} className="w-6 h-6" />
                 </button>
             </header>
             <div className="flex-1 overflow-y-auto px-6 py-8 md:py-12">
@@ -737,7 +737,7 @@ export const ShareLinkCreate = ({
                             </div>
                             <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-v3-4">
                                 <div className="flex gap-3">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={lockClosedOutline}
                                         className="mt-0.5 text-grayscale-600 shrink-0"
                                     />
@@ -803,7 +803,7 @@ export const ShareLinkCreate = ({
                                                 onClick={() => setShowPasscode(shown => !shown)}
                                                 className="absolute inset-y-0 inset-e-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                                             >
-                                                <IonIcon
+                                                <AppIcon
                                                     aria-hidden="true"
                                                     icon={showPasscode ? eyeOffOutline : eyeOutline}
                                                 />
@@ -817,7 +817,7 @@ export const ShareLinkCreate = ({
                                     </label>
                                 )}
                                 <div className="border-t border-grayscale-100 pt-4 flex gap-3">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={notificationsOutline}
                                         className="mt-0.5 text-grayscale-600 shrink-0"
                                     />
@@ -1014,7 +1014,7 @@ export const ShareLinkCreate = ({
                                         <Busy>{m['shareLinks.preparingPdf']()}</Busy>
                                     ) : (
                                         <>
-                                            <IonIcon icon={downloadOutline} />
+                                            <AppIcon icon={downloadOutline} />
                                             {m['shareLinks.downloadQrPdf']()}
                                         </>
                                     )}
@@ -1047,7 +1047,7 @@ export const ShareLinkCreate = ({
                                     <Busy>{m['shareLinks.copying']()}</Busy>
                                 ) : (
                                     <span className="flex items-center gap-2">
-                                        <IonIcon icon={copied ? checkmarkOutline : copyOutline} />
+                                        <AppIcon icon={copied ? checkmarkOutline : copyOutline} />
                                         {copied ? m['shareLinks.copied']() : m['shareLinks.copy']()}
                                     </span>
                                 )}
@@ -1069,7 +1069,7 @@ export const ShareLinkCreate = ({
                                 setUnsupportedBase(false);
                             }}
                         >
-                            <IonIcon
+                            <AppIcon
                                 aria-hidden="true"
                                 icon={arrowBackOutline}
                                 className="h-4 w-4 shrink-0"
@@ -1089,7 +1089,7 @@ export const ShareLinkCreate = ({
                                 setResumeOnly(false);
                             }}
                         >
-                            <IonIcon
+                            <AppIcon
                                 aria-hidden="true"
                                 icon={arrowBackOutline}
                                 className="h-4 w-4 shrink-0"
@@ -1110,7 +1110,7 @@ export const ShareLinkCreate = ({
                             }}
                         >
                             {m['shareLinks.continue']()}{' '}
-                            <IonIcon
+                            <AppIcon
                                 aria-hidden="true"
                                 icon={arrowForwardOutline}
                                 className="h-4 w-4 shrink-0"
@@ -1128,7 +1128,7 @@ export const ShareLinkCreate = ({
                             ) : (
                                 <>
                                     {m['shareLinks.preview']()}{' '}
-                                    <IonIcon
+                                    <AppIcon
                                         aria-hidden="true"
                                         icon={arrowForwardOutline}
                                         className="h-4 w-4 shrink-0"

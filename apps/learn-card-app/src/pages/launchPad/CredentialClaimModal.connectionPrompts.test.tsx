@@ -16,9 +16,6 @@ const mocks = vi.hoisted(() => ({
     resolveCredentialForClaim: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => <div role="status">Loading</div>,
-}));
 vi.mock('learn-card-base', () => ({
     BoostCategoryOptionsEnum: { achievement: 'Achievement' },
     BoostPageViewMode: { Card: 'card' },

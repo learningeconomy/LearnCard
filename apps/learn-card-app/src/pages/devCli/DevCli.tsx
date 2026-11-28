@@ -1,15 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import {
-    IonPage,
-    IonContent,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
-    IonButton,
-    IonIcon,
-} from '@ionic/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -25,6 +14,15 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import {
+    AppBackButton,
+    AppContent,
+    AppHeader,
+    AppPage,
+    AppTitle,
+    AppToolbar,
+} from 'learn-card-base/ui/chrome';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -729,16 +727,16 @@ const DevCli: React.FC = () => {
     );
 
     return (
-        <IonPage className="cli-page">
-            <IonHeader className="cli-header">
-                <IonToolbar className="cli-toolbar">
-                    <IonButtons slot="start">
-                        <IonBackButton defaultHref="/launchpad" className="cli-back-btn" />
-                    </IonButtons>
+        <AppPage className="cli-page">
+            <AppHeader className="cli-header">
+                <AppToolbar className="cli-toolbar">
+                    <AppButtons slot="start">
+                        <AppBackButton defaultHref="/launchpad" className="cli-back-btn" />
+                    </AppButtons>
 
-                    <IonTitle className="cli-title">LearnCard CLI</IonTitle>
+                    <AppTitle className="cli-title">LearnCard CLI</AppTitle>
 
-                    <IonButtons slot="end">
+                    <AppButtons slot="end">
                         <button
                             onClick={() => setShowTutorial(true)}
                             className="cli-tutorial-btn"
@@ -746,11 +744,11 @@ const DevCli: React.FC = () => {
                         >
                             📖 Tutorial
                         </button>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
 
-            <IonContent className="ion-no-padding">
+            <AppContent className="ion-no-padding">
                 <div className="cli-container">
                     <CommandSidebar
                         onInsertCommand={handleInsertCommand}
@@ -893,11 +891,11 @@ const DevCli: React.FC = () => {
                         --color-focused: #fe8019;
                     }
 
-                    .cli-back-btn::part(native) {
+                    .cli-back-btn > .app-back-button-native {
                         color: #a89984;
                     }
 
-                    .cli-back-btn::part(native):hover {
+                    .cli-back-btn > .app-back-button-native:hover {
                         color: #ebdbb2;
                     }
 
@@ -2566,8 +2564,8 @@ const DevCli: React.FC = () => {
                         background: rgba(251, 73, 52, 0.1);
                     }
                 `}</style>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

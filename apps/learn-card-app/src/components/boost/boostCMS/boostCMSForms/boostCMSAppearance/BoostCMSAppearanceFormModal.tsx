@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { BoostCategoryOptionsEnum, useModal } from 'learn-card-base';
 
-import { IonPage, IonContent, IonGrid } from '@ionic/react';
+import { AppGrid } from 'learn-card-base/ui/layout';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';
@@ -76,7 +76,7 @@ const BoostCMSAppearanceFormModal: React.FC<BoostCMSAppearanceFormModalProps> = 
         formBackgroundColor = '#ffffff';
 
         activeFormEl = (
-            <IonGrid
+            <AppGrid
                 className="w-full h-full ion-no-padding flex justify-center items-start"
                 style={{
                     backgroundColor: formBackgroundColor,
@@ -92,7 +92,7 @@ const BoostCMSAppearanceFormModal: React.FC<BoostCMSAppearanceFormModalProps> = 
                     setShowStylePackCategoryList={setShowStylePackCategoryList}
                     setActiveForm={setActiveForm}
                 />
-            </IonGrid>
+            </AppGrid>
         );
     } else {
         activeFormEl = (

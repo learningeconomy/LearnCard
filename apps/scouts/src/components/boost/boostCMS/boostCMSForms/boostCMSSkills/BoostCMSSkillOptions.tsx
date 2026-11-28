@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 
-import { IonRow, IonCol, IonPage, IonHeader, IonContent, IonGrid, IonToolbar } from '@ionic/react';
-
 import BoostCMSSkillCategoryTypeSwiper from './BoostCMSSkillCategorySwiper';
 import BoostCMSPrimarySkillButton from './BoostCMSPrimarySkillButton';
 import BoostCMSSubSkillButton from './BoostCMSSubSkillButton';
@@ -12,11 +10,13 @@ import { BoostCMSSKillsCategoryEnum, CATEGORY_TO_SKILLS, SKILLS_TO_SUBSKILLS } f
 import { isPlatformIOS } from 'learn-card-base/helpers/platformHelpers';
 import * as m from '../../../../../paraglide/messages.js';
 import { useLocale } from '../../../../../i18n';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const BoostCMSSkillOptions: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     showCloseButton?: boolean;
     handleAddSkill: (skill: { skill: BoostCMSSkill | string; subskills: string[] }) => void;
     handleRemoveSkill: (skill: BoostCMSSkill | string) => void;
@@ -49,23 +49,23 @@ const BoostCMSSkillOptions: React.FC<{
     );
 
     return (
-        <IonPage id="user-options-modal">
-            <IonHeader
+        <AppPage id="user-options-modal">
+            <AppHeader
                 className={`ion-no-border bg-white pt-5 ${
                     isPlatformIOS() ? customHeaderClass : ''
                 }`}
             >
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end px-3">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end px-3">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
-                <IonToolbar color="#fffff pt-8">
+                <AppToolbar color="#fffff pt-8">
                     <div className="flex items-center justify-between px-4 mt-2 font-notoSans text-2xl">
                         {title}
                         <button
@@ -80,11 +80,11 @@ const BoostCMSSkillOptions: React.FC<{
                         activeCategoryType={activeCategoryType}
                         setActiveCategoryType={setActiveCategoryType}
                     />
-                </IonToolbar>
-            </IonHeader>
-            <IonContent color="grayscale-100">
-                <IonGrid className="ion-padding">
-                    <IonRow>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent color="grayscale-100">
+                <AppGrid className="ion-padding">
+                    <AppRow>
                         {skills.map((skill, index) => {
                             const subSkills = [...(SKILLS_TO_SUBSKILLS?.[skill?.type] ?? [])].sort(
                                 (a, b) => a.title.localeCompare(b.title, locale)
@@ -131,8 +131,8 @@ const BoostCMSSkillOptions: React.FC<{
                                 </React.Fragment>
                             );
                         })}
-                    </IonRow>
-                </IonGrid>
+                    </AppRow>
+                </AppGrid>
                 <div className="w-full flex items-center justify-center pb-8">
                     <button
                         onClick={() => handleCloseModal()}
@@ -141,8 +141,8 @@ const BoostCMSSkillOptions: React.FC<{
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

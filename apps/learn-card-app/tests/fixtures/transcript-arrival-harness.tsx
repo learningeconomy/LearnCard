@@ -1,6 +1,6 @@
 import React, { createContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { setupIonicReact } from '@ionic/react';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { VC } from '@learncard/types';
@@ -21,7 +21,7 @@ import { TranscriptOptInCard } from '../../src/components/classlink/TranscriptOp
 import type { AppAuthContextValue } from '../../src/providers/AuthCoordinatorProvider';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
-setupIonicReact();
+initAppPlatform();
 
 const params = new URLSearchParams(window.location.search);
 const scenario = params.get('scenario') ?? 'requesting';

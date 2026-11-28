@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { businessOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { businessOutline, shieldCheckmarkOutline } from 'learn-card-base/icons/ionicons';
 import type { ConsentFlowContractDetails } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 
@@ -20,7 +20,7 @@ export const ContractAudience: React.FC<{
             className="font-poppins p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 text-grayscale-900"
         >
             <h4 className="flex items-center gap-2 text-xs font-medium text-grayscale-700">
-                <IonIcon
+                <AppIcon
                     icon={shieldCheckmarkOutline}
                     aria-hidden="true"
                     className="text-base text-emerald-700"
@@ -34,7 +34,7 @@ export const ContractAudience: React.FC<{
                         className="flex items-center gap-2.5 leading-relaxed min-w-0"
                     >
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white border border-grayscale-200">
-                            <IonIcon
+                            <AppIcon
                                 icon={businessOutline}
                                 aria-hidden="true"
                                 className="text-sm text-grayscale-500"

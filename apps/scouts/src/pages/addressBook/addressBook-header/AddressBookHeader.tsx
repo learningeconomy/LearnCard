@@ -1,7 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonGrid, IonRow, IonCol } from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import { useIsCurrentUserLCNUser, useModal, ModalTypes } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
@@ -10,6 +9,7 @@ import AddUser from 'apps/scouts/src/components/svgs/AddUser';
 
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import * as m from '../../../paraglide/messages.js';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export const AddressBookHeader: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -17,6 +17,7 @@ export const AddressBookHeader: React.FC<{
     connectionCount: number;
     search: string;
     clearSearch: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     children?: any;
     showSearch?: boolean;
     handleShowSearch?: () => void;
@@ -58,10 +59,10 @@ export const AddressBookHeader: React.FC<{
     };
 
     return (
-        <IonGrid className="flex w-full items-center justify-center bg-grayscale-100">
-            <IonRow className="flex w-full max-w-[650px] flex-col items-center justify-center px-2">
-                <IonRow className="flex w-full max-w-[600px] items-center justify-between">
-                    <IonCol className="flex items-center justify-start">
+        <AppGrid className="flex w-full items-center justify-center bg-grayscale-100">
+            <AppRow className="flex w-full max-w-[650px] flex-col items-center justify-center px-2">
+                <AppRow className="flex w-full max-w-[600px] items-center justify-between">
+                    <AppCol className="flex items-center justify-start">
                         <button
                             className="font-rubik mr-[10px] flex items-center p-0 text-xl font-bold"
                             onClick={() => {
@@ -72,7 +73,7 @@ export const AddressBookHeader: React.FC<{
                             <LeftArrow className="rtl-mirror w-[30px] mr-[10px] h-auto font text-grayscale-800 desktop:hidden" />{' '}
                             {m['addressBook.contactsLabel']()}
                         </button>
-                    </IonCol>
+                    </AppCol>
                     <button
                         onClick={() => {
                             if (!checkIfUserInNetwork()) return;
@@ -86,10 +87,10 @@ export const AddressBookHeader: React.FC<{
                         <AddUser className="mr-[5px]" fill="#9FED8F" />
                         {m['addressBook.newLabel']()}
                     </button>
-                </IonRow>
+                </AppRow>
                 {children}
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

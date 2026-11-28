@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import {
     PersonalizedQuestionEnum,
     PersonalizedQuestionType,
@@ -99,10 +99,10 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
                     {answer || placeholderText}
                 </button>
             ) : (
-                <IonTextarea
+                <AppTextarea
                     value={answer}
-                    onIonInput={e => {
-                        setAnswer(e.detail.value);
+                    onValueInput={value => {
+                        setAnswer(value);
                     }}
                     placeholder={placeholderText}
                     className={`${minWidth} ion-no-padding mb-0! min-h-0!`}

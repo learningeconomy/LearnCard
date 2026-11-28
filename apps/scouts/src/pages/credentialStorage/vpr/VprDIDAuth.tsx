@@ -4,8 +4,9 @@ import { initLearnCard } from '@learncard/init';
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('vpr-did-auth');
 
 const VprDIDAuth: React.FC = ({ event, currentUser }) => {
@@ -60,10 +61,10 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
-                <IonRow className="w-full flex items-center justify-center h-full">
-                    <IonCol className="w-full flex flex-col items-center justify-center text-center">
+        <AppPage>
+            <AppContent fullscreen>
+                <AppRow className="w-full flex items-center justify-center h-full">
+                    <AppCol className="w-full flex flex-col items-center justify-center text-center">
                         <h2 className="mt-6 font-bold">
                             {m['credentialStorage.wouldLikeToSend']({
                                 origin: event?.credentialRequestOrigin,
@@ -89,10 +90,10 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
                                 {m['credentialStorage.reject']()}
                             </button>
                         </div>
-                    </IonCol>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                    </AppCol>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

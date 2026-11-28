@@ -1,7 +1,9 @@
 import React from 'react';
 
-import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppSegment, AppSegmentButton } from 'learn-card-base/ui/widgets';
 
 export enum TroopsCMSTabsEnum {
     content = 'content',
@@ -13,41 +15,36 @@ const TroopsCMSTabs: React.FC<{
     setActiveTab: React.Dispatch<React.SetStateAction<TroopsCMSTabsEnum>>;
 }> = ({ activeTab, setActiveTab }) => {
     return (
-        <IonRow className="flex w-full items-center justify-center">
-            <IonSegment
-                onIonChange={e => {
-                    setActiveTab(e.detail.value);
-                    e.stopPropagation();
-                }}
+        <AppRow className="flex w-full items-center justify-center">
+            <AppSegment
+                onValueChange={value => setActiveTab(value)}
                 value={activeTab}
                 className="fix-ripple bg-grayscale-100 z-10 flex-1 overflow-hidden rounded-full py-[2px] px-[1px]"
             >
-                <IonSegmentButton
-                    mode="ios"
+                <AppSegmentButton
                     value={TroopsCMSTabsEnum.content}
                     className="py-[12px]"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel className="font-normal text-[17px] text-grayscale-800">
+                    <AppLabel className="font-normal text-[17px] text-grayscale-800">
                         {m['troops.contentTab']()}
-                    </IonLabel>
-                </IonSegmentButton>
-                <IonSegmentButton
-                    mode="ios"
+                    </AppLabel>
+                </AppSegmentButton>
+                <AppSegmentButton
                     value={TroopsCMSTabsEnum.appearance}
                     className="py-[12px]"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel className="font-normal text-[17px] text-grayscale-800">
+                    <AppLabel className="font-normal text-[17px] text-grayscale-800">
                         {m['boostCMS.appearance']()}
-                    </IonLabel>
-                </IonSegmentButton>
-            </IonSegment>
-        </IonRow>
+                    </AppLabel>
+                </AppSegmentButton>
+            </AppSegment>
+        </AppRow>
     );
 };
 

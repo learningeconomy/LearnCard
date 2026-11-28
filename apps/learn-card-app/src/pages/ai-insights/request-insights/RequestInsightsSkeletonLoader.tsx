@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const RequestInsightsSkeletonLoader: React.FC = () => {
     return (
@@ -7,7 +7,7 @@ export const RequestInsightsSkeletonLoader: React.FC = () => {
             <div className="w-full flex items-center justify-center px-4 max-w-[600px]">
                 <div className="bg-white py-12 w-full flex flex-col items-center gap-4 justify-center shadow-box-bottom rounded-[24px]">
                     <div className="flex items-center gap-4">
-                        <IonSkeletonText
+                        <AppSkeletonText
                             animated
                             style={{
                                 width: '64px',
@@ -16,7 +16,7 @@ export const RequestInsightsSkeletonLoader: React.FC = () => {
                             }}
                         />
 
-                        <IonSkeletonText
+                        <AppSkeletonText
                             animated
                             style={{
                                 width: '48px',
@@ -25,7 +25,7 @@ export const RequestInsightsSkeletonLoader: React.FC = () => {
                             }}
                         />
 
-                        <IonSkeletonText
+                        <AppSkeletonText
                             animated
                             style={{
                                 width: '64px',
@@ -35,7 +35,7 @@ export const RequestInsightsSkeletonLoader: React.FC = () => {
                         />
                     </div>
 
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={{
                             width: '70%',
@@ -43,7 +43,7 @@ export const RequestInsightsSkeletonLoader: React.FC = () => {
                             borderRadius: '8px',
                         }}
                     />
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={{
                             width: '50%',

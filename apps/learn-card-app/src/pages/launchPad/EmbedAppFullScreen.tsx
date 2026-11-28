@@ -1,14 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import {
-    IonPage,
-    IonContent,
-    IonHeader,
-    IonToolbar,
-    IonButtons,
-    IonButton,
-    IonTitle,
-} from '@ionic/react';
 
 import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
 import { Network } from '@capacitor/network';
@@ -22,6 +13,9 @@ import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCa
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
 
 interface EmbedAppParams {
     appId: string;
@@ -169,11 +163,11 @@ export const EmbedAppFullScreen: React.FC = () => {
     const embedUrlWithOverride =
         buildEmbedUrlWithPath(embedUrl, initialPath, window.location.origin) ?? undefined;
     return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonButton onClick={() => history.goBack()}>
+        <AppPage>
+            <AppHeader>
+                <AppToolbar>
+                    <AppButtons slot="start">
+                        <AppButton onClick={() => history.goBack()}>
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-6 w-6"
@@ -188,20 +182,20 @@ export const EmbedAppFullScreen: React.FC = () => {
                                     d="M15 19l-7-7 7-7"
                                 />
                             </svg>
-                        </IonButton>
-                    </IonButtons>
-                    <IonTitle>{appName}</IonTitle>
-                    <IonButtons className="mr-[10px]" slot="end">
+                        </AppButton>
+                    </AppButtons>
+                    <AppTitle>{appName}</AppTitle>
+                    <AppButtons className="mr-[10px]" slot="end">
                         <AppCredentialDashboard
                             appId={appId}
                             appName={appName}
                             pendingCredential={pendingCredential}
                             onNavigateAction={handleTapNotificationAction}
                         />
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent fullscreen>
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent fullscreen>
                 <div className="relative w-full h-full">
                     {isOffline || hasLoadFailed ? (
                         <AppEmbedOfflineState appName={appName} onRetry={handleRetry} />
@@ -246,7 +240,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                         </>
                     )}
                 </div>
-            </IonContent>
+            </AppContent>
 
             {pendingCredential && (
                 <CredentialClaimModal
@@ -258,7 +252,7 @@ export const EmbedAppFullScreen: React.FC = () => {
             )}
 
             {ToastOverlay}
-        </IonPage>
+        </AppPage>
     );
 };
 

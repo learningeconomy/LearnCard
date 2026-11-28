@@ -11,7 +11,6 @@ vi.mock('learn-card-base', () => ({
     BoostPageViewMode: { Card: 'Card' },
     useGetIDs: () => ({ data: host.records, isLoading: false, isFetching: false }),
 }));
-vi.mock('@ionic/react', () => ({ IonCol: () => null, IonSpinner: () => null }));
 vi.mock('../../../stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
 vi.mock('../../../components/boost/boostErrors/BoostErrorsDisplay', () => ({
     default: () => null,

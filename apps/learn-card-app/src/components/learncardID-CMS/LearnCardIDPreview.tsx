@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { IonFooter, IonPage, IonToolbar } from '@ionic/react';
 import LearnCardIDCMSLayout from './LearnCardIDCMSLayout';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import LearnCardID from './LearnCardID';
 
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
+import { AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const LearnCardIDPreview: React.FC<{
     user: FamilyChildAccount;
@@ -13,7 +13,7 @@ export const LearnCardIDPreview: React.FC<{
     handleCloseModal: () => void;
 }> = ({ user, learnCardID, handleCloseModal }) => {
     return (
-        <IonPage>
+        <AppPage>
             <LearnCardIDCMSLayout
                 learnCardID={learnCardID}
                 containerClassName="justify-center!"
@@ -37,11 +37,11 @@ export const LearnCardIDPreview: React.FC<{
                     </div>
                 </div>
             </LearnCardIDCMSLayout>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
             >
-                <IonToolbar color="transparent" mode="ios">
+                <AppToolbar color="transparent" mode="ios">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                             <button
@@ -52,9 +52,9 @@ export const LearnCardIDPreview: React.FC<{
                             </button>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonFooter>
-        </IonPage>
+                </AppToolbar>
+            </AppFooter>
+        </AppPage>
     );
 };
 

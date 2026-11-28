@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Plus from 'apps/scouts/src/components/svgs/Plus';
 // import TrashIcon from 'learn-card-base/svgs/TrashIcon';
 import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SkillFramework = {
     id: string;
@@ -207,7 +207,7 @@ const FrameworkCRUDContent: React.FC = () => {
             {/* Loading State */}
             {loadingFrameworks && (
                 <div className="flex items-center justify-center py-8">
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 </div>
             )}
 
@@ -280,7 +280,7 @@ const FrameworkCRUDContent: React.FC = () => {
 
                         {loadingNetworks ? (
                             <div className="flex justify-center py-4">
-                                <IonSpinner name="crescent" />
+                                <AppSpinner name="crescent" />
                             </div>
                         ) : networks && networks.length > 0 ? (
                             <div className="space-y-v3-2">

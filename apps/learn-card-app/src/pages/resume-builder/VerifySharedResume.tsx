@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
 
@@ -32,6 +32,8 @@ import {
 } from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const getQueryParam = (value: string | string[] | null): string => {
     if (Array.isArray(value)) return value[0] ?? '';
@@ -56,7 +58,7 @@ const VerifySharedResume: React.FC = () => {
         Record<string, VC | null>
     >({});
 
-    const [presentVerificationModal, dismissVerificationModal] = useIonModal(
+    const [presentVerificationModal, dismissVerificationModal] = useAppOverlayModal(
         SharedBoostVerificationBlock,
         {
             handleCloseModal: () => dismissVerificationModal(),
@@ -216,9 +218,9 @@ const VerifySharedResume: React.FC = () => {
     }, [pin, rawUri, seed]);
 
     return (
-        <IonPage>
-            <IonHeader color="light">
-                <IonToolbar className="flex">
+        <AppPage>
+            <AppHeader>
+                <AppToolbar className="flex">
                     <div className="flex justify-between items-center pl-[16px] pr-[16px] py-3 w-full">
                         <HeaderBranding
                             branding={BrandingEnum.learncard}
@@ -237,7 +239,7 @@ const VerifySharedResume: React.FC = () => {
                                     <DownloadIcon className="w-5 h-5" />
                                 )}
                                 {downloadingResume ? (
-                                    <IonSpinner name="crescent" className="w-4 h-4" />
+                                    <AppSpinner name="crescent" className="w-4 h-4" />
                                 ) : (
                                     <span className={isMobile ? 'sr-only' : ''}>Download</span>
                                 )}
@@ -250,15 +252,15 @@ const VerifySharedResume: React.FC = () => {
                             </a>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
-            <IonContent fullscreen className="bg-grayscale-100">
+            <AppContent fullscreen className="bg-grayscale-100">
                 <div className="min-h-full bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.16),transparent_35%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)]">
                     <div className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6 lg:px-8">
                         {loading ? (
                             <div className="flex min-h-[70vh] items-center justify-center">
-                                <IonSpinner name="crescent" className="h-10 w-10 text-indigo-500" />
+                                <AppSpinner name="crescent" className="h-10 w-10 text-indigo-500" />
                             </div>
                         ) : error ? (
                             <div className="mx-auto mt-10 max-w-[680px] rounded-[28px] border border-grayscale-200 bg-white p-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.12)]">
@@ -296,8 +298,8 @@ const VerifySharedResume: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ErrorBoundary } from 'react-error-boundary';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
 import MySkillProfile from '../ai-pathways/ai-pathways-skill-profile/MySkillProfile';
@@ -48,6 +47,7 @@ import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 import AiInsightsWidgets from './AiInsightsWidgets';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import { getAiErrorCopy } from '../../helpers/aiError.helpers';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type Flags = {
     enableAiAgentDebugTab?: boolean;
@@ -322,9 +322,9 @@ const AiInsights: React.FC = () => {
     }
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color={backgroundSecondaryColor}>
+                <AppContent fullscreen color={backgroundSecondaryColor}>
                     <MainHeader
                         category={CredentialCategoryEnum.aiInsight}
                         showBackButton
@@ -345,9 +345,9 @@ const AiInsights: React.FC = () => {
                             </div>
                         </div>
                     </AiFeatureGate>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

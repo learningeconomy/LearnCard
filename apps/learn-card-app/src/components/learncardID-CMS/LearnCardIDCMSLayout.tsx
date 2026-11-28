@@ -1,8 +1,7 @@
 import React from 'react';
 
-import { IonContent } from '@ionic/react';
-
 import { FamilyCMSAppearance } from '../familyCMS/familyCMSState';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 type AllowedWallpaperStylesType = {
     backgroundSize?: string;
@@ -61,7 +60,7 @@ export const LearnCardIDCMSLayout: React.FC<{
     }
 
     return (
-        <IonContent fullscreen color="grayscale-200">
+        <AppContent fullscreen color="grayscale-200">
             <div
                 className={`w-full flex flex-col items-center justify-start ion-padding overflow-y-scroll h-full pt-8 ${containerClassName}`}
                 style={{
@@ -72,7 +71,7 @@ export const LearnCardIDCMSLayout: React.FC<{
                     {children}
                 </div>
             </div>
-        </IonContent>
+        </AppContent>
     );
 };
 

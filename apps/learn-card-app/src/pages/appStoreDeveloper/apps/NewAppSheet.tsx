@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowBackOutline,
     chevronForwardOutline,
@@ -7,7 +7,7 @@ import {
     openOutline,
     sparklesOutline,
     storefrontOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { LaunchType } from '@learncard/types';
 
 import { Overlay } from 'learn-card-base';
@@ -37,13 +37,13 @@ const ChoiceRow: React.FC<{
         className="group w-full flex items-center gap-4 p-4 text-left rounded-2xl border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-colors"
     >
         <span className="w-10 h-10 rounded-xl bg-grayscale-100 flex items-center justify-center shrink-0">
-            <IonIcon icon={icon} className="text-lg text-grayscale-700" />
+            <AppIcon icon={icon} className="text-lg text-grayscale-700" />
         </span>
         <span className="flex-1 min-w-0">
             <span className="block text-sm font-medium text-grayscale-900">{title}</span>
             <span className="block text-xs text-grayscale-500 mt-0.5">{description}</span>
         </span>
-        <IonIcon
+        <AppIcon
             icon={chevronForwardOutline}
             className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors shrink-0"
         />
@@ -68,7 +68,7 @@ export const NewAppSheet: React.FC<NewAppSheetProps> = ({
                             onClick={() => setView('start')}
                             className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
-                            <IonIcon icon={arrowBackOutline} />
+                            <AppIcon icon={arrowBackOutline} />
                             Back
                         </button>
                     ) : (
@@ -80,7 +80,7 @@ export const NewAppSheet: React.FC<NewAppSheetProps> = ({
                         aria-label="Close"
                         className="w-8 h-8 rounded-full flex items-center justify-center text-grayscale-500 hover:bg-grayscale-100 transition-colors"
                     >
-                        <IonIcon icon={closeOutline} className="text-xl" />
+                        <AppIcon icon={closeOutline} className="text-xl" />
                     </button>
                 </div>
 
@@ -97,7 +97,7 @@ export const NewAppSheet: React.FC<NewAppSheetProps> = ({
                             className="group w-full text-left rounded-2xl bg-grayscale-900 p-5 hover:opacity-95 transition-opacity"
                         >
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/80">
-                                <IonIcon icon={sparklesOutline} />
+                                <AppIcon icon={sparklesOutline} />
                                 Recommended
                             </span>
                             <span className="block mt-2 text-base font-semibold text-white">
@@ -124,7 +124,7 @@ export const NewAppSheet: React.FC<NewAppSheetProps> = ({
                             className="mt-6 w-full flex items-center justify-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
                             Read the developer docs
-                            <IonIcon icon={openOutline} />
+                            <AppIcon icon={openOutline} />
                         </button>
                     </>
                 ) : (

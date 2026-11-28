@@ -31,7 +31,7 @@ export class ConsentFlowPage {
 
     async validateExternalDoor(username: string = 'Demo') {
         // no sidebar
-        await expect(this.page.locator('ion-menu')).not.toBeAttached();
+        await expect(this.page.locator('[data-app-menu]')).not.toBeAttached();
 
         await expect(this.page.locator(`img[src="${testContract.image}"]`)).toBeVisible({
             timeout: 20000,
@@ -53,7 +53,7 @@ export class ConsentFlowPage {
 
     async validateExternalDoorLoggedOut() {
         // no sidebar
-        await expect(this.page.locator('ion-menu')).not.toBeAttached();
+        await expect(this.page.locator('[data-app-menu]')).not.toBeAttached();
 
         await expect(this.page.locator(`img[src="${testContract.image}"]`)).toBeVisible({
             timeout: 15000,

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useIonViewWillLeave } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 
 import { getLogger, useTenantConfig } from 'learn-card-base';
@@ -176,10 +175,9 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface, allowAdvocacy = true
         timerRef.current = setTimeout(commitCardAsk, CARD_COMMIT_DELAY_MS);
     }, [allowAdvocacy, privacyEligible, isNative, isLearnCardTenant, surface, commitCardAsk]);
 
-    // Ionic caches visited pages, so leaving the view does not unmount this
-    // hook — without this the OS modal would surface over whatever page the
-    // user navigated to. See the same note in `useHeaderScrollSync`.
-    useIonViewWillLeave(cancelPending);
+    // Leaving the page unmounts this hook (the routes outlet never kept pages
+    // cached; an `ionViewWillLeave` hook that used to sit here never fired), and
+    // the unmount cleanup below clears the pending timer.
 
     useEffect(() => {
         if (!isNative) return;

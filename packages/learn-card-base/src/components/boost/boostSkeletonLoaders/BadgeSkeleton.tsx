@@ -1,4 +1,4 @@
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const BadgeSkeleton: React.FC<{
     badgeContainerCustomClass?: string;
@@ -11,7 +11,7 @@ export const BadgeSkeleton: React.FC<{
             <div
                 className={`absolute z-10 w-full h-full rounded-br-[100%] rounded-bl-[100%] bg-none! overflow-hidden top-[-10px]`}
             >
-                <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
+                <AppSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
             </div>
             <div
                 className={`relative z-50 flex items-center justify-center rounded-full ${badgeCircleCustomClass} shadow-none bg-none mt-[-10px]`}

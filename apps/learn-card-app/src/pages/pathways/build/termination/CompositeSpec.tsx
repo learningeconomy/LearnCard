@@ -14,7 +14,7 @@
 
 import React from 'react';
 
-import { gitMergeOutline } from 'ionicons/icons';
+import { gitMergeOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Termination } from '../../types';
 import TerminationEditor from '../TerminationEditor';

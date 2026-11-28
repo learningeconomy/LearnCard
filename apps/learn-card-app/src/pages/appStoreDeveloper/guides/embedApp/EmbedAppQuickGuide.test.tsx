@@ -12,7 +12,6 @@ const state = vi.hoisted(() => ({
     resetGuide: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('../../../../helpers/externalLinkHelpers', () => ({ openExternalLink: vi.fn() }));
 vi.mock('../../apps/NewAppSheet', () => ({ DEVELOPER_DOCS_URL: 'https://docs.example.com' }));
 vi.mock('../shared/useGuideState', async () => {

@@ -3,20 +3,20 @@ import { useHistory } from 'react-router-dom';
 
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
 import { VCClaim } from 'learn-card-base';
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 export const PresentVcModalListener: React.FC = () => {
     const history = useHistory();
     const presentVcModalState = modalStateStore.useTracked.presentVcModal();
-    const [present, dismiss] = useIonModal(VCClaim, {
-        dismiss: ({historyPush, callback}) => {
+    const [present, dismiss] = useAppOverlayModal(VCClaim, {
+        dismiss: ({ historyPush, callback }) => {
             dismiss();
-           history.push(historyPush ?? '/wallet');
-           modalStateStore.set.presentVcModal({
-            open: false,
-            name: null,
-        });
-           callback?.();  
+            history.push(historyPush ?? '/wallet');
+            modalStateStore.set.presentVcModal({
+                open: false,
+                name: null,
+            });
+            callback?.();
         },
     });
     useEffect(() => {

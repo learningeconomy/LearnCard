@@ -2,7 +2,7 @@ import React from 'react';
 import { PendingContractRequests } from '../../components/contract-requests/ContractRequest';
 import * as m from '../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import TrustSummaryCard from './components/TrustSummaryCard';
 import ConnectedAppsSection from './components/ConnectedAppsSection';
@@ -55,7 +55,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
                     aria-live="polite"
                     className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] gap-3"
                 >
-                    <IonSpinner aria-hidden="true" name="crescent" className="w-8 h-8" />
+                    <AppSpinner aria-hidden="true" name="crescent" className="w-8 h-8" />
                     <p className="text-grayscale-600 text-sm">{m['dataSharing.loadingCenter']()}</p>
                 </div>
             ) : (

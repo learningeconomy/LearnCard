@@ -15,7 +15,6 @@ vi.mock('learn-card-base', () => ({
     ProfilePicture: () => null,
     useModal: () => ({ closeModal }),
 }));
-vi.mock('@ionic/react', () => ({ IonSpinner: () => null }));
 vi.mock('swiper/react', () => ({
     Swiper: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     SwiperSlide: ({ children }: React.PropsWithChildren) => <div>{children}</div>,

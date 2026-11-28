@@ -85,13 +85,6 @@ vi.mock('react-router-dom', () => ({
         hash: window.location.hash,
     }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonIcon: () => null,
-    IonHeader: ({ children }: { children: React.ReactNode }) => <header>{children}</header>,
-    IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
 vi.mock('../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
     useTheme: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),

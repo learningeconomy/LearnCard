@@ -3,7 +3,6 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
-import { IonContent, IonPage } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
@@ -56,6 +55,7 @@ import type { DuplicateCredentialResolution } from '../../components/credentials
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface ExchangeAcceptCredentialsProps {
     inboxDeliveries?: InboxDelivery[];
@@ -556,8 +556,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     if (credentials.length === 0) {
         return (
-            <IonPage>
-                <IonContent fullscreen className="ion-padding">
+            <AppPage>
+                <AppContent fullscreen className="ion-padding">
                     <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
                         <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                             {/* Header with icon */}
@@ -634,8 +634,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             </div>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -670,7 +670,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         const credential = credentials[0];
 
         return (
-            <IonPage>
+            <AppPage>
                 <h1 className="sr-only">
                     {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
                 </h1>
@@ -722,13 +722,13 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         )}
                     </div>
                 </BoostFooterLayout>
-            </IonPage>
+            </AppPage>
         );
     }
 
     // Multiple-credential claim — grid selection view (unchanged).
     return (
-        <IonPage>
+        <AppPage>
             {claimLoadingOverlay}
             <BoostFooterLayout
                 contentOwnsScroll
@@ -743,11 +743,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     useFullCloseButton: false,
                 }}
             >
-                <IonContent fullscreen color="grayscale-100" className="ion-padding h-full">
+                <AppContent fullscreen color="grayscale-100" className="ion-padding h-full">
                     {renderMultipleCredentials()}
-                </IonContent>
+                </AppContent>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

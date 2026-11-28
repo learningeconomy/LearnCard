@@ -1,5 +1,4 @@
-
-.ios .learn-card-bubble-underlay  {
+.ios .learn-card-bubble-underlay {
     border-top-left-radius: 120px;
     border-top-right-radius: 120px;
     height: 75%;
@@ -38,17 +37,22 @@
             bottom: 0;
             left: 0;
             right: 0;
-            display:  flex;
+            display: flex;
             align-items: center;
 
-            background: linear-gradient(214.64deg, rgba(251, 251, 252, 0.9) 26.11%, rgba(231, 249, 253, 0.64) 60.05%, rgba(231, 249, 253, 0.6) 80.81%);
+            background: linear-gradient(
+                214.64deg,
+                rgba(251, 251, 252, 0.9) 26.11%,
+                rgba(231, 249, 253, 0.64) 60.05%,
+                rgba(231, 249, 253, 0.6) 80.81%
+            );
             backdrop-filter: blur(2px);
             margin: 8px;
             padding: 36px 25px;
             border-radius: 20px;
 
             text-align: center;
-            color: #18224E;
+            color: #18224e;
             font-weight: 700;
 
             & > .preview-main-text {
@@ -57,13 +61,12 @@
                 margin-bottom: 10px;
             }
 
-             & > .preview-sub-text {
+            & > .preview-sub-text {
                 font-size: 18px;
                 width: 252px;
                 margin-left: auto;
                 margin-right: auto;
             }
-
         }
         .credit-card-bubble {
             background-color: rgb(65 206 242 / var(--tw-bg-opacity));
@@ -73,7 +76,6 @@
         }
     }
 }
-
 
 .learn-card-balance-big {
     font-size: 36px;
@@ -92,58 +94,52 @@
 }
 
 .qr-code-user-card-content {
-    --background: rgb(255,255,255,0.7)
+    --background: rgb(255, 255, 255, 0.7);
 }
 
 .qr-code-user-card-toolbar {
-    background-color:rgb(255,255,255,0.7);
-    --background: rgb(255,255,255,0.7)
-    --border-color: #ffffff;
+    background-color: rgb(255, 255, 255, 0.7);
+    --background: rgb(255, 255, 255, 0.7) --border-color: #ffffff;
 }
 
 .full-opacity {
     opacity: 1 !important;
 }
 
-
-.ion-toast-bottom-nav-offset { transform: translateY(-115px); }
+.ion-toast-bottom-nav-offset {
+    transform: translateY(-115px);
+}
 
 .toast-custom-class {
-    --color:#ffffff;
-    --border-color:#18224E;
-    --border-radius:20px;
-    --border-style:solid;
-    --border-width:3px;    
-    --background:#18224E;
-    --button-color:#ffffff;
+    --color: #ffffff;
+    --border-color: #18224e;
+    --border-radius: 20px;
+    --border-style: solid;
+    --border-width: 3px;
+    --background: #18224e;
+    --button-color: #ffffff;
 }
 
 .vc-list-btn {
-    --color:#ffffff;
-    --border-color:#18224E;
-    --border-radius:20px;
-    --border-style:solid;
-    --border-width:0px;    
-    --background:#18224E !important;
-    --ion-color-base: #18224E!important;
-    --button-color:#ffffff;
+    --color: #ffffff;
+    --border-color: #18224e;
+    --border-radius: 20px;
+    --border-style: solid;
+    --border-width: 0px;
+    --background: #18224e !important;
+    --ion-color-base: #18224e !important;
+    --button-color: #ffffff;
     --background-hover: #5364b0;
 }
 
-.vc-template-creator{
+.vc-template-creator {
     width: 100%;
     max-width: 600px;
     margin: auto;
 }
 
-ion-button {
-    span {
-        text-align: left;
-        justify-content: flex-start;
-    }
-}
 .credential-details-container {
-    .vc-verification-full-wrapper{
+    .vc-verification-full-wrapper {
         display: none;
     }
 
@@ -159,10 +155,10 @@ ion-button {
 }
 
 .card-slider {
-    .swiper-wrapper{
+    .swiper-wrapper {
         padding: 10px;
     }
-   
+
     .swiper-slide {
         width: 190px !important;
     }
@@ -176,7 +172,7 @@ ion-button {
 
 .vc-display-card {
     width: 100%;
-    margin:auto;
+    margin: auto;
     max-width: 400px;
 }
 
@@ -198,19 +194,15 @@ ion-button {
     font-size: 20px !important;
     font-weight: 500 !important;
     text-transform: none !important;
-    background-color: #18224E;
+    background-color: #18224e;
     letter-spacing: normal !important;
-
-  
 }
 
 .vc-card-content-container {
-    
     h3 {
         font-weight: 500 !important;
     }
 }
-
 
 .vc-issue-info-box {
     h3 {
@@ -218,33 +210,37 @@ ion-button {
     }
 }
 
-.description-box, .criteria-box, .media-attachments-box, .verifications-box  {
+.description-box,
+.criteria-box,
+.media-attachments-box,
+.verifications-box {
     h3 {
         font-weight: 500 !important;
     }
 }
 
-.description-box, .criteria-box {
+.description-box,
+.criteria-box {
     p {
-        font-family: 'Rubik', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+        font-family:
+            'Rubik', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode',
+            Geneva, Verdana, sans-serif;
         font-size: 14px;
         line-height: 150%;
     }
 }
 
 .vc-card-header-main-title span {
-   text-shadow: none !important;
-   font-weight: 500 !important;
-}
-
-.vc-card-header{
-    span:first-of-type {
-   
     text-shadow: none !important;
     font-weight: 500 !important;
-    font-family: 'Rubik';
+}
+
+.vc-card-header {
+    span:first-of-type {
+        text-shadow: none !important;
+        font-weight: 500 !important;
+        font-family: 'Rubik';
     }
-   
 }
 
 .small-boost-title {
@@ -252,10 +248,8 @@ ion-button {
 }
 
 .vc-card-background-hider {
-    display:none;
+    display: none;
 }
-
-
 
 .boost-confirmation-alert {
     .alert-wrapper {
@@ -268,7 +262,7 @@ ion-button {
 }
 .boost-small-card {
     .check-btn-overlay {
-        z-index:99 !important;
+        z-index: 99 !important;
     }
 }
 
@@ -280,7 +274,7 @@ ion-button {
 
 .notifications-list-container {
     display: flex;
-    justify-content:center;
+    justify-content: center;
 }
 
 .alert-indicator-dot {
@@ -309,9 +303,9 @@ ion-button {
     inset: 0% 0% auto 52%;
     width: 20px;
     height: 20px;
-    margin-top:0px;
+    margin-top: 0px;
     margin-bottom: 0px;
-    margin-left:0px;
+    margin-left: 0px;
 }
 
 .alert-indicator-dot.hidden {
@@ -326,7 +320,7 @@ ion-button {
     height: 10px;
     min-width: 10px;
     top: 2px;
-    left:0px;
+    left: 0px;
     opacity: 0.5;
     margin-top: 10px;
     margin-bottom: -3px;

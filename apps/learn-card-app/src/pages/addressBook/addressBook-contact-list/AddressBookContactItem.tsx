@@ -6,7 +6,8 @@ import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-contact-item');
 
-import { IonItem, useIonAlert } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppItem } from 'learn-card-base/ui/list';
 
 import Plus from 'learn-card-base/svgs/Plus';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
@@ -91,7 +92,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     });
 
     const { presentToast } = useToast();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -742,12 +743,12 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         </>
     );
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-[95%] max-w-3xl ion-no-border px-[12px] py-[10px] flex items-center justify-between notificaion-list-item cursor-pointer last:border-b-0"
         >
             {contactItemDetails}
-        </IonItem>
+        </AppItem>
     );
 };
 

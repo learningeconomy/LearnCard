@@ -64,7 +64,10 @@ const paraglideLazyLocalesNoop = (): PluginOption => ({
 });
 
 const config: StorybookConfig = {
-    stories: ['../src/**/*.stories.@(ts|tsx)'],
+    stories: [
+        '../src/**/*.stories.@(ts|tsx)',
+        '../../../packages/learn-card-base/src/ui/**/*.stories.@(ts|tsx)',
+    ],
     // Storybook 9 folded essentials and interactions into core; docs stays an addon.
     addons: ['@storybook/addon-docs', '@storybook/addon-themes'],
     framework: {

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-import { IonHeader, IonToolbar, IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 import { BoostCMSStepsEnum } from '../../boost';
@@ -10,6 +10,7 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../../../i18n/categoryTitle';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -80,11 +81,11 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     };
 
     return (
-        <IonHeader className="shadow-none">
-            <IonToolbar color="grayscale-800" className="ion-no-border px-2">
-                <IonRow className="flex items-center justify-center w-full py-[10px]">
+        <AppHeader className="shadow-none">
+            <AppToolbar color="grayscale-800" className="ion-no-border px-2">
+                <AppRow className="flex items-center justify-center w-full py-[10px]">
                     <div className="w-full max-w-[600px] flex items-center justify-between">
-                        <IonCol className="w-full flex justify-start items-center">
+                        <AppCol className="w-full flex justify-start items-center">
                             {currentStep === BoostCMSStepsEnum.issueTo && (
                                 <button
                                     className="text-white p-0 mr-[1px] z-50"
@@ -98,7 +99,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                                     {headerTitle}
                                 </p>
                             </div>
-                        </IonCol>
+                        </AppCol>
                         <div className="right-cms-header">
                             <button
                                 onClick={handleQuitConfirmationModal}
@@ -126,9 +127,9 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                             )}
                         </div>
                     </div>
-                </IonRow>
-            </IonToolbar>
-        </IonHeader>
+                </AppRow>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

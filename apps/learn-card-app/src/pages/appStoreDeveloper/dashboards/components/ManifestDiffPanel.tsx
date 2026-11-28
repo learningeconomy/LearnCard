@@ -1,12 +1,12 @@
 import React from 'react';
 import { AppManifestDiff } from '@learncard/types';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     addOutline,
     removeOutline,
     swapHorizontalOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 interface ManifestDiffPanelProps {
     diff: AppManifestDiff;
@@ -57,7 +57,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                             key={`added-${i}`}
                             className="flex items-start gap-2 p-2 bg-emerald-50 rounded-lg text-sm text-emerald-900"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={addOutline}
                                 className="mt-0.5 shrink-0 text-emerald-600"
                             />
@@ -69,7 +69,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                             key={`removed-${i}`}
                             className="flex items-start gap-2 p-2 bg-red-50 rounded-lg text-sm text-red-900"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={removeOutline}
                                 className="mt-0.5 shrink-0 text-red-600"
                             />
@@ -81,7 +81,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                             key={`changed-${i}`}
                             className="flex items-start gap-2 p-2 bg-grayscale-100 rounded-lg text-sm text-grayscale-900"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={swapHorizontalOutline}
                                 className="mt-0.5 shrink-0 text-grayscale-600"
                             />
@@ -113,7 +113,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                             key={`added-${i}`}
                             className="flex items-start gap-2 p-2 bg-emerald-50 rounded-lg text-sm text-emerald-900"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={addOutline}
                                 className="mt-0.5 shrink-0 text-emerald-600"
                             />
@@ -127,7 +127,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                             key={`removed-${i}`}
                             className="flex items-start gap-2 p-2 bg-red-50 rounded-lg text-sm text-red-900"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={removeOutline}
                                 className="mt-0.5 shrink-0 text-red-600"
                             />
@@ -141,7 +141,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                             key={`changed-${i}`}
                             className="flex items-start gap-2 p-2 bg-grayscale-100 rounded-lg text-sm text-grayscale-900"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={swapHorizontalOutline}
                                 className="mt-0.5 shrink-0 text-grayscale-600"
                             />
@@ -159,7 +159,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
         <div className="font-poppins">
             {diff.requiresReview && (
                 <div className="mb-5 p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-amber-600 text-lg mt-0.5 shrink-0"
                     />

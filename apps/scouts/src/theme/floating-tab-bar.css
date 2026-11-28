@@ -3,7 +3,7 @@
     --ion-tab-bar-color-selected: #34eab9;
 }
 
-ion-tab-bar {
+.app-tab-bar {
     --background: rgba(255, 255, 255, 0.7);
     box-shadow: 0px 1px 13px rgba(0, 0, 0, 0.2);
     border-radius: 20px !important;
@@ -17,11 +17,11 @@ ion-tab-bar {
     border-top: none;
 }
 
-ion-tab-button {
+.app-tab-button {
     border-radius: 16px !important;
     background: transparent;
 }
 
-ion-tab-button ion-icon {
+.app-tab-button .app-icon {
     font-size: 1.75rem;
 }

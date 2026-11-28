@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
 import AiPathwayCareerHeader from './AiPathwayCareerHeader';
 import AiPathwayCareerSkills from './AiPathwayCareerSkills';
 import AiPathwayCareerSalaries from './AiPathwayCareerSalaries';
@@ -12,6 +11,7 @@ import AiPathwayCareerQualifications from './AiPathwayCareerQualifications';
 import { useModal } from 'learn-card-base';
 
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }> = ({
     occupation,
@@ -38,7 +38,7 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
                     <AiPathwayTopPayLocations occupation={occupation} />
                 </div>
             </div>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -50,7 +50,7 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
                         Close
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

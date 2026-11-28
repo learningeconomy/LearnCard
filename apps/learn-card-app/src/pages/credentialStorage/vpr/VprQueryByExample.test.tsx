@@ -31,11 +31,6 @@ vi.mock('learn-card-base', () => ({
     chapiStore: { set: { isChapiInteraction: mocks.reset } },
     redirectStore: { set: { authRedirect: vi.fn() } },
 }));
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonIcon: () => null,
-}));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => undefined }),
 }));

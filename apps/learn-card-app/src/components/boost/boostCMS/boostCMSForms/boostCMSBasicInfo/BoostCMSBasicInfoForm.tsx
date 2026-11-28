@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonRow, IonCol, IonTextarea, IonToggle, IonDatetime, useIonModal } from '@ionic/react';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import Calendar from '../../../../svgs/Calendar';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import LocationIcon from 'learn-card-base/svgs/LocationIcon';
@@ -51,9 +55,9 @@ const BoostCMSBasicInfoForm: React.FC<{
         });
     };
 
-    const [presentDatePicker, dismissDatePicker] = useIonModal(
+    const [presentDatePicker, dismissDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     const isoString = moment(e.detail.value).toISOString();
                     handleStateChange('expirationDate', isoString);
@@ -76,13 +80,13 @@ const BoostCMSBasicInfoForm: React.FC<{
         </div>
     );
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(LocationSearch, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(LocationSearch, {
         showCloseButton: true,
         handleLocationStateChange: handleAddressStateChange,
         handleCloseModal: () => dismissCenterModal(),
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(LocationSearch, {
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(LocationSearch, {
         handleLocationStateChange: handleAddressStateChange,
         handleCloseModal: () => dismissSheetModal(),
     });
@@ -91,8 +95,8 @@ const BoostCMSBasicInfoForm: React.FC<{
     const isMembership = boostType === BoostCategoryOptionsEnum.membership;
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
                     {m['common.about']()}
                 </h1>
@@ -103,18 +107,16 @@ const BoostCMSBasicInfoForm: React.FC<{
                         }`}
                     />
                 </button>
-            </IonCol>
+            </AppCol>
             {showAbout && (
-                <IonCol size="12" className="w-full bg-white">
+                <AppCol size="12" className="w-full bg-white">
                     {isID ||
                         (isMembership && (
                             <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                                <IonTextarea
+                                <AppTextarea
                                     autocapitalize="on"
                                     value={basicInfo?.issuerName}
-                                    onIonInput={e =>
-                                        handleStateChange('issuerName', e.detail.value)
-                                    }
+                                    onValueInput={value => handleStateChange('issuerName', value)}
                                     placeholder={m['boost.cms.basicInfo.issuerNamePlaceholder']()}
                                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                                     rows={2}
@@ -123,10 +125,10 @@ const BoostCMSBasicInfoForm: React.FC<{
                             </div>
                         ))}
                     <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                        <IonTextarea
+                        <AppTextarea
                             autocapitalize="on"
                             value={basicInfo?.description}
-                            onIonInput={e => handleStateChange('description', e.detail.value)}
+                            onValueInput={value => handleStateChange('description', value)}
                             placeholder={m['boost.cms.basicInfo.descriptionPlaceholder']()}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium  text-base"
                             rows={3}
@@ -134,10 +136,10 @@ const BoostCMSBasicInfoForm: React.FC<{
                         />
                     </div>
                     <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                        <IonTextarea
+                        <AppTextarea
                             autocapitalize="on"
                             value={basicInfo?.narrative}
-                            onIonInput={e => handleStateChange('narrative', e.detail.value)}
+                            onValueInput={value => handleStateChange('narrative', value)}
                             placeholder={m['boost.cms.basicInfo.narrativePlaceholder']()}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium  text-base"
                             rows={3}
@@ -185,10 +187,10 @@ const BoostCMSBasicInfoForm: React.FC<{
                         <p className="text-grayscale-900 font-medium w-10/12">
                             {m['boost.cms.basicInfo.credentialExpires']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const expiresValue = !basicInfo?.credentialExpires;
                                 handleStateChange('credentialExpires', expiresValue);
                                 //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -222,9 +224,9 @@ const BoostCMSBasicInfoForm: React.FC<{
                             </button>
                         )}
                     </div>
-                </IonCol>
+                </AppCol>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

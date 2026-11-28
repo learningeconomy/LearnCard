@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { chevronForward } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { chevronForward } from 'learn-card-base/icons/ionicons';
 
 import * as m from '../../../../paraglide/messages.js';
 import GlassCard from '../GlassCard';
@@ -29,7 +29,7 @@ export const QuietTextButton: React.FC<{
         onClick={onClick}
         className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50"
     >
-        {icon && <IonIcon icon={icon} aria-hidden="true" />}
+        {icon && <AppIcon icon={icon} aria-hidden="true" />}
         {children}
     </button>
 );
@@ -94,7 +94,7 @@ export const ViewAllRow: React.FC<{ label: string; onClick: () => void }> = ({
             className="flex w-full items-center justify-center gap-1 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 hover:text-grayscale-900"
         >
             {label}
-            <IonIcon icon={chevronForward} aria-hidden="true" className="rtl:-scale-x-100" />
+            <AppIcon icon={chevronForward} aria-hidden="true" className="rtl:-scale-x-100" />
         </button>
     </li>
 );

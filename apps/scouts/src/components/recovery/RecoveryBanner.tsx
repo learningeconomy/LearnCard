@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { IonIcon } from '@ionic/react';
-import { shieldOutline, closeOutline } from 'ionicons/icons';
+import { shieldOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import { isPublicComputerMode } from '@learncard/sss-key-manager';
 import * as m from '../../paraglide/messages.js';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 const DISMISS_KEY = 'lc_recovery_banner_dismissed';
 
@@ -47,7 +47,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({ recoveryMethodCo
             className="w-full max-w-[600px] mt-4 flex items-center gap-3 p-3 bg-amber-50 border border-amber-100 rounded-2xl text-left transition-colors hover:bg-amber-100 group"
         >
             <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 group-hover:bg-amber-200 transition-colors">
-                <IonIcon icon={shieldOutline} className="text-amber-600 text-lg" />
+                <AppIcon icon={shieldOutline} className="text-amber-600 text-lg" />
             </div>
 
             <div className="flex-1 min-w-0">
@@ -80,7 +80,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({ recoveryMethodCo
                 className="p-1 rounded-full hover:bg-amber-200 transition-colors shrink-0"
                 aria-label={m['common.dismiss']()}
             >
-                <IonIcon icon={closeOutline} className="text-grayscale-500 text-lg" />
+                <AppIcon icon={closeOutline} className="text-grayscale-500 text-lg" />
             </div>
         </button>
     );

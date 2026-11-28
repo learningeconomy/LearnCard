@@ -1,12 +1,11 @@
 import React from 'react';
 
-import { IonProgressBar } from '@ionic/react';
-
 import {
     EndorsementMediaOptionsEnum,
     endorsementMediaOptions,
 } from '../EndorsementForm/endorsement-state.helpers';
 import * as m from '../../../paraglide/messages.js';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
 
 export const EndorsementMediaAttachmentButtons: React.FC<{
     handleImageSelect: () => void;
@@ -39,7 +38,7 @@ export const EndorsementMediaAttachmentButtons: React.FC<{
 
             {loadingProgress && (
                 <div className="w-full px-4">
-                    <IonProgressBar
+                    <AppProgressBar
                         color="grayscale-800"
                         value={(loadingProgress as number) / 100}
                     />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { HexColorPicker } from 'react-colorful';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSState } from '../../../boost';
@@ -64,11 +64,11 @@ const BoostIDCardAccentForm: React.FC<{
 
     return (
         <>
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between mt-4">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between mt-4">
                 <h3 className="text-grayscale-700 text-left w-full font-medium text-lg">
                     Accent Color
                 </h3>
-            </IonCol>
+            </AppCol>
 
             <div className="w-full flex items-center justify-center p-0 m-0 mt-2">
                 <div className="relative w-full flex items-center justify-between">

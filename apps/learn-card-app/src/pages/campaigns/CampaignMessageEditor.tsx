@@ -1,7 +1,7 @@
 import React, { useId, useMemo, useState } from 'react';
 import { inAppMessageValidator } from '@learncard/types';
-import { IonIcon } from '@ionic/react';
-import { codeSlashOutline, optionsOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { codeSlashOutline, optionsOutline } from 'learn-card-base/icons/ionicons';
 import { z } from 'zod';
 import { buttonClass, primaryClass, textButtonClass } from './ui';
 import { SchemaField } from './message-editor/SchemaField';
@@ -122,7 +122,7 @@ export const CampaignMessageEditor: React.FC<Props> = ({ value, campaignId, onCh
                                 setPendingFormat(undefined);
                             }}
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={tab === 'fields' ? optionsOutline : codeSlashOutline}
                                 aria-hidden="true"
                             />

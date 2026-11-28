@@ -35,13 +35,11 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('@capacitor/browser', () => ({ Browser: { open: vi.fn() } }));
 vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'default' }));
-vi.mock('@ionic/react', () => ({
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    useIonAlert: () => [mocks.presentAlert],
-    useIonModal: () => [vi.fn(), vi.fn()],
+vi.mock('learn-card-base/ui/overlays/useAppAlert', () => ({
+    useAppAlert: () => [mocks.presentAlert],
+}));
+vi.mock('learn-card-base/ui/overlays/useAppOverlayModal', () => ({
+    useAppOverlayModal: () => [vi.fn(), vi.fn()],
 }));
 vi.mock('learn-card-base', () => ({
     BrandingEnum: { learncard: 'learncard' },

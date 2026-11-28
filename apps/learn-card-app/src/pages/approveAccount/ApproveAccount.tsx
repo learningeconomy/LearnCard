@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('approve-account');
@@ -10,6 +9,9 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import { usePathQuery } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ApproveAccount: React.FC = () => {
     const { textLogo, brandMarkLight } = useTenantBrandingAssets();
@@ -89,8 +91,8 @@ const ApproveAccount: React.FC = () => {
     const handleGoLogin = () => history.replace('/login');
 
     return (
-        <IonPage color="emerald-700">
-            <IonContent
+        <AppPage color="emerald-700">
+            <AppContent
                 fullscreen
                 color="emerald-700"
                 className="flex flex-col grow bg-emerald-700"
@@ -106,7 +108,7 @@ const ApproveAccount: React.FC = () => {
                     </div>
                     {loading && (
                         <div className="flex flex-col items-center justify-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg text-white">Approving…</p>
                         </div>
                     )}
@@ -117,9 +119,9 @@ const ApproveAccount: React.FC = () => {
                             <p className="text-emerald-50 max-w-[520px] mb-4">
                                 {message || 'Profile approved successfully.'}
                             </p>
-                            <IonButton color="light" onClick={handleGoLogin}>
+                            <AppButton color="light" onClick={handleGoLogin}>
                                 Open LearnCard Login
-                            </IonButton>
+                            </AppButton>
                         </>
                     )}
 
@@ -127,9 +129,9 @@ const ApproveAccount: React.FC = () => {
                         <>
                             <h1 className="text-xl font-bold text-white mb-2">Unable to Approve</h1>
                             <p className="text-emerald-50 max-w-[520px] mb-4">{error}</p>
-                            <IonButton color="light" onClick={handleGoLogin}>
+                            <AppButton color="light" onClick={handleGoLogin}>
                                 Go to Login
-                            </IonButton>
+                            </AppButton>
                         </>
                     )}
 
@@ -139,8 +141,8 @@ const ApproveAccount: React.FC = () => {
                         </p>
                     )} */}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

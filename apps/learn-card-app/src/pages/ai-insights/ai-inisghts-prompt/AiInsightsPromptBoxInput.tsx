@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 export const AiInsightsPromptBoxInput: React.FC<{
     prompt: string;
@@ -10,10 +10,10 @@ export const AiInsightsPromptBoxInput: React.FC<{
 }> = ({ prompt, setPrompt }) => {
     return (
         <div className="w-full">
-            <IonTextarea
+            <AppTextarea
                 value={prompt}
-                onIonInput={e => {
-                    setPrompt(e.detail.value as string);
+                onValueInput={value => {
+                    setPrompt(value);
                 }}
                 placeholder={m['aiInsights.askAboutSkills']()}
                 className="w-full font-notoSans text-left bg-indigo-50 px-4 rounded-[10px] text-grayscale-900 text-[17px]"

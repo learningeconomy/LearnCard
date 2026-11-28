@@ -30,7 +30,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { Handle, Position } from '@xyflow/react';
 import {
     documentTextOutline,
@@ -40,7 +40,7 @@ import {
     refreshOutline,
     repeatOutline,
     ribbonOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 
 import type { PathwayNode, Policy } from '../types';
@@ -211,7 +211,7 @@ const StackedAvatar: React.FC<{
                             <span
                                 className={`w-full h-full flex items-center justify-center ${tone.bg} ${tone.fg}`}
                             >
-                                <IonIcon icon={glyph} className="text-sm" />
+                                <AppIcon icon={glyph} className="text-sm" />
                             </span>
                         )}
                     </span>
@@ -312,7 +312,7 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                                bg-white border-emerald-200 text-emerald-700
                                text-[10px] font-medium shadow-xs"
                 >
-                    <IonIcon icon={layersOutline} className="text-[11px]" />
+                    <AppIcon icon={layersOutline} className="text-[11px]" />
                     <span>
                         {progress.completed}/{progress.total}
                     </span>

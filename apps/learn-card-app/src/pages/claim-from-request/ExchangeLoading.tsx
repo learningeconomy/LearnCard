@@ -1,18 +1,19 @@
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ExchangeLoading = () => {
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <div className="min-h-full bg-grayscale-100 flex flex-col items-center justify-center p-4 font-poppins">
-                    <IonSpinner name="crescent" className="text-emerald-600 w-8 h-8 mb-4" />
+                    <AppSpinner name="crescent" className="text-emerald-600 w-8 h-8 mb-4" />
                     <p className="text-sm text-grayscale-600 font-medium">
                         {m['common.loading']()}
                     </p>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

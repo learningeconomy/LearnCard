@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { IonIcon } from '@ionic/react';
-import { closeOutline, documentsOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { closeOutline, documentsOutline } from 'learn-card-base/icons/ionicons';
 import { Overlay } from 'learn-card-base';
 import {
     getCredentialName,
@@ -50,7 +50,7 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
                     onClick={() => onChoose('cancel')}
                     className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-grayscale-500 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900"
                 >
-                    <IonIcon icon={closeOutline} className="text-2xl" />
+                    <AppIcon icon={closeOutline} className="text-2xl" />
                 </button>
 
                 <div className="pr-10">
@@ -74,7 +74,7 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
                             {imageUrl ? (
                                 <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                             ) : (
-                                <IonIcon icon={documentsOutline} className="text-2xl" />
+                                <AppIcon icon={documentsOutline} className="text-2xl" />
                             )}
                         </div>
                         <div className="min-w-0">

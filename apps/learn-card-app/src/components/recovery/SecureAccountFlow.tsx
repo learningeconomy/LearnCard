@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    shieldCheckmarkOutline,
+} from 'learn-card-base/icons/ionicons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { focusOnMount } from './focusOnMount';
 import { validatePin } from '@learncard/sss-key-manager';
@@ -152,7 +156,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
             return (
                 <div className="space-y-v3-5">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
-                        <IonIcon
+                        <AppIcon
                             icon={checkmarkCircleOutline}
                             className="text-emerald-600 text-3xl"
                         />
@@ -261,7 +265,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
         return (
             <div className="space-y-v3-5">
                 <div className="w-14 h-14 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <IonIcon icon={shieldCheckmarkOutline} className="text-3xl" />
+                    <AppIcon icon={shieldCheckmarkOutline} className="text-3xl" />
                 </div>
                 <h2 className="text-xl font-semibold text-grayscale-900">
                     {m['recovery.secureAccount.title']()}
@@ -271,7 +275,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
                         role="alert"
                         className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-start"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                         />

@@ -14,7 +14,6 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
-import { IonPage, IonContent } from '@ionic/react';
 import LaunchPadHeader from './LaunchPadHeader/LaunchPadHeader';
 import LaunchPadBecomeAnApp from './LaunchPadBecomeAnApp';
 import LaunchPadAppListItem from './LaunchPadAppListItem';
@@ -38,6 +37,7 @@ import AppStoreListItem from './AppStoreListItem';
 import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
 import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
@@ -284,10 +284,10 @@ const LaunchPad: React.FC = () => {
     }, [embedUrlParam, appNameParam, appImageParam]);
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
-                <IonContent
+                <AppContent
                     fullscreen
                     scrollY={true}
                     color="grayscale-100"
@@ -612,9 +612,9 @@ const LaunchPad: React.FC = () => {
                             )}
                         </div>
                     </div>
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

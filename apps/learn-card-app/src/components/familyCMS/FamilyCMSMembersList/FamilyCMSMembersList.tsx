@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { useConfirmation, useModal, ModalTypes } from 'learn-card-base';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import AddUser from '../../svgs/AddUser';
 import { m } from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
@@ -238,11 +238,11 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                 </button>
                             )}
                         </div>
-                        <IonInput
+                        <AppInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder mb-2"
                             placeholder={m['family.members.searchPlaceholder']()}
                             value={search}
-                            onIonInput={e => setSearch(e.detail.value)}
+                            onValueInput={value => setSearch(value)}
                         />
                     </>
                 )}

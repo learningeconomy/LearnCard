@@ -22,7 +22,8 @@ import {
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import CustomSpinner from '../svgs/CustomSpinner';
 
-import { IonMenuToggle, IonList } from '@ionic/react';
+import { AppList } from 'learn-card-base/ui/list';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -277,27 +278,27 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
         // Alerts opens a modal (web) or routes to /notifications (native); in
         // neither case should it be marked as the active tab here — on web the
-        // visible page is unchanged, and on native the IonMenuToggle closes the
+        // visible page is unchanged, and on native the AppMenuToggle closes the
         // menu on tap anyway.
         const handleTabClick =
             linkPath === '/notifications' ? undefined : () => setActiveTab(linkPath);
 
         return (
-            <IonMenuToggle
+            <AppMenuToggle
                 key={link.id}
                 autoHide={false}
                 onClick={handleTabClick}
                 className="w-full flex items-center justify-center px-0 py-[3px]"
             >
                 {linkEl}
-            </IonMenuToggle>
+            </AppMenuToggle>
         );
     });
 
     return (
-        <IonList role="navigation" aria-label="Primary navigation" className="m-4 rounded-2xl py-3">
+        <AppList role="navigation" aria-label="Primary navigation" className="m-4 rounded-2xl py-3">
             {rootLinks}
-        </IonList>
+        </AppList>
     );
 };
 

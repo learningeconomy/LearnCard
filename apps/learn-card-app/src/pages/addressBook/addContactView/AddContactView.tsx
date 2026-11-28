@@ -15,7 +15,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonGrid } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { AddressBookContact } from '../addressBookHelpers';
@@ -295,18 +295,18 @@ export const AddContactView: React.FC<{
         if (isLoggedIn) {
             if (isIssuingBoost) {
                 actionButton = (
-                    <IonCol className="flex flex-col items-center justify-center px-4">
+                    <AppCol className="flex flex-col items-center justify-center px-4">
                         <button
                             onClick={e => handleAddBoostIssueTo(e, user?.profileId)}
                             className={`w-full flex items-center justify-center bg-${primaryColor} rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4`}
                         >
                             <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost
                         </button>
-                    </IonCol>
+                    </AppCol>
                 );
             } else {
                 actionButton = (
-                    <IonCol className="flex flex-col items-center justify-center px-4">
+                    <AppCol className="flex flex-col items-center justify-center px-4">
                         {!connectionRequested ? (
                             <button
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
@@ -324,7 +324,7 @@ export const AddContactView: React.FC<{
                                 Pending request
                             </button>
                         )}
-                    </IonCol>
+                    </AppCol>
                 );
             }
         }
@@ -345,7 +345,7 @@ export const AddContactView: React.FC<{
         }
     } else if (mode === AddContactViewMode.acceptInvite) {
         actionButton = (
-            <IonCol className="flex flex-col items-center justify-center px-4">
+            <AppCol className="flex flex-col items-center justify-center px-4">
                 {!connectionRequested && (
                     <button
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
@@ -356,7 +356,7 @@ export const AddContactView: React.FC<{
                             : m['common.connect']()}
                     </button>
                 )}
-            </IonCol>
+            </AppCol>
         );
         if (!isLoggedIn) {
             const redirectTo = `/invite?challenge=${challenge}&profileId=${user?.profileId}`;
@@ -374,7 +374,7 @@ export const AddContactView: React.FC<{
         }
     } else if (mode === AddContactViewMode.acceptConnectionRequest) {
         actionButton = (
-            <IonCol className="flex flex-col items-center justify-center px-4">
+            <AppCol className="flex flex-col items-center justify-center px-4">
                 {!connectionRequested ? (
                     <button
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
@@ -390,7 +390,7 @@ export const AddContactView: React.FC<{
                         Connected
                     </button>
                 )}
-            </IonCol>
+            </AppCol>
         );
     }
 
@@ -428,11 +428,11 @@ export const AddContactView: React.FC<{
     }
 
     return (
-        // <IonGrid className="flex flex-col items-center justify-center py-5 px-5">
-        <IonGrid className="relative flex flex-col items-center justify-center h-full w-full">
-            <IonRow className={`max-w-[375px] py-[75px] ${customContainerClass}`}>
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol
+        // <AppGrid className="flex flex-col items-center justify-center py-5 px-5">
+        <AppGrid className="relative flex flex-col items-center justify-center h-full w-full">
+            <AppRow className={`max-w-[375px] py-[75px] ${customContainerClass}`}>
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol
                         className={`w-full flex items-center justify-center ${
                             mode === AddContactViewMode?.acceptConnectionRequest
                                 ? 'flex-row-reverse'
@@ -460,23 +460,23 @@ export const AddContactView: React.FC<{
                             customSize={120}
                             user={user}
                         />
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol className="w-full flex items-center justify-center">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol className="w-full flex items-center justify-center">
                         {promptText}
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center w-full mt-8">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center w-full mt-8">
                     {actionButton}
-                </IonRow>
+                </AppRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
                         {isLoggedIn ? m['common.cancel']() : m['contacts.returnHome']()}
                     </button>
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

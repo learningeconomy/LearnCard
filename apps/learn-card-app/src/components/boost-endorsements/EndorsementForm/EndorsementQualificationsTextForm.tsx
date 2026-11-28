@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 import { VC } from '@learncard/types';
 import { CredentialCategoryEnum, useGetVCInfo } from 'learn-card-base';
@@ -29,10 +29,10 @@ export const EndorsementQualificationsTextForm: React.FC<{
             <p className="text-[17px] text-grayscale-900 text-left">
                 {m['endorsement.form.qualifications.title']()}
             </p>
-            <IonTextarea
+            <AppTextarea
                 autocapitalize="on"
                 value={endorsement?.qualification}
-                onIonInput={e => handleStateChange('qualification', e.detail.value)}
+                onValueInput={value => handleStateChange('qualification', value)}
                 placeholder={m['endorsement.form.qualifications.placeholder']()}
                 className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mt-2
                     ${errors?.qualification ? 'border-red-300 border-2' : ''}

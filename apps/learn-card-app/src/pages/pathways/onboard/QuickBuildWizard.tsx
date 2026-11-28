@@ -22,7 +22,7 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     arrowBackOutline,
@@ -35,7 +35,7 @@ import {
     searchOutline,
     sparklesOutline,
     trashOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { AnimatePresence } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -333,7 +333,7 @@ const WizardHeader: React.FC<{
                        text-grayscale-600 hover:text-grayscale-900 hover:bg-grayscale-10
                        transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-            <IonIcon icon={arrowBackOutline} className="text-xl" aria-hidden />
+            <AppIcon icon={arrowBackOutline} className="text-xl" aria-hidden />
         </button>
 
         <div className="flex-1 min-w-0">
@@ -479,7 +479,7 @@ const StepsStage: React.FC<{
                            transition-colors flex items-center justify-center gap-2
                            disabled:opacity-40 disabled:cursor-not-allowed"
             >
-                <IonIcon icon={addOutline} className="text-base" aria-hidden />
+                <AppIcon icon={addOutline} className="text-base" aria-hidden />
                 Add a step
             </button>
 
@@ -492,7 +492,7 @@ const StepsStage: React.FC<{
                            transition-colors flex items-center justify-center gap-2
                            disabled:opacity-40 disabled:cursor-not-allowed"
             >
-                <IonIcon icon={libraryOutline} className="text-base" aria-hidden />
+                <AppIcon icon={libraryOutline} className="text-base" aria-hidden />
                 Add a pathway
             </button>
         </div>
@@ -513,7 +513,7 @@ const StepsStage: React.FC<{
                     </>
                 ) : (
                     <>
-                        <IonIcon icon={sparklesOutline} className="text-base" aria-hidden />
+                        <AppIcon icon={sparklesOutline} className="text-base" aria-hidden />
                         Create journey
                     </>
                 )}
@@ -558,7 +558,7 @@ const NestedStepCard: React.FC<{
                 />
 
                 <p className="text-[11px] text-emerald-700 flex items-center gap-1.5">
-                    <IonIcon icon={layersOutline} aria-hidden />
+                    <AppIcon icon={layersOutline} aria-hidden />
                     {step.nested?.nodeCount ?? 0} steps · Credential Engine pathway
                 </p>
             </div>
@@ -573,7 +573,7 @@ const NestedStepCard: React.FC<{
                            disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent
                            disabled:hover:text-grayscale-400"
             >
-                <IonIcon icon={trashOutline} className="text-base" aria-hidden />
+                <AppIcon icon={trashOutline} className="text-base" aria-hidden />
             </button>
         </div>
     </div>
@@ -662,7 +662,7 @@ const StepCard: React.FC<{
                                disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent
                                disabled:hover:text-grayscale-400"
                 >
-                    <IonIcon icon={trashOutline} className="text-base" aria-hidden />
+                    <AppIcon icon={trashOutline} className="text-base" aria-hidden />
                 </button>
             </div>
 
@@ -682,7 +682,7 @@ const StepCard: React.FC<{
                             {attached.displayName}
                         </p>
                         <p className="text-[11px] text-emerald-600 flex items-center gap-1">
-                            <IonIcon icon={checkmarkOutline} aria-hidden />
+                            <AppIcon icon={checkmarkOutline} aria-hidden />
                             Linked app
                         </p>
                     </div>
@@ -694,13 +694,13 @@ const StepCard: React.FC<{
                         className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center
                                    text-grayscale-400 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors"
                     >
-                        <IonIcon icon={closeOutline} className="text-base" aria-hidden />
+                        <AppIcon icon={closeOutline} className="text-base" aria-hidden />
                     </button>
                 </div>
             ) : pickerOpen ? (
                 <div className="pl-8 space-y-v3-2">
                     <div className="relative">
-                        <IonIcon
+                        <AppIcon
                             icon={searchOutline}
                             aria-hidden
                             className="absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-400 text-base"
@@ -779,7 +779,7 @@ const StepCard: React.FC<{
                         className="inline-flex items-center gap-1.5 text-xs font-medium
                                    text-grayscale-500 hover:text-grayscale-900 transition-colors"
                     >
-                        <IonIcon icon={linkOutline} className="text-sm" aria-hidden />
+                        <AppIcon icon={linkOutline} className="text-sm" aria-hidden />
                         Link an app (optional)
                     </button>
                 </div>
@@ -841,7 +841,7 @@ const CompletionControl: React.FC<{
     if (completion) {
         return (
             <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
-                <IonIcon
+                <AppIcon
                     icon={ribbonOutline}
                     className="text-emerald-600 text-base shrink-0"
                     aria-hidden
@@ -861,7 +861,7 @@ const CompletionControl: React.FC<{
                     className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center
                                text-grayscale-400 hover:text-grayscale-900 hover:bg-white transition-colors"
                 >
-                    <IonIcon icon={closeOutline} className="text-base" aria-hidden />
+                    <AppIcon icon={closeOutline} className="text-base" aria-hidden />
                 </button>
             </div>
         );
@@ -875,7 +875,7 @@ const CompletionControl: React.FC<{
                 className="inline-flex items-center gap-1.5 text-xs font-medium
                            text-grayscale-500 hover:text-grayscale-900 transition-colors"
             >
-                <IonIcon icon={ribbonOutline} className="text-sm" aria-hidden />
+                <AppIcon icon={ribbonOutline} className="text-sm" aria-hidden />
                 Auto-complete when a credential is earned
             </button>
         );
@@ -907,7 +907,7 @@ const CompletionControl: React.FC<{
                                            bg-emerald-50 border border-emerald-200 text-emerald-800
                                            text-xs font-medium hover:bg-emerald-100 transition-colors"
                             >
-                                <IonIcon icon={ribbonOutline} className="text-sm" aria-hidden />
+                                <AppIcon icon={ribbonOutline} className="text-sm" aria-hidden />
                                 {b.templateAlias || 'App credential'}
                             </button>
                         ))}
@@ -921,7 +921,7 @@ const CompletionControl: React.FC<{
                 </p>
 
                 <div className="relative">
-                    <IonIcon
+                    <AppIcon
                         icon={searchOutline}
                         aria-hidden
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-400 text-base"
@@ -957,7 +957,7 @@ const CompletionControl: React.FC<{
                                     onClick={() => pickBoost(b.uri, b.name || 'Credential')}
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-grayscale-10 transition-colors"
                                 >
-                                    <IonIcon
+                                    <AppIcon
                                         icon={ribbonOutline}
                                         className="shrink-0 text-grayscale-400 text-base"
                                         aria-hidden

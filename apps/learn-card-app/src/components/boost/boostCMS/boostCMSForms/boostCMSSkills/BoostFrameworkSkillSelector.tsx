@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BoostCMSState, SkillFrameworkNode } from '../../../boost';
 import { useModal, ModalTypes, useGetBoostsThatUseFramework } from 'learn-card-base';
@@ -79,8 +79,8 @@ export const BoostFrameworkSkillSelector: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="text-grayscale-900 text-xl p-0 m-0 font-notoSans flex items-center gap-[5px]">
                     <PuzzlePiece className="w-6 h-6" version="filled" />
                     Skills
@@ -94,7 +94,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
                 >
                     <Plus className="w-[30px] h-[30px]" />
                 </button>
-            </IonCol>
+            </AppCol>
 
             {selectedSkills.map((skill, index) => (
                 <BoostCMSSkillDisplay
@@ -103,7 +103,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
                     handleRemoveSkill={handleRemoveSkill}
                 />
             ))}
-        </IonRow>
+        </AppRow>
     );
 };
 

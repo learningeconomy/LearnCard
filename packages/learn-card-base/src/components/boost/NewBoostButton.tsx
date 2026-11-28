@@ -1,7 +1,6 @@
 import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 
-import { IonCol, IonRow } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 
 import {
@@ -12,6 +11,7 @@ import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'le
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 import type { TenantBrandingConfig } from '../../config/tenantConfig';
 import { getCategoryLabel, getCategoryColor } from '../../config/brandingHelpers';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 type NewBoostButtonProps = {
     credentialType: CredentialCategory;
@@ -70,7 +70,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
     if (viewMode === BoostPageViewMode.Card) {
         // if (isId) {
         //     return (
-        //         <IonRow className="flex items-center justify-center cursor-pointer mx-4 h-[200px] w-[355px] overflow-hidden">
+        //         <AppRow className="flex items-center justify-center cursor-pointer mx-4 h-[200px] w-[355px] overflow-hidden">
         //             <button
         //                 onClick={onClick}
         //                 className="bg-blue-400 rounded-[15px] px-[6px] h-full w-full flex flex-col gap-[10px] items-center justify-center"
@@ -86,11 +86,11 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
         //                     <span>{typeName}</span>
         //                 </div>
         //             </button>
-        //         </IonRow>
+        //         </AppRow>
         //     );
         // }
         return (
-            <IonCol
+            <AppCol
                 size="6"
                 size-sm={4}
                 size-md={4}
@@ -113,12 +113,12 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
                         <span>{typeName}</span>
                     </div>
                 </button>
-            </IonCol>
+            </AppCol>
         );
     } else {
         // List View
         return (
-            <IonRow
+            <AppRow
                 className={`rounded-[15px] w-full flex gap-[10px] items-center w-full z-[2] ${
                     isId ? 'px-[8px] py-[17px]' : 'p-[8px]'
                 }`}
@@ -132,7 +132,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
                     <Plus className="h-[20px] w-[20px]" />
                 </div>
                 <span className="text-[17px] text-white">New {typeName}</span>
-            </IonRow>
+            </AppRow>
         );
     }
 };

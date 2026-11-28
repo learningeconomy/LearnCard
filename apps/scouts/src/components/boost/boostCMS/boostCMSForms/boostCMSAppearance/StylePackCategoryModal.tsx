@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonCol, IonRow } from '@ionic/react';
 import * as m from '../../../../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -10,6 +9,7 @@ import { StylePackCategories } from './BoostCMSAppearanceBadgeList';
 import { SetState } from '@learncard/helpers';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export interface StylePackCategoryModalProps {
     activeStylePackCategory: StylePackCategories;

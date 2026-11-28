@@ -1,6 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { getLogger, useModal, ModalTypes, QRCodeScannerStore } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -13,6 +12,8 @@ import CheckListUploadRawVC from '../learncard/checklist/checklist-steps/CheckLi
 import useBuildMyLearnCardModal from '../../pages/dashboard/hooks/useBuildMyLearnCardModal';
 
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const log = getLogger('add-to-passport');
 
@@ -39,13 +40,13 @@ const importPasteOrUploadClaimModal = () =>
 const LazyPasteOrUploadClaimModal = lazy(importPasteOrUploadClaimModal);
 
 const PasteOrUploadClaimModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
+    <AppPage>
+        <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
-        </IonContent>
-    </IonPage>
+        </AppContent>
+    </AppPage>
 );
 
 export const AddToPassportMenu: React.FC<{ className?: string }> = ({ className }) => {

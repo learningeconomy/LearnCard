@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
-import { IonIcon } from '@ionic/react';
-import { chevronForwardOutline, syncOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { chevronForwardOutline, syncOutline } from 'learn-card-base/icons/ionicons';
 
 import { ErrorBoundary } from '@sentry/react';
 import X from 'learn-card-base/svgs/X';
@@ -95,7 +95,7 @@ const GroupedConsentFlowCard: React.FC<GroupedConsentFlowCardProps> = ({ notific
                             />
                         </div>
                         <span className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-grayscale-100 border border-white">
-                            <IonIcon
+                            <AppIcon
                                 icon={syncOutline}
                                 className="text-grayscale-600 text-[12px]"
                             />
@@ -135,7 +135,7 @@ const GroupedConsentFlowCard: React.FC<GroupedConsentFlowCardProps> = ({ notific
                     >
                         <X className="text-grayscale-500 w-4 h-4" />
                     </button>
-                    <IonIcon
+                    <AppIcon
                         icon={chevronForwardOutline}
                         className="text-grayscale-400 text-[18px]"
                     />

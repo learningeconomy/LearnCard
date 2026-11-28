@@ -1,7 +1,6 @@
 import React from 'react';
 import { middleTruncate, useGetSkillPath } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 import TierIcon from './TierIcon';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
@@ -20,6 +19,7 @@ import {
     SkillFrameworkNode,
     SkillFrameworkNodeWithSearchInfo,
 } from '../../components/boost/boost';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type FrameworkSearchResultItemProps = {
     node: SkillFrameworkNode | SkillFrameworkNodeWithSearchInfo;
@@ -72,7 +72,7 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                     version="outlined"
                 />
                 {pathLoading && (
-                    <IonSpinner
+                    <AppSpinner
                         color="dark"
                         name="crescent"
                         className="h-[12px] w-[12px] ml-[5px]"

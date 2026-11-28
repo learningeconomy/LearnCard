@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, useHistory, Redirect } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -23,6 +22,7 @@ import ConsentFlowGuide from './useCases/ConsentFlowGuide';
 import VerifyCredentialsGuide from './useCases/VerifyCredentialsGuide';
 import ServerWebhooksGuide from './useCases/ServerWebhooksGuide';
 import CourseCatalogGuide from './useCases/CourseCatalogGuide';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 // Guide components that accept integration prop
 export interface GuideProps {
@@ -70,18 +70,18 @@ const GuidePage: React.FC = () => {
     // Show loader while waiting for integration to load (need to check if active)
     if (currentIntegrationId && isLoadingIntegrations) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title={m['developerPortal.guides.page.title']()} />
 
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="flex items-center justify-center min-h-[400px]">
                         <div className="text-center">
                             <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
                             <p className="text-sm text-gray-500 mt-3">{m['common.loading']()}</p>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -96,10 +96,10 @@ const GuidePage: React.FC = () => {
 
     if (!useCaseConfig || !GuideComponent) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title={m['developerPortal.guides.page.title']()} />
 
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-2xl mx-auto py-12 text-center">
                         <h1 className="text-2xl font-semibold text-gray-800 mb-2">
                             {m['developerPortal.guides.page.notFound.title']()}
@@ -116,32 +116,32 @@ const GuidePage: React.FC = () => {
                             {m['developerPortal.guides.page.backToGuides']()}
                         </button>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!currentIntegrationId) {
         if (isLoadingIntegrations) {
             return (
-                <IonPage>
+                <AppPage>
                     <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} />
-                    <IonContent className="ion-padding">
+                    <AppContent className="ion-padding">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <Loader2 className="w-8 h-8 text-grayscale-400 animate-spin" />
                         </div>
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         }
 
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <GuideProjectPicker guideType={useCaseId} integrations={integrations} />
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -171,10 +171,10 @@ const GuidePage: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} rightContent={headerContent} />
 
-            <IonContent className="ion-padding">
+            <AppContent className="ion-padding">
                 {submittedApp && (
                     <div className="max-w-3xl mx-auto mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3 font-poppins">
                         <p className="flex-1 text-sm text-emerald-800">
@@ -195,8 +195,8 @@ const GuidePage: React.FC = () => {
                     selectedIntegration={currentIntegration}
                     setSelectedIntegration={handleSetSelectedIntegration}
                 />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

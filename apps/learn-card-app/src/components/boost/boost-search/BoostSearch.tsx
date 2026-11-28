@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-    IonFooter,
-    IonSpinner,
-    useIonModal,
-    IonInput,
-} from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostAddressBookContactList from '../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactList';
@@ -30,6 +19,7 @@ import { useBrandingConfig } from 'learn-card-base';
 import Lottie from '../../lottie/LazyLottie';
 const Pulpo = '/lotties/cuteopulpo.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -108,13 +98,13 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             : connections?.length;
 
     return (
-        <IonPage className="bg-white">
-            <IonHeader className="learn-card-header ion-no-border my-[0px]">
-                <IonToolbar className="ion-no-border bg-white " color="white">
-                    <IonGrid className="bg-white">
-                        <IonRow className="w-full flex items-center justify-center pt-[20px]">
-                            <IonRow className="flex flex-col w-full max-w-[600px]">
-                                <IonCol className="flex flex-1 justify-start items-center">
+        <AppPage className="bg-white">
+            <AppHeader className="learn-card-header ion-no-border my-[0px]">
+                <AppToolbar className="ion-no-border bg-white " color="white">
+                    <AppGrid className="bg-white">
+                        <AppRow className="w-full flex items-center justify-center pt-[20px]">
+                            <AppRow className="flex flex-col w-full max-w-[600px]">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-grayscale-50 p-0 mr-[10px]"
                                         onClick={() => {
@@ -128,25 +118,25 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                     <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
                                         {contactCount ?? 0} Contacts
                                     </h3>
-                                </IonCol>
+                                </AppCol>
 
                                 <div className="flex items-center justify-start w-full">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         placeholder={`Search ${brandingConfig?.name} Network...`}
                                         value={search}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                                        onIonInput={e => handleSearch(e?.detail?.value ?? '')}
+                                        onValueInput={value => handleSearch(value)}
                                         debounce={500}
                                         type="text"
                                     />
                                 </div>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent>
                 {loading && !searchLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <div className="max-w-[150px]">
@@ -222,24 +212,24 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                             <strong>No search results</strong>
                         </section>
                     )}
-            </IonContent>
-            <IonFooter className="ion-no-border pb-[15px] bg-white" color="white">
-                <IonToolbar color="white" className="ion-no-border pt-5 bg-white">
-                    <IonRow className="w-full flex items-center justify-center">
+            </AppContent>
+            <AppFooter className="ion-no-border pb-[15px] bg-white">
+                <AppToolbar color="white" className="ion-no-border pt-5 bg-white">
+                    <AppRow className="w-full flex items-center justify-center">
                         <div className="w-full max-w-[600px] flex items-center justify-center px-4">
-                            <IonCol size="12" className="w-full flex items-center justify-between">
+                            <AppCol size="12" className="w-full flex items-center justify-between">
                                 <button
                                     onClick={handleSaveContacts}
                                     className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide text-center"
                                 >
                                     {buttonText}
                                 </button>
-                            </IonCol>
+                            </AppCol>
                         </div>
-                    </IonRow>
-                </IonToolbar>
-            </IonFooter>
-        </IonPage>
+                    </AppRow>
+                </AppToolbar>
+            </AppFooter>
+        </AppPage>
     );
 };
 

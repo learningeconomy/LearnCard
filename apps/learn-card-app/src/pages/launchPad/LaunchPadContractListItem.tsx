@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { IonItem, IonSkeletonText } from '@ionic/react';
+import { AppItem } from 'learn-card-base/ui/list';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -16,6 +16,7 @@ import useConsentFlow from '../consentFlow/useConsentFlow';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import * as m from '../../paraglide/messages.js';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 type LaunchPadContractListItemProps = {
     contract?: ConsentFlowContractDetails;
@@ -44,14 +45,14 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
     const hasImage = !!image;
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
             <div className="flex items-center justify-start w-full bg-white">
                 <div className="rounded-lg shadow-3xl w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
                     {isPending ? (
-                        <IonSkeletonText animated className="w-full h-full" />
+                        <AppSkeletonText animated className="w-full h-full" />
                     ) : (
                         <img
                             className={
@@ -68,8 +69,8 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                     <div className="flex flex-col items-start justify-center text-left w-full">
                         {isPending ? (
                             <>
-                                <IonSkeletonText animated className="w-36 h-[15px]" />
-                                <IonSkeletonText animated className="w-5/6 h-[12px]" />
+                                <AppSkeletonText animated className="w-36 h-[15px]" />
+                                <AppSkeletonText animated className="w-5/6 h-[12px]" />
                             </>
                         ) : (
                             <>
@@ -95,7 +96,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                     </div>
                 </div>
             </div>
-        </IonItem>
+        </AppItem>
     );
 };
 

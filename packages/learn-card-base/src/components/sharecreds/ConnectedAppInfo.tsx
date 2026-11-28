@@ -1,9 +1,9 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 import { useGetConnection } from 'learn-card-base/react-query/queries/queries';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ConnectedAppInfo: React.FC = () => {
     const { profileId } = useParams<{ profileId: string }>();
@@ -34,7 +34,7 @@ const ConnectedAppInfo: React.FC = () => {
                     </div>
                 </>
             )}
-            {appInfoLoading && <IonSpinner />}
+            {appInfoLoading && <AppSpinner />}
         </div>
     );
 };

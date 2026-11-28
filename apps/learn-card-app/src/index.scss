@@ -55,16 +55,18 @@ body.scanner-active > * {
     }
 }
 
+// On an AppContent: `> .app-content-background` / `> .app-content-scroll` were ion-content's
+// `::part(background)` / `::part(scroll)`.
 .fs-ion-content-fix {
     height: 100%;
     width: 100%;
     position: fixed;
 
-    &::part(background) {
+    & > .app-content-background {
         display: none;
     }
 
-    &::part(scroll) {
+    & > .app-content-scroll {
         position: fixed;
         top: 0;
         bottom: 0;

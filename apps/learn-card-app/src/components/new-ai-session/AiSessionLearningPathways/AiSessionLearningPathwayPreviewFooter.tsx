@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 
 import { useModal } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiSessionLearningPathwayPreviewFooter: React.FC<{
     handleStartAiSession?: () => void;
@@ -16,7 +16,7 @@ export const AiSessionLearningPathwayPreviewFooter: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -43,7 +43,7 @@ export const AiSessionLearningPathwayPreviewFooter: React.FC<{
                     </button>
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

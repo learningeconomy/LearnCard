@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { lockClosedOutline, alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { lockClosedOutline, alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { VC } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { useWallet } from 'learn-card-base';
@@ -95,7 +95,7 @@ const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
             <ClaimsBoxShell>
                 <ClaimsBoxHeader />
                 <div className="w-full flex items-start gap-2.5 p-3 bg-grayscale-10 rounded-2xl">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-grayscale-400 text-lg mt-0.5 shrink-0"
                     />
@@ -170,7 +170,7 @@ const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
 
             {hasBinding && (
                 <div className="w-full flex items-center gap-2 mt-1 pt-3 border-t border-grayscale-100">
-                    <IonIcon
+                    <AppIcon
                         icon={lockClosedOutline}
                         className={`text-base ${
                             isBoundToDevice ? 'text-emerald-600' : 'text-grayscale-400'

@@ -2,7 +2,7 @@ import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ProfilePicture } from 'learn-card-base';
 import Sparkles from '../../../../assets/images/purple-sparkles.gif';
 
@@ -63,7 +63,7 @@ export const ChecklistLoader: React.FC<{
                         customImageClass="w-full h-full object-cover"
                     />
                     <img src={Sparkles} className="absolute h-[182px] w-[182px] z-20" />
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         style={{ color: '#6366F1' }}
                         className="z-[100] absolute h-[94px] w-[94px]"

@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ListingStatusBanner } from './ListingStatusBanner';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
-
 const renderBanner = (
     mode: React.ComponentProps<typeof ListingStatusBanner>['mode'],
     hasPendingChanges = false

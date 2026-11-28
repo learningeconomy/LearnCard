@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppPreviewPane } from './AppPreviewPane';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('../../launchPad/EmbedIframeModal', () => ({
     EmbedIframeModal: ({ embedUrl }: { embedUrl: string }) => <div>Running {embedUrl}</div>,
 }));

@@ -10,7 +10,6 @@ import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import ViewTroopIdModal from '../../../pages/troop/ViewTroopIdModal';
 
-import { useIonAlert } from '@ionic/react';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import {
@@ -33,6 +32,7 @@ import {
 
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NotificationTypeStyles, CATEGORY_TO_NOTIFICATION_ENUM } from './types';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -95,7 +95,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const notificationCategoryFromCredCategory =
         credCategory && CATEGORY_TO_NOTIFICATION_ENUM[credCategory];
 
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const handleReadStatus = async () => {
         setIsRead(true);

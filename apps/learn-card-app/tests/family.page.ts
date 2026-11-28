@@ -39,11 +39,11 @@ export class FamilyCMSPage {
         motto = FAMILY.motto,
         children = [],
     }: // guardians = [],
-        {
-            motto?: string;
-            children?: { name: string; tagline: string }[];
-            // guardians?: {name: string; tagline: string}[];
-        }) {
+    {
+        motto?: string;
+        children?: { name: string; tagline: string }[];
+        // guardians?: {name: string; tagline: string}[];
+    }) {
         await this.page.getByRole('textbox', { name: 'motto' }).fill(motto);
 
         for (const child of children) {
@@ -82,8 +82,8 @@ export class FamilyCMSPage {
         await expect(this.page.getByText('Child Account')).toBeVisible();
         await expect(this.page.getByText('Child in Demo Family')).toBeVisible(); // Update to use dynamic name when needed
 
-        await expect(this.page.locator('ion-input').filter({ hasText: 'Name' })).toBeVisible();
-        await expect(this.page.locator('ion-input').filter({ hasText: 'Tagline' })).toBeVisible();
+        await expect(this.page.locator('.app-input').filter({ hasText: 'Name' })).toBeVisible();
+        await expect(this.page.locator('.app-input').filter({ hasText: 'Tagline' })).toBeVisible();
 
         await expect(this.page.getByRole('button', { name: 'Edit LearnCard' })).toBeVisible();
         await expect(

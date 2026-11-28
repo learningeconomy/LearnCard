@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     alertCircleOutline,
@@ -8,19 +8,20 @@ import {
     shareSocialOutline,
     shieldCheckmarkOutline,
     schoolOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { SchoolConnection } from '@learncard/lca-api-plugin';
 
 import SchoolConnectTileIcon from '../myApps/icons/SchoolConnectTileIcon';
 import classlinkLogo from 'learn-card-base/assets/images/classlink-logo.png';
 import * as m from '../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ErrorBanner: React.FC<{ message: string }> = ({ message }) => (
     <div
         role="alert"
         className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
     >
-        <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+        <AppIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
         <span className="text-sm text-red-700 leading-relaxed">{message}</span>
     </div>
 );
@@ -54,7 +55,7 @@ const PrivacyRow: React.FC<{ icon: string; title: string; body: string }> = ({
 }) => (
     <div className="flex items-start gap-3 p-4">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-600">
-            <IonIcon icon={icon} className="text-lg" aria-hidden="true" />
+            <AppIcon icon={icon} className="text-lg" aria-hidden="true" />
         </span>
         <div className="min-w-0">
             <p className="text-sm font-medium text-grayscale-900">{title}</p>
@@ -102,7 +103,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
     if (isLoading) {
         return (
             <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-                <IonSpinner name="crescent" className="h-8 w-8" />
+                <AppSpinner name="crescent" className="h-8 w-8" />
             </div>
         );
     }
@@ -128,7 +129,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                 <PageHeader />
                 <div className="rounded-[20px] bg-white border border-grayscale-200 shadow-sm p-8 text-center">
                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-500">
-                        <IonIcon icon={schoolOutline} className="text-2xl" aria-hidden="true" />
+                        <AppIcon icon={schoolOutline} className="text-2xl" aria-hidden="true" />
                     </div>
                     <h2 className="text-lg font-semibold text-grayscale-900 mb-1">
                         {m['schoolConnect.notAvailableTitle']()}
@@ -181,7 +182,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                             >
                                 {connecting ? (
                                     <span className="flex items-center gap-1.5">
-                                        <IonSpinner name="crescent" className="h-3 w-3" />
+                                        <AppSpinner name="crescent" className="h-3 w-3" />
                                         {m['schoolConnect.connecting']()}
                                     </span>
                                 ) : (
@@ -194,7 +195,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                                 aria-hidden="true"
                                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-dashed border-grayscale-300 text-grayscale-400"
                             >
-                                <IonIcon icon={addOutline} className="text-xl" />
+                                <AppIcon icon={addOutline} className="text-xl" />
                             </div>
                             <p className="text-sm text-grayscale-500">
                                 {m['schoolConnect.moreSchools']()}
@@ -256,7 +257,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" className="h-4 w-4" />
+                                    <AppSpinner name="crescent" className="h-4 w-4" />
                                     {m['schoolConnect.connecting']()}
                                 </span>
                             ) : (
@@ -299,7 +300,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
             <div className="mb-10 space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                        <IonIcon icon={documentTextOutline} className="text-xl" />
+                        <AppIcon icon={documentTextOutline} className="text-xl" />
                     </div>
                     <div>
                         <p className="text-sm font-medium text-grayscale-900">
@@ -309,7 +310,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                        <IonIcon icon={shareSocialOutline} className="text-xl" />
+                        <AppIcon icon={shareSocialOutline} className="text-xl" />
                     </div>
                     <div>
                         <p className="text-sm font-medium text-grayscale-900">
@@ -319,7 +320,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                        <IonIcon icon={shieldCheckmarkOutline} className="text-xl" />
+                        <AppIcon icon={shieldCheckmarkOutline} className="text-xl" />
                     </div>
                     <div>
                         <p className="text-sm font-medium text-grayscale-900">
@@ -344,7 +345,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" className="h-4 w-4" />
+                                    <AppSpinner name="crescent" className="h-4 w-4" />
                                     {m['schoolConnect.connecting']()}
                                 </span>
                             ) : (

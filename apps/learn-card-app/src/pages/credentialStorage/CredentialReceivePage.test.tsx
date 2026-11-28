@@ -28,11 +28,6 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
 vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
     default: () => <div>Full credential details</div>,
 }));
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonIcon: () => null,
-}));
 vi.mock('../../paraglide/messages.js', () => ({
     'chapi.receive.title': () => 'Add to Passport',
     'chapi.receive.description': () => 'Review the credentials',

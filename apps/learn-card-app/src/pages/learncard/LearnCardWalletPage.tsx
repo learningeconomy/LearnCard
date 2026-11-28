@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { IonContent, IonPage, IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import {
     LearnCard,
@@ -11,28 +11,29 @@ import {
 
 import UserF from '../../assets/images/f-user.png';
 import MainHeader from '../../components/main-header/MainHeader';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const LearnCardWalletPage: React.FC = () => {
     const [isActivityHeaderFixed, setIsActivityHeaderFixed] = useState<boolean>(false);
-    const activityContainer = useRef<HTMLIonRowElement>(null);
+    const activityContainer = useRef<HTMLDivElement>(null);
 
     const activityHeader = (
-        <IonRow className="w-full flex items-center justify-center">
-            <IonCol className="flex items-center justify-between w-full z-10 max-w-[500px]">
+        <AppRow className="w-full flex items-center justify-center">
+            <AppCol className="flex items-center justify-between w-full z-10 max-w-[500px]">
                 <h2 className="text-grayscale-900 font-bold text-lg">Recent Activity</h2>
                 <button className="text-grayscale-900 font-bold text-lg">
                     {m['common.viewAll']()}
                 </button>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader customClassName="bg-white">
                 {isActivityHeaderFixed && activityHeader}
             </MainHeader>
-            <IonContent
+            <AppContent
                 fullscreen
                 scrollEvents={true}
                 onIonScroll={event => {
@@ -46,14 +47,14 @@ const LearnCardWalletPage: React.FC = () => {
                         setIsActivityHeaderFixed(false);
                     }
                 }}
-                class="learn-card-card-content"
+                className="learn-card-card-content"
                 color="cyan-100"
             >
                 <LearnCard userImage={UserF} />
                 {activityHeader}
                 <LearnCardActivityList ref={activityContainer} />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

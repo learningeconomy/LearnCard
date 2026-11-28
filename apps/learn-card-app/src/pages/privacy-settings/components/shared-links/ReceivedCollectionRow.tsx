@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { bookmarkOutline, chevronForward } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { bookmarkOutline, chevronForward } from 'learn-card-base/icons/ionicons';
 import { useGetProfile } from 'learn-card-base';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
@@ -38,7 +38,7 @@ const SenderAvatar: React.FC<{ collection: SavedCredentialCollection }> = ({ col
             aria-hidden="true"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-600"
         >
-            <IonIcon icon={bookmarkOutline} />
+            <AppIcon icon={bookmarkOutline} />
         </span>
     );
 };
@@ -80,7 +80,7 @@ const ReceivedCollectionRow: React.FC<{
                     </span>
                 </span>
             </span>
-            <IonIcon
+            <AppIcon
                 icon={chevronForward}
                 aria-hidden="true"
                 className="me-2 shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 group-hover:rtl:-translate-x-0.5"

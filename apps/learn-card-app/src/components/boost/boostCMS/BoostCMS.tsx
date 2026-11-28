@@ -8,7 +8,7 @@ import {
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import {
     BoostAddressBookEditMode,
@@ -133,6 +133,7 @@ interface BoostCMSProps {
 }
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<BoostCMSProps> = ({
@@ -1093,7 +1094,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {(isLoading ||
                 isSaveLoading ||
                 isPublishLoading ||
@@ -1113,21 +1114,21 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 issueToLength={issueToLength}
             />
 
-            <IonContent fullscreen color="grayscale-800">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4">
+            <AppContent fullscreen color="grayscale-800">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
-                </IonGrid>
+                </AppGrid>
                 {currentStep !== BoostCMSStepsEnum.confirmation && (
-                    <IonRow className="w-full flex items-center justify-center pb-[200px]">
-                        <IonCol className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center pb-[200px]">
+                        <AppCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
                                 {m['boost.cms.quit']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

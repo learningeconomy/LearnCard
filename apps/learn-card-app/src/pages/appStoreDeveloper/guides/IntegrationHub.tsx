@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useHistory, Redirect } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 import {
     Award,
     Layout,
@@ -52,6 +51,7 @@ interface UseCaseCardProps {
 }
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('integration-hub');
 
 const UseCaseCard: React.FC<UseCaseCardProps> = ({
@@ -195,13 +195,13 @@ const IntegrationHub: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader
                 title={m['developerPortal.guides.page.title']()}
                 rightContent={integrationSelector}
             />
 
-            <IonContent className="ion-padding">
+            <AppContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
                     {/* Setup prompt when no integrations exist */}
                     {showSetupPrompt && (
@@ -492,8 +492,8 @@ const IntegrationHub: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

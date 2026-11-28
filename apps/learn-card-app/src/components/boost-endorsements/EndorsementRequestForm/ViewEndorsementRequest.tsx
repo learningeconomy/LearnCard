@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-endorsement-request');
 
-import { useIonAlert } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import EndorsementFormHeader from '../EndorsementForm/EndorsementFormHeader';
 import EndorsementReviewFooter from '../EndorsementsList/EndorsementReviewFooter';
 import EndorsementFullView from '../EndorsementsList/EndorsementFullView';
@@ -39,7 +39,7 @@ const ViewEndorsementRequest: React.FC<{
     const seed = sharedLink?.seed;
     const pin = sharedLink?.pin;
 
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');

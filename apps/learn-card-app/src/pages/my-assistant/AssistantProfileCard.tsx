@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { createOutline, hardwareChipOutline, pencilOutline, settingsOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    createOutline,
+    hardwareChipOutline,
+    pencilOutline,
+    settingsOutline,
+} from 'learn-card-base/icons/ionicons';
 
 import AssistantAvatar from './AssistantAvatar';
 import type { LearnCardAssistantProfile } from './learnCardAssistant.api';
@@ -228,7 +233,7 @@ export const AssistantProfileCard: React.FC<{
                                     className="shrink-0 p-2 rounded-full text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     aria-label="Edit assistant profile"
                                 >
-                                    <IonIcon icon={pencilOutline} className="text-base" />
+                                    <AppIcon icon={pencilOutline} className="text-base" />
                                 </button>
                             </div>
 
@@ -253,7 +258,7 @@ export const AssistantProfileCard: React.FC<{
                                 disabled={disabled}
                                 className="flex items-center justify-center gap-2 py-4 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-800 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <IonIcon icon={hardwareChipOutline} className="text-xl" />
+                                <AppIcon icon={hardwareChipOutline} className="text-xl" />
                                 Memories
                             </button>
 
@@ -262,7 +267,7 @@ export const AssistantProfileCard: React.FC<{
                                 onClick={onOpenChat}
                                 className="flex items-center justify-center gap-2 py-4 px-4 rounded-[20px] bg-grayscale-900 text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <IonIcon icon={createOutline} className="text-xl" />
+                                <AppIcon icon={createOutline} className="text-xl" />
                                 Chat
                             </button>
 
@@ -279,7 +284,7 @@ export const AssistantProfileCard: React.FC<{
                                     </>
                                 ) : (
                                     <>
-                                        <IonIcon icon={settingsOutline} className="text-xl" />
+                                        <AppIcon icon={settingsOutline} className="text-xl" />
                                         Consent Flow
                                     </>
                                 )}

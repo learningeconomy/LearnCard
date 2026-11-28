@@ -13,8 +13,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { informationCircleOutline, trophyOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { informationCircleOutline, trophyOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Termination } from '../../types';
 
@@ -25,7 +25,7 @@ const PathwayCompletedEditor: React.FC<{
     onChange: (next: Termination) => void;
 }> = () => (
     <div className="flex items-start gap-2.5 p-3 rounded-xl bg-grayscale-10 border border-grayscale-200">
-        <IonIcon
+        <AppIcon
             icon={informationCircleOutline}
             aria-hidden
             className="text-grayscale-500 text-base mt-0.5 shrink-0"

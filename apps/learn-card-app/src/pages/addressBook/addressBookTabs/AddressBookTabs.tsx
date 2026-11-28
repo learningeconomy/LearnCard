@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import Search from 'learn-card-base/svgs/Search';
 import X from 'learn-card-base/svgs/X';
@@ -43,8 +43,8 @@ const AddressBookTabs: React.FC<{
     return (
         <>
             {search?.length === 0 && (
-                <IonRow class="w-full max-w-[600px] px-3 pt-[10px]">
-                    <IonCol className="flex w-full items-center justify-start">
+                <AppRow className="w-full max-w-[600px] px-3 pt-[10px]">
+                    <AppCol className="flex w-full items-center justify-start">
                         <button
                             onClick={() => {
                                 setActiveTab(AddressBookTabsEnum.Connections);
@@ -85,11 +85,11 @@ const AddressBookTabs: React.FC<{
                                 {blockedCount ?? 0} {m['contacts.blockedContacts']()}
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             )}
-            <IonRow className="w-full max-w-[600px] p-2">
-                <IonCol className="p-0">
+            <AppRow className="w-full max-w-[600px] p-2">
+                <AppCol className="p-0">
                     <div className="relative w-full">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-5 h-5 text-grayscale-400 pointer-events-none" />
                         <input
@@ -112,8 +112,8 @@ const AddressBookTabs: React.FC<{
                             </button>
                         )}
                     </div>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </>
     );
 };

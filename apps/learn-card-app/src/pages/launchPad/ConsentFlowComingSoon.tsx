@@ -2,7 +2,7 @@ import React from 'react';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
 
-import { IonCol, IonRow, IonSkeletonText } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 
@@ -10,6 +10,7 @@ import { useContract, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export type ConsentFlowWriteAccessType = {
     [BoostCategoryOptionsEnum.socialBadge]: boolean;
@@ -65,7 +66,7 @@ const ConsentFlowComingSoon: React.FC<ConsentFlowComingSoonProps> = ({
                             className="h-full w-full m-0"
                         />
                     ) : (
-                        <IonSkeletonText animated className="h-full w-full m-0" />
+                        <AppSkeletonText animated className="h-full w-full m-0" />
                     )}
                 </div>
                 {contract?.contract ? (
@@ -73,7 +74,7 @@ const ConsentFlowComingSoon: React.FC<ConsentFlowComingSoonProps> = ({
                         {contract?.name}
                     </h3>
                 ) : (
-                    <IonSkeletonText animated className="mt-2 w-64" />
+                    <AppSkeletonText animated className="mt-2 w-64" />
                 )}
                 {contract?.contract ? (
                     <>
@@ -88,8 +89,8 @@ const ConsentFlowComingSoon: React.FC<ConsentFlowComingSoonProps> = ({
                     </>
                 ) : (
                     <>
-                        <IonSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
-                        <IonSkeletonText animated className="w-[calc(100%-32px)]" />
+                        <AppSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
+                        <AppSkeletonText animated className="w-[calc(100%-32px)]" />
                     </>
                 )}
             </div>
@@ -135,16 +136,16 @@ const ConsentFlowComingSoon: React.FC<ConsentFlowComingSoonProps> = ({
                 <div className="bg-grayscale-200 w-[90%] h-[1px]" />
             </div>
 
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal text-grayscale-600">
                         All connections are{' '}
                         <b>
                             <u>encrypted.</u>
                         </b>
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </section>
     );
 };

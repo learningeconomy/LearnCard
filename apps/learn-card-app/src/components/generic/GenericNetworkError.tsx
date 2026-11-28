@@ -1,5 +1,5 @@
-import { IonFooter } from '@ionic/react';
 import NetworkErrorIcon from 'learn-card-base/svgs/NetworkErrorIcon';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const GenericNetworkError: React.FC<{
     text: string;
@@ -18,7 +18,7 @@ const GenericNetworkError: React.FC<{
                 </p>
             </div>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
@@ -39,7 +39,7 @@ const GenericNetworkError: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

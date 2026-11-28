@@ -1,12 +1,12 @@
 import * as m from '../../paraglide/messages.js';
 import React from 'react';
 
-import { IonFooter, IonToolbar, useIonModal } from '@ionic/react';
 import X from '../svgs/X';
 import LearnCardIDPreview from './LearnCardIDPreview';
 
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const LearnCardIDCMSFooter: React.FC<{
     user: FamilyChildAccount;
@@ -19,14 +19,14 @@ export const LearnCardIDCMSFooter: React.FC<{
     const actionButtonColor = 'bg-grayscale-900';
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
             style={{
                 paddingBottom: 'var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px))',
             }}
         >
-            <IonToolbar color="transparent" mode="ios">
+            <AppToolbar color="transparent" mode="ios">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                         <button
@@ -62,8 +62,8 @@ export const LearnCardIDCMSFooter: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

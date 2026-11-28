@@ -3,7 +3,7 @@
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    
+
     @media (min-width: 768px) {
         max-width: 768px;
         margin: 0 auto;
@@ -161,19 +161,19 @@
 
 // boost earned / managed tabs
 
-.fix-ripple ion-segment-button {
+.fix-ripple div:where(.app-segment-button) {
     --border-radius: 100px;
     --indicator-transition: none;
 
     overflow: hidden;
 }
 
-ion-segment {
+div:where(.app-segment) {
     min-height: fit-content;
     max-height: fit-content;
 }
 
-ion-segment-button {
+div:where(.app-segment-button) {
     min-width: auto;
     min-height: auto;
     display: flex;

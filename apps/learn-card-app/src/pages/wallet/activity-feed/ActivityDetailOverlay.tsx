@@ -1,8 +1,8 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { formatLocaleDate } from '../../../i18n/formatters';
 import { useHistory } from 'react-router-dom';
-import { IonIcon } from '@ionic/react';
-import { closeOutline, arrowForwardOutline, calendarOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { closeOutline, arrowForwardOutline, calendarOutline } from 'learn-card-base/icons/ionicons';
 import { UserProfilePicture } from 'learn-card-base';
 import { CATEGORY_TO_ROUTE } from '../../../helpers/categoryRoutes';
 import { ActivityCredentialIcon } from './ActivityCredentialIcon';
@@ -151,7 +151,7 @@ export const ActivityDetailOverlay: React.FC<{
                     aria-label={m['common.close']()}
                     className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                    <IonIcon icon={closeOutline} className="text-xl" />
+                    <AppIcon icon={closeOutline} className="text-xl" />
                 </button>
 
                 <div className="p-8 pb-6 flex flex-col items-center">
@@ -167,7 +167,7 @@ export const ActivityDetailOverlay: React.FC<{
                         ) : (
                             <>
                                 {leadNode}
-                                <IonIcon
+                                <AppIcon
                                     icon={arrowForwardOutline}
                                     className="text-2xl text-grayscale-300"
                                 />
@@ -208,7 +208,7 @@ export const ActivityDetailOverlay: React.FC<{
                             {m['passport.activity.date']()}
                         </span>
                         <span className="text-sm text-grayscale-900 font-medium text-right flex items-center gap-1.5 justify-end">
-                            <IonIcon
+                            <AppIcon
                                 icon={calendarOutline}
                                 className="text-grayscale-600 text-sm"
                             />

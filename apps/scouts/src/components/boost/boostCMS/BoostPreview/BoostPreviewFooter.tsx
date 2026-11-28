@@ -1,14 +1,14 @@
 import React from 'react';
 
-import { IonSpinner } from '@ionic/react';
-
 import { boostCategoryOptions } from '../../boost-options/boostOptions';
 import * as m from '../../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const BoostPreviewFooter: React.FC<{
     selectedVCType: string;
     showSaveAndQuitButton?: boolean;
     isSaveLoading?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
     handleSaveAndQuit?: (goBack?: boolean) => {};
     showIssueButton?: boolean;
     handleSubmit?: () => void;
@@ -36,7 +36,7 @@ export const BoostPreviewFooter: React.FC<{
                 >
                     {isSaveLoading ? (
                         <>
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 ">{m['common.saving']()}</p>
                         </>
                     ) : (
@@ -59,7 +59,7 @@ export const BoostPreviewFooter: React.FC<{
                     </div>
                     {isLoading ? (
                         <>
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 font-medium">
                                 {m['common.loading']()}
                             </p>

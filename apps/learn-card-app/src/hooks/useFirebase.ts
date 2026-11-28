@@ -13,7 +13,7 @@ import {
     emitAuthSuccess,
     emitAuthError,
 } from '../components/debug/authDebugEvents';
-import { useIonAlert } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 
 import {
     authStore,
@@ -180,7 +180,7 @@ export const useFirebase = () => {
         mobile: ModalTypes.Cancel,
     });
     const { presentToast } = useToast();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { track } = useAnalytics();
 
     const trackLogin = (method: SocialLoginTypes): void => {

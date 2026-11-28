@@ -6,17 +6,8 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-address-book-contact-options');
 
-import {
-    IonCol,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonFooter,
-    IonHeader,
-    IonContent,
-    IonPage,
-    useIonModal,
-} from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -42,6 +33,7 @@ import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;
@@ -99,7 +91,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         }
     }, [walletDid]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookQRCode, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(AddressBookQRCode, {
         handleCloseModal: () => dismissCenterModal(),
         showCloseButton: true,
         title: (
@@ -115,7 +107,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         collectionPropName,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(AddressBookQRCode, {
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(AddressBookQRCode, {
         handleCloseModal: () => dismissSheetModal(),
         showCloseButton: false,
         title: (
@@ -131,7 +123,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         collectionPropName,
     });
 
-    const [presentAddressBook, dismissAddressbook] = useIonModal(BoostAddressBook, {
+    const [presentAddressBook, dismissAddressbook] = useAppOverlayModal(BoostAddressBook, {
         state: state,
         setState: setState,
         viewMode: BoostAddressBookViewMode.full,
@@ -159,7 +151,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     };
 
     // TODO can't test this one bc Native
-    const [presentScannerPromptModal, dismissScannerPromptModal] = useIonModal(
+    const [presentScannerPromptModal, dismissScannerPromptModal] = useAppOverlayModal(
         ScannerPermissionsPrompt,
         {
             handleCloseModal: () => dismissScannerPromptModal(),
@@ -294,24 +286,24 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         // );
     };
 
-    // useIonModal version
+    // useAppOverlayModal version
     return (
-        <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+        <AppPage id="user-options-modal">
+            <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
-            <IonContent>
-                <IonGrid className="ion-padding">
-                    <IonRow className="w-full flex items-center justify-center mt-8">
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
+            <AppContent>
+                <AppGrid className="ion-padding">
+                    <AppRow className="w-full flex items-center justify-center mt-8">
                         <button
                             onClick={event => {
                                 event.preventDefault();
@@ -325,8 +317,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             {m['boost.cms.issueTo.boostMyself']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
                         </button>
-                    </IonRow>
-                    <IonRow className="w-full flex items-center justify-center mt-4">
+                    </AppRow>
+                    <AppRow className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={event => {
                                 event.preventDefault();
@@ -340,8 +332,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             {m['boost.cms.issueTo.boostOthers']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
                         </button>
-                    </IonRow>
-                    {/* <IonCol className="w-full flex items-center justify-center">
+                    </AppRow>
+                    {/* <AppCol className="w-full flex items-center justify-center">
                         <button
                             onClick={() =>
                                 presentCenterModal({
@@ -367,9 +359,9 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         >
                             <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code
                         </button>
-                    </IonCol> */}
+                    </AppCol> */}
                     {Capacitor.isNativePlatform() && (
-                        <IonCol className="w-full flex items-center justify-center mt-1">
+                        <AppCol className="w-full flex items-center justify-center mt-1">
                             <button
                                 onClick={event => {
                                     event.preventDefault();
@@ -381,16 +373,16 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                                 <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                                 {m['contacts.scanCode']()}
                             </button>
-                        </IonCol>
+                        </AppCol>
                     )}
-                    {/* <IonCol className="w-full flex items-center justify-center mt-1">
+                    {/* <AppCol className="w-full flex items-center justify-center mt-1">
                         <button
                             onClick={handleShare}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                         >
                             <LinkChain className="h-[30px] w-[30px] mr-2" /> Share Code
                         </button>
-                    </IonCol> */}
+                    </AppCol> */}
                     <div className="w-full flex items-center justify-center mt-8">
                         <button
                             onClick={() => handleCloseModal()}
@@ -399,33 +391,33 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             {m['common.cancel']()}
                         </button>
                     </div>
-                </IonGrid>
-            </IonContent>
+                </AppGrid>
+            </AppContent>
             {footer && (
-                <IonFooter className={fixedFooterStyles}>
-                    <IonToolbar>{footer}</IonToolbar>
-                </IonFooter>
+                <AppFooter className={fixedFooterStyles}>
+                    <AppToolbar>{footer}</AppToolbar>
+                </AppFooter>
             )}
-        </IonPage>
+        </AppPage>
     );
 
     // useModal version
     return (
         <section id="user-options-modal" className="h-[500px]">
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+            <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={closeModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
-            <IonGrid className="ion-padding">
-                <IonRow className="w-full flex items-center justify-center mt-8">
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
+            <AppGrid className="ion-padding">
+                <AppRow className="w-full flex items-center justify-center mt-8">
                     {/* desktop */}
                     <button
                         onClick={() => handleAddYoself()}
@@ -434,8 +426,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                         {m['boost.cms.issueTo.boostMyself']()}
                     </button>
-                </IonRow>
-                <IonRow className="w-full flex items-center justify-center mt-4">
+                </AppRow>
+                <AppRow className="w-full flex items-center justify-center mt-4">
                     {/* desktop */}
                     <button
                         onClick={() => handleAddSomeoneElse()}
@@ -444,8 +436,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                         {m['boost.cms.issueTo.boostOthers']()}
                     </button>
-                </IonRow>
-                {/* <IonCol className="w-full flex items-center justify-center">
+                </AppRow>
+                {/* <AppCol className="w-full flex items-center justify-center">
                         <button
                             onClick={() =>
                                 presentCenterModal({
@@ -471,9 +463,9 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         >
                             <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code
                         </button>
-                    </IonCol> */}
+                    </AppCol> */}
                 {Capacitor.isNativePlatform() && (
-                    <IonCol className="w-full flex items-center justify-center mt-1">
+                    <AppCol className="w-full flex items-center justify-center mt-1">
                         <button
                             onClick={handleScan}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg modal-btn-mobile normal tracking-wide"
@@ -481,16 +473,16 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                             {m['contacts.scanCode']()}
                         </button>
-                    </IonCol>
+                    </AppCol>
                 )}
-                {/* <IonCol className="w-full flex items-center justify-center mt-1">
+                {/* <AppCol className="w-full flex items-center justify-center mt-1">
                         <button
                             onClick={handleShare}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                         >
                             <LinkChain className="h-[30px] w-[30px] mr-2" /> Share Code
                         </button>
-                    </IonCol> */}
+                    </AppCol> */}
                 <div className="w-full flex items-center justify-center mt-8">
                     <button
                         onClick={() => closeModal()}
@@ -499,11 +491,11 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonGrid>
+            </AppGrid>
             {footer && (
-                <IonFooter className={fixedFooterStyles}>
-                    <IonToolbar>{footer}</IonToolbar>
-                </IonFooter>
+                <AppFooter className={fixedFooterStyles}>
+                    <AppToolbar>{footer}</AppToolbar>
+                </AppFooter>
             )}
         </section>
     );

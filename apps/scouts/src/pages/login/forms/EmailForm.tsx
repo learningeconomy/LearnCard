@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useHistory } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
-
-import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { useFirebase } from '../../../hooks/useFirebase';
 
@@ -40,6 +38,10 @@ const CodeValidator = z.object({
 });
 
 import { useSignInAdapter } from 'learn-card-base';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 const EmailForm: React.FC = () => {
     const adapter = useSignInAdapter();
@@ -309,7 +311,7 @@ const EmailForm: React.FC = () => {
             </p>
         );
         activeStep = (
-            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
+            <AppCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <AccessibleCodeInput
                     name="phoneVerification"
                     label={m['login.verificationCode']()}
@@ -330,68 +332,68 @@ const EmailForm: React.FC = () => {
                 {codeError && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">{codeError}</p>
                 )}
-            </IonCol>
+            </AppCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading;
     } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
         formTitle = m['common.password']();
         activeStep = (
-            <IonCol size="12">
-                <IonInput
+            <AppCol size="12">
+                <AppInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
                     placeholder={m['common.password']()}
                     // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onValueInput={value => setPassword(value)}
                     value={password}
                     type="password"
                 />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
+                <AppCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
                         {m['common.staySignedIn']()}
                     </p>{' '}
-                    <IonToggle />
-                </IonCol>
-            </IonCol>
+                    <AppToggle />
+                </AppCol>
+            </AppCol>
         );
         buttonTitle = m['common.login']();
     } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
         formTitle = m['common.password']();
         activeStep = (
-            <IonCol size="12">
-                <IonInput
+            <AppCol size="12">
+                <AppInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
                     placeholder={m['common.password']()}
                     // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onValueInput={value => setPassword(value)}
                     value={password}
                     type="password"
                 />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
+                <AppCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
                         <TransP
                             m={m['common.agreeToTerms']}
                             components={[
-                                <IonRouterLink
-                                    href="#"
+                                <Link
+                                    to="#"
                                     className="font-semibold login-terms-span"
                                     key="terms"
                                 />,
                             ]}
                         />
                     </p>{' '}
-                    <IonCheckbox />
-                </IonCol>
-            </IonCol>
+                    <AppCheckbox />
+                </AppCol>
+            </AppCol>
         );
         buttonTitle = m['common.createAccount']();
     }
 
     return (
         <form onSubmit={handleOnClick} className="w-full">
-            <IonCol size="12">{formTitle}</IonCol>
+            <AppCol size="12">{formTitle}</AppCol>
             {activeStep}
             <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
@@ -431,7 +433,7 @@ const EmailForm: React.FC = () => {
                 </div>
             )}
             {currentStep === EmailFormStepsEnum.passwordNewUser && (
-                <IonCol
+                <AppCol
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
@@ -442,7 +444,7 @@ const EmailForm: React.FC = () => {
                     >
                         {m['common.differentEmail']()}
                     </button>
-                </IonCol>
+                </AppCol>
             )}
         </form>
     );

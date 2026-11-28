@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import * as m from '../../../paraglide/messages.js';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
@@ -23,7 +23,7 @@ const AddressBookBlockedContacts: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             )}

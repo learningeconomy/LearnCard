@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useModal } from 'learn-card-base';
-import { IonFooter, IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import {
     FrameworkNodeRole,
     SkillFramework,
@@ -14,6 +14,7 @@ import * as m from '../../paraglide/messages.js';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type SkillPreviewProps = {
     framework: SkillFramework;
@@ -245,11 +246,11 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
             </div>
 
             <section className="h-full flex flex-col gap-[10px] pt-[15px] px-[20px] pb-[170px] overflow-y-auto z-0">
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
                     placeholder={m['skills.framework.searchPlaceholder']()}
                     value={search}
-                    onIonInput={e => setSearch(e.detail.value)}
+                    onValueInput={value => setSearch(value)}
                 />
 
                 <TiersAndCompetencies
@@ -273,7 +274,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                 />
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -302,7 +303,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                         {successButtonText}
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

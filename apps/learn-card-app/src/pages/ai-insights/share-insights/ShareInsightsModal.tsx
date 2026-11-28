@@ -3,8 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
-import { IonInput } from '@ionic/react';
-import { IonSpinner } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import AiInsightsUserCard from '../AiInsightsUserCard';
 import ShareInsightsWithAnyoneController from './ShareInsightsWithAnyoneController';
 
@@ -19,6 +18,7 @@ import { AiInsightsUserCardMode } from '../ai-insights.helpers';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const ShareInsightsModal: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();
@@ -69,12 +69,12 @@ export const ShareInsightsModal: React.FC = () => {
 
                 {/* search  */}
                 <div className="flex items-center justify-start w-full ion-padding">
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         placeholder={m['aiInsights.searchByName']()}
                         value={search}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                        onIonInput={e => handleSearch(e?.detail?.value)}
+                        onValueInput={value => handleSearch(value)}
                         debounce={500}
                         type="text"
                         clearInput
@@ -90,7 +90,7 @@ export const ShareInsightsModal: React.FC = () => {
                         <div className="w-full flex flex-col gap-2">
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-8">
-                                    <IonSpinner color="grayscale-900" />
+                                    <AppSpinner color="grayscale-900" />
                                     <p className="mt-2 font-bold text-lg">
                                         {m['aiInsights.loading']()}
                                     </p>

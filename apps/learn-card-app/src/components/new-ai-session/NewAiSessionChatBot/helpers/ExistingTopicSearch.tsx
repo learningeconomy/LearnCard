@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../../paraglide/messages.js';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Search from 'learn-card-base/svgs/Search';
 
 import useTheme from '../../../../theme/hooks/useTheme';
@@ -38,8 +38,8 @@ export const ExistingTopicSearch: React.FC<{
                         : 'bg-cyan-50'
                 }`}
             >
-                <IonInput
-                    onIonInput={e => setSearch(e.detail.value)}
+                <AppInput
+                    onValueInput={value => setSearch(value)}
                     className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] px-4! ${
                         isDesktop ? '' : 'border-solid border border-grayscale-200'
                     }`}

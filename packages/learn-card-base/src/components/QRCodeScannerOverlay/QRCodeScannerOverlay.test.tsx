@@ -19,12 +19,12 @@ const mocks = vi.hoisted(() => {
     };
 });
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ className, icon }: { className?: string; icon?: string }) => (
+vi.mock('learn-card-base/ui/icon', () => ({
+    AppIcon: ({ className, icon }: { className?: string; icon?: string }) => (
         <span className={className} data-icon={icon} />
     ),
 }));
-vi.mock('ionicons/icons', () => ({
+vi.mock('learn-card-base/icons/ionicons', () => ({
     alertCircleOutline: 'alert-circle',
     checkmarkCircleOutline: 'checkmark-circle',
     closeOutline: 'close',

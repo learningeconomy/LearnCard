@@ -2,7 +2,7 @@ import React from 'react';
 import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ThreeDotVertical } from '@learncard/react';
 import { SkillFrameworkType } from '@learncard/types';
 import Plus from 'apps/learn-card-app/src/components/svgs/Plus';
@@ -88,7 +88,7 @@ const SkillFrameworks: React.FC = () => {
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-[40px]">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 ) : isError ? (
                     <div className="text-center py-[40px]">

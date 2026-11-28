@@ -4,8 +4,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonIcon, IonSpinner } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
 import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';
@@ -44,6 +45,7 @@ import {
     getEndorsementRequestBaseUrl,
 } from '../../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 import { buildLinkedInCertificationUrl, buildLinkedInPostUrl } from './linkedInSharing';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -345,14 +347,14 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 title={m['toasts.boost.shareLinkGenerationFailed']()}
                                 className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
-                                <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                                <AppIcon icon={alertCircleOutline} aria-hidden="true" />
                                 <span className="text-[10px] font-medium leading-tight text-center">
                                     {m['common.tryAgain']()}
                                 </span>
                             </button>
                         </div>
                     ) : isLinkLoading || !shareLink ? (
-                        <IonSpinner
+                        <AppSpinner
                             role="status"
                             aria-label={m['passport.resumeBuilder.shareLink.generatingLink']()}
                             name="crescent"
@@ -376,7 +378,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
     return (
         <>
-            <IonGrid
+            <AppGrid
                 className={`w-full max-w-[480px] px-[20px] ${customClassName} overflow-y-scroll pb-[50px] disable-scrollbars`}
             >
                 <div
@@ -428,7 +430,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         role="alert"
                                         className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                                     >
-                                        <IonIcon
+                                        <AppIcon
                                             icon={alertCircleOutline}
                                             aria-hidden="true"
                                             className="text-red-400 text-lg mt-0.5 shrink-0"
@@ -470,7 +472,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
                             {!isShareError && (isLinkLoading || !shareLink) && (
                                 <div className="min-h-[300px] h-full w-full relative flex flex-col gap-3 items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         role="status"
                                         aria-label={m[
                                             'passport.resumeBuilder.shareLink.generatingLink'
@@ -538,7 +540,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         role="status"
                                         className="flex items-center justify-center gap-2 text-sm text-grayscale-600"
                                     >
-                                        <IonSpinner name="crescent" className="w-4 h-4" />
+                                        <AppSpinner name="crescent" className="w-4 h-4" />
                                         {m['credentialShare.publishingPreview']()}
                                     </span>
                                 )}
@@ -694,7 +696,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                         <CredentialVerificationDisplay credential={cred} showText />
                     </div>
                 </div>
-            </IonGrid>
+            </AppGrid>
         </>
     );
 };

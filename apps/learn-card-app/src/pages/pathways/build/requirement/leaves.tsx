@@ -21,8 +21,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { NodeRequirement } from '../../types';
 import { ComparisonOpSchema } from '../../types/outcome';
@@ -39,7 +39,7 @@ const Hint: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const InlineWarning: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-100">
-        <IonIcon
+        <AppIcon
             icon={alertCircleOutline}
             aria-hidden
             className="text-amber-600 text-sm mt-0.5 shrink-0"

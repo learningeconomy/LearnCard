@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
 import { buildInboxClaimRedirect } from './inboxClaimGate';
-import { useIonModal } from '@ionic/react';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import { redirectStore } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import ClaimLoginPage from '../login/ClaimLoginPage';
 import DoubleTrapezoid from 'learn-card-base/svgs/DoubeTrapezoid';
-import { IonRow } from '@ionic/react';
+import { AppRow } from 'learn-card-base/ui/layout';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -118,11 +117,11 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                     />
                 </div>
 
-                <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
+                <AppRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                     <div className="flex flex-col items-center justify-center w-full">
                         <img src={textLogo} alt="Logo" className="object-contain" />
                     </div>
-                </IonRow>
+                </AppRow>
 
                 <h1 className="text-white text-[24px] font-semibold text-center mb-4 max-w-[300px] drop-shadow-xs">
                     Someone sent you a credential

@@ -1,11 +1,11 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { IonIcon } from '@ionic/react';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { MessageMedia } from './MessageMedia';
 import { MessageActions } from './MessageActions';
 import type { MessagePresentationProps } from './presentationTypes';
 import { useT } from '../i18n';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 const isInteractive = (target: EventTarget | null): boolean =>
     target instanceof Element &&
@@ -119,7 +119,7 @@ export const InAppMessageStory: React.FC<
                         className="p-2 rounded-[20px] text-grayscale-700"
                         onClick={() => onClose('dismissed', { stepIndex: current })}
                     >
-                        <IonIcon icon={closeOutline} />
+                        <AppIcon icon={closeOutline} />
                     </button>
                 )}
             </header>

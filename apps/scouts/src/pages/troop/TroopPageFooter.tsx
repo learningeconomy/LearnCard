@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIonAlert } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import useEditTroopId from '../../hooks/useEditTroopId';
@@ -24,6 +23,7 @@ import InviteSelectionModal from './InviteSelectionModal';
 import * as m from '../../paraglide/messages.js';
 import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 type TroopPageFooterProps = {
     credential: VC;
@@ -49,7 +49,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const confirm = useConfirmation();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { newModal, closeModal, closeAllModals } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,

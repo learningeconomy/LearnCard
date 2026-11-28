@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonList } from '@ionic/react';
+import { AppList } from 'learn-card-base/ui/list';
 
 import BoostAddressBookContactItem from './BoostAddressBookContactItem';
 import { BoostUserTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
@@ -56,9 +56,9 @@ export const BoostAddressBookContactList: React.FC<BoostAddressBookContactListPr
     });
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+        <AppList lines="none" className="flex flex-col items-center justify-center w-full">
             {contactItems}
-        </IonList>
+        </AppList>
     );
 };
 

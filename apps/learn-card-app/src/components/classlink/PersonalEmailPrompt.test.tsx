@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
     preferencesHook: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useFeatureConfig: () => mocks.features,
     useGetPreferencesForDid: (enabled: boolean) => {

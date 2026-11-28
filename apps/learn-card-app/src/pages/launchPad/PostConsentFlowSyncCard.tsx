@@ -11,7 +11,7 @@ import {
     LCNProfile,
 } from '@learncard/types';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import ConsentFlowEditAccess from './ConsentFlowEditAccess';
 import PostConsentFlowActivityFeed from './PostConsentFlowActivityFeed';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
@@ -28,7 +28,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { IonLoading } from '@ionic/react';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -278,7 +278,7 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
                 >
                     {returnTo ? 'Back' : 'Cancel'}
                 </button>
-                <IonLoading
+                <AppLoading
                     isOpen={updatingTerms || consentingToContract}
                     message={isDisconnected ? 'Reconnecting...' : 'Updating Terms...'}
                     mode="ios"
@@ -289,16 +289,16 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
                 <div className="bg-grayscale-200 w-[90%] h-[1px]" />
             </div>
 
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal text-grayscale-600">
                         All connections are{' '}
                         <b>
                             <u>encrypted.</u>
                         </b>
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </section>
     );
 };

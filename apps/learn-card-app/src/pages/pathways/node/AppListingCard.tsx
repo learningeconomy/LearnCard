@@ -27,8 +27,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { useModal, ModalTypes } from 'learn-card-base';
-import { IonIcon } from '@ionic/react';
-import { openOutline, downloadOutline, playCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { openOutline, downloadOutline, playCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import AppStoreDetailModal from '../../launchPad/AppStoreDetailModal';
 
@@ -118,13 +118,13 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
     // it inline would be a pile of modal stacks.
     //
     // Must open as a Right-slide modal (desktop + mobile). The modal's
-    // root is `<IonPage className="h-full w-full">`, which assumes a
+    // root is `<AppPage className="h-full w-full">`, which assumes a
     // full-height container; rendering it inside the default Center
-    // modal (max-width 600 / max-height 75vh) clips it and the
-    // IonPage renders at `opacity: 0` without a router context —
+    // modal (max-width 600 / max-height 75vh) clips it (with IonPage it
+    // also rendered at `opacity: 0` without a router context) —
     // what the user sees as "background blurs but nothing appears."
     // `hideButton: true` because AppStoreDetailModal has its own
-    // close affordance in the IonHeader — we don't want two X buttons.
+    // close affordance in the AppHeader — we don't want two X buttons.
     const handleInstall = () => {
         onSuppressHost?.();
 
@@ -277,7 +277,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
                             "
                             aria-label={`${openLabel} ${listing.display_name}`}
                         >
-                            <IonIcon icon={buttonIcon} className="text-base" aria-hidden />
+                            <AppIcon icon={buttonIcon} className="text-base" aria-hidden />
                             <span>
                                 {openLabel} {listing.display_name}
                             </span>
@@ -296,7 +296,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
                             "
                             aria-label={`${installLabel} ${listing.display_name}`}
                         >
-                            <IonIcon icon={buttonIcon} className="text-base" aria-hidden />
+                            <AppIcon icon={buttonIcon} className="text-base" aria-hidden />
                             <span>
                                 {installLabel} {listing.display_name}
                             </span>

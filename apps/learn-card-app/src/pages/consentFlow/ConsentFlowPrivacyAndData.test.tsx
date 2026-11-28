@@ -26,11 +26,6 @@ vi.mock('./useConsentFlow', () => ({
 vi.mock('../../hooks/useGuardianGate', () => ({
     default: () => ({ guardedAction: async (action: () => unknown) => action() }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonToggle: ({ checked, onClick }: { checked: boolean; onClick: () => void }) => (
-        <button role="switch" aria-checked={checked} onClick={onClick} />
-    ),
-}));
 vi.mock('../../helpers/contract.helpers', () => ({
     getPrivacyAndDataInfo: () => ({ name: 'Learning Economy' }),
     isVerifiableDataContractCategory: () => false,

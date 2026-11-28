@@ -11,7 +11,7 @@ import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-share-options.helpers';
 
 const APP_ALBUM_NAME = 'LearnCard';
@@ -242,14 +242,14 @@ const QrCodeUserCardShareOptions: React.FC<{
                     if (isSavingPng && option.type === QrCodeDownloadOptionsEnum.saveToPhotos) {
                         text = m['scanner.processing']();
                         icon = (
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                         );
                     }
 
                     if (isSavingPdf && option.type === QrCodeDownloadOptionsEnum.saveToFiles) {
                         text = m['scanner.processing']();
                         icon = (
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                         );
                     }
 

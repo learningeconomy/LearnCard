@@ -3,8 +3,6 @@ import { fireEvent, render, screen, waitFor, act } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { EscrowRecoveryHoldBanner } from './EscrowRecoveryHoldBanner';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
-
 vi.mock('../../paraglide/runtime.js', () => ({ getLocale: () => 'en' }));
 
 vi.mock('../../paraglide/messages.js', () => ({

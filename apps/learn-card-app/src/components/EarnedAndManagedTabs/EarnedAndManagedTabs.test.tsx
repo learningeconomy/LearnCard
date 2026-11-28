@@ -14,12 +14,6 @@ vi.mock('react-router-dom', () => ({
     useHistory: () => ({ replace: vi.fn() }),
     useLocation: () => ({ pathname: '/socialbadges' }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children, className }: React.PropsWithChildren<{ className: string }>) => (
-        <div className={className}>{children}</div>
-    ),
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: {
         useStore: () => ({ searchString: 'badge', isSearchActive: true }),

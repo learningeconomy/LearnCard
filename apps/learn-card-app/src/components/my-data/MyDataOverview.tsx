@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonPage, IonGrid, IonCol, IonRow, IonToolbar, IonHeader, IonContent } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import BellSimple from 'learn-card-base/svgs/BellSimple';
@@ -9,6 +9,7 @@ import LockSimple from 'learn-card-base/svgs/LockSimple';
 import useTheme from '../../theme/hooks/useTheme';
 
 import { MyDataStepsEnum } from './MyData';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const MyDataOverview: React.FC<{
     handleCloseModal: () => void;
@@ -19,13 +20,13 @@ const MyDataOverview: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <IonPage className="bg-grayscale-900">
-            <IonHeader className="ion-no-border mt-[25px]">
-                <IonToolbar className="ion-no-border" color="grayscale-900">
-                    <IonGrid className="bg-grayscale-900">
-                        <IonRow className="w-full flex flex-col items-center justify-center">
-                            <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                <IonCol className="flex flex-1 justify-start items-center">
+        <AppPage className="bg-grayscale-900">
+            <AppHeader className="ion-no-border mt-[25px]">
+                <AppToolbar className="ion-no-border" color="grayscale-900">
+                    <AppGrid className="bg-grayscale-900">
+                        <AppRow className="w-full flex flex-col items-center justify-center">
+                            <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-white p-0 mr-[10px]"
                                         aria-label="Back button"
@@ -36,16 +37,16 @@ const MyDataOverview: React.FC<{
                                     <h3 className="text-white flex items-center justify-start font-poppins text-4xl">
                                         My Data
                                     </h3>
-                                </IonCol>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent fullscreen color="grayscale-900">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                                </AppCol>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent fullscreen color="grayscale-900">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <div className="flex items-center justify-between w-full pl-4 pr-4 pt-4">
                                 <h1 className="font-poppins text-black text-xl p-0 m-0">My Data</h1>
                             </div>
@@ -113,11 +114,11 @@ const MyDataOverview: React.FC<{
                                     Ask Someone to Share
                                 </button>
                             </div>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
 
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <button
                                 onClick={() => setActiveStep(MyDataStepsEnum.apps)}
                                 className="flex w-full items-center justify-between text-grayscale-900 ion-padding font-poppins text-xl border-b-2 border-solid border-grayscale-100"
@@ -125,8 +126,8 @@ const MyDataOverview: React.FC<{
                                 Apps
                                 <CaretLeft className="rotate-180 text-grayscale-500" />
                             </button>
-                        </IonCol>
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                        </AppCol>
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <button
                                 onClick={() => setActiveStep(MyDataStepsEnum.schools)}
                                 className="flex w-full items-center justify-between text-grayscale-900 ion-padding font-poppins text-xl border-b-2 border-solid border-grayscale-100"
@@ -134,8 +135,8 @@ const MyDataOverview: React.FC<{
                                 Schools
                                 <CaretLeft className="rotate-180 text-grayscale-500" />
                             </button>
-                        </IonCol>
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                        </AppCol>
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <button
                                 onClick={() => setActiveStep(MyDataStepsEnum.jobs)}
                                 className="flex w-full items-center justify-between text-grayscale-900 ion-padding font-poppins text-xl"
@@ -143,11 +144,11 @@ const MyDataOverview: React.FC<{
                                 Jobs
                                 <CaretLeft className="rotate-180 text-grayscale-500" />
                             </button>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

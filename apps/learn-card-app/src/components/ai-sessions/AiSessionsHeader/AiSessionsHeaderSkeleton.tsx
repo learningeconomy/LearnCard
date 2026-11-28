@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const AiSessionsHeaderSkeleton: React.FC = () => {
     return (
@@ -7,18 +7,18 @@ const AiSessionsHeaderSkeleton: React.FC = () => {
             <div className="p-0 shrink-0" />
 
             <div className="h-[55px] w-[55px] min-h-[55px] min-w-[55px]">
-                <IonSkeletonText
+                <AppSkeletonText
                     animated
                     style={{ width: '55px', height: '55px', borderRadius: '16px' }}
                 />
             </div>
 
             <div className="flex flex-col items-start justify-center min-w-0 gap-[8px]">
-                <IonSkeletonText
+                <AppSkeletonText
                     animated
                     style={{ width: '180px', height: '21px', borderRadius: '4px' }}
                 />
-                <IonSkeletonText
+                <AppSkeletonText
                     animated
                     style={{ width: '120px', height: '14px', borderRadius: '4px' }}
                 />

@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonContent, IonIcon, IonPage, IonPopover } from '@ionic/react';
-import { alertCircleOutline, chevronDownOutline, filterOutline } from 'ionicons/icons';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    alertCircleOutline,
+    chevronDownOutline,
+    filterOutline,
+} from 'learn-card-base/icons/ionicons';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 import { CredentialCategoryEnum, useGetCurrentLCNUser, useWallet } from 'learn-card-base';
@@ -39,6 +44,7 @@ import {
     saveAssistantAvatarConfig,
     type AssistantAvatarConfig,
 } from './assistantAvatarOptions';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const AssistantCardsSkeleton: React.FC = () => (
     <div className="space-y-v3-3">
@@ -332,7 +338,7 @@ const MyAssistantPageContent: React.FC = () => {
 
                 {actionError && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                         />
@@ -383,12 +389,12 @@ const MyAssistantPageContent: React.FC = () => {
                                 }}
                                 className="shrink-0 inline-flex items-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                             >
-                                <IonIcon icon={filterOutline} className="text-lg" />
+                                <AppIcon icon={filterOutline} className="text-lg" />
                                 Filter
-                                <IonIcon icon={chevronDownOutline} className="text-base" />
+                                <AppIcon icon={chevronDownOutline} className="text-base" />
                             </button>
 
-                            <IonPopover
+                            <AppPopover
                                 isOpen={filterOpen}
                                 event={filterPopoverEvent}
                                 reference="event"
@@ -469,7 +475,7 @@ const MyAssistantPageContent: React.FC = () => {
                                         </select>
                                     </div>
                                 </div>
-                            </IonPopover>
+                            </AppPopover>
                         </div>
                     </div>
 
@@ -478,7 +484,7 @@ const MyAssistantPageContent: React.FC = () => {
                     ) : cardsError ? (
                         <div className="space-y-v3-3">
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-red-400 text-lg mt-0.5 shrink-0"
                                 />
@@ -558,9 +564,9 @@ const MyAssistantPageContent: React.FC = () => {
 };
 
 const MyAssistantPage: React.FC = () => (
-    <IonPage className="bg-grayscale-100">
+    <AppPage className="bg-grayscale-100">
         <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-            <IonContent
+            <AppContent
                 fullscreen
                 className="bg-grayscale-100"
                 style={{ '--background': '#EFF0F5' } as React.CSSProperties}
@@ -573,9 +579,9 @@ const MyAssistantPage: React.FC = () => (
                 <AiFeatureGate>
                     <MyAssistantPageContent />
                 </AiFeatureGate>
-            </IonContent>
+            </AppContent>
         </ErrorBoundary>
-    </IonPage>
+    </AppPage>
 );
 
 export default MyAssistantPage;

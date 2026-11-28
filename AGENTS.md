@@ -88,7 +88,7 @@ All buttons use `rounded-[20px]` (pill shape), **never** `rounded-lg`.
 
 ### Form Inputs
 
-**Never use `IonItem` / `IonInput` / `IonTextarea` for modal or overlay forms.** Ionic's theme layer can override text color, causing white-on-white text that is invisible. Use styled native HTML inputs instead:
+**Never use `AppItem` / `AppInput` / `AppTextarea` for modal or overlay forms.** Their ported theme layer can override text color, causing white-on-white text that is invisible. Use styled native HTML inputs instead:
 
 ```tsx
 <input
@@ -163,7 +163,7 @@ Use the standard error banner pattern:
 {
     error && (
         <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <AppIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
             <span className="text-sm text-red-700 leading-relaxed">{error}</span>
         </div>
     );
@@ -182,7 +182,7 @@ Map raw error messages to friendly language:
 {
     success && (
         <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-            <IonIcon
+            <AppIcon
                 icon={checkmarkCircleOutline}
                 className="text-emerald-500 text-lg mt-0.5 shrink-0"
             />
@@ -204,7 +204,7 @@ Map raw error messages to friendly language:
 
 ### Icons
 
-- Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
+- Use `AppIcon` (`learn-card-base/ui/icon`) with the vendored Ionicons (`learn-card-base/icons/ionicons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
 - For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
 - **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
 
@@ -242,7 +242,7 @@ Before shipping any new modal, overlay, or form:
 5. **Loading**: Every button with an async handler shows a spinner + contextual text
 6. **Errors**: Friendly error messages, never raw `error.message`
 7. **Copy**: No jargon, concise, action-oriented
-8. **Icons**: Ionicons or inline SVGs, never raw emoji
+8. **Icons**: `AppIcon` with the vendored Ionicons, or inline SVGs, never raw emoji
 9. **Contrast**: Text readable on its background (test on white AND colored backgrounds)
 10. **Animation**: Use `animate-fade-in-up` for overlay entrance, `transition-colors` / `transition-opacity` for interactions
 
@@ -852,7 +852,7 @@ import {
 
 1. Create component in `packages/learn-card-base/src/components/form-inputs/`
 2. Export from `packages/learn-card-base/src/components/form-inputs/index.ts`
-3. Follow existing patterns: use Ionic components, grayscale-100 backgrounds, rounded-[10px] styling
+3. Follow existing patterns: use the app-owned `learn-card-base/ui` components, grayscale-100 backgrounds, rounded-[10px] styling
 
 ## Privacy Preferences & Age-Gate System
 

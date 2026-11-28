@@ -7,8 +7,8 @@
  *
  * - Stylesheets stay out of vendor groups. A CSS module is a side-effect import, so grouping
  *   swiper's CSS with swiper's JS made every importer load all of swiper at startup.
- * - Modules a vendor only loads through import() (Ionic's input shims, swipe-back, status tap)
- *   stay out of the group, as they were under Rollup.
+ * - Modules a vendor only loads through import() stay out of the group, as they were under
+ *   Rollup.
  * - Paraglide's base-locale messages and the dispatchers that call them share one chunk. Split
  *   apart, the dispatcher chunk imports ~8k names from the locale chunk, ~65 KB gzip of
  *   import/export lists on the startup path.
@@ -26,7 +26,6 @@ export type ChunkMeta = {
 
 const VENDOR_CHUNKS: Record<string, readonly string[]> = {
     'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'],
-    'vendor-ionic': ['@ionic/react', '@ionic/react-router', '@ionic/core'],
     'vendor-firebase': ['firebase', '@firebase'],
     'vendor-sentry': ['@sentry', '@sentry-internal'],
     'vendor-launchdarkly': ['launchdarkly-react-client-sdk', 'launchdarkly-js-client-sdk'],

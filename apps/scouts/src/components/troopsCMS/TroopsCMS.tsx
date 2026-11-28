@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { z } from 'zod';
 
-import { IonPage } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 import TroopsCMSLayout from './TroopsCMSLayout';
 import TroopsCMSThumbnail from './TroopsCMSThumbnail';
@@ -40,6 +39,7 @@ import { useAddCredentialToWallet } from '../boost/mutations';
 import { getPermissionsByRole } from './troops.helpers';
 import { cloneDeep } from 'lodash';
 import { getLogger } from 'learn-card-base';
+import { AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('troops-cms');
 
 const StateValidator = z.object({
@@ -487,7 +487,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
     };
 
     return (
-        <IonPage>
+        <AppPage>
             {(isLoading || isSaveLoading || isPublishLoading) && (
                 <BoostLoader text={m['troops.loading']()} darkBackground />
             )}
@@ -530,7 +530,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                 state={state}
                 editorMode={editorMode}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

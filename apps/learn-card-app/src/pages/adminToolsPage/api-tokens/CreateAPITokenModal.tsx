@@ -4,16 +4,12 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-api-token-modal');
 
-import {
-    IonInput,
-    IonItem,
-    IonList,
-    IonLabel,
-    IonDatetime,
-    IonButtons,
-    IonButton,
-    IonTextarea,
-} from '@ionic/react';
+import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import AppDatetime, { type AppDatetimeHandle } from 'learn-card-base/ui/datetime/AppDatetime';
 import Calendar from '../../../components/svgs/Calendar';
 
 import {
@@ -68,7 +64,7 @@ const CreateAPITokenModal: React.FC<{
         { displayName: 'Custom', technicalName: '' },
     ];
 
-    const datetime = useRef<null | HTMLIonDatetimeElement>(null);
+    const datetime = useRef<AppDatetimeHandle>(null);
     const reset = () => {
         datetime.current?.reset();
     };
@@ -77,7 +73,7 @@ const CreateAPITokenModal: React.FC<{
     };
     const handleShowDatePicker = () => {
         newModal(
-            <IonDatetime
+            <AppDatetime
                 mode="ios"
                 ref={datetime}
                 onIonChange={e => {
@@ -94,22 +90,24 @@ const CreateAPITokenModal: React.FC<{
                 color={primaryColor}
                 max="2050-12-31"
                 min={moment().format('YYYY-MM-DD')}
-            >
-                <IonButtons slot="buttons">
-                    <IonButton color="primary" onClick={reset}>
-                        Clear
-                    </IonButton>
-                    <IonButton
-                        color="primary"
-                        onClick={() => {
-                            confirm();
-                            closeModal();
-                        }}
-                    >
-                        Done
-                    </IonButton>
-                </IonButtons>
-            </IonDatetime>,
+                buttons={
+                    <AppButtons slot="buttons" mode="ios">
+                        <AppButton color="primary" mode="ios" onClick={reset}>
+                            Clear
+                        </AppButton>
+                        <AppButton
+                            color="primary"
+                            mode="ios"
+                            onClick={() => {
+                                confirm();
+                                closeModal();
+                            }}
+                        >
+                            Done
+                        </AppButton>
+                    </AppButtons>
+                }
+            />,
             {
                 sectionClassName: 'max-w-[300px]!',
                 hideButton: true,
@@ -200,18 +198,18 @@ const CreateAPITokenModal: React.FC<{
             <h1 className="font-semibold mb-[10px] font-notoSans text-[20px] text-grayscale-900">
                 Create API Token
             </h1>
-            <IonInput
+            <AppInput
                 className="ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base mb-[10px]"
                 type="text"
-                onIonInput={e => setName(e.detail.value)}
+                onValueInput={value => setName(value)}
                 value={name}
                 placeholder="Name*"
             />
-            <IonTextarea
+            <AppTextarea
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base pl-4 pt-2"
                 style={{ '--min-width': '385px', '--max-width': '385px' }}
                 rows={3}
-                onIonInput={e => setDescription(e.detail.value)}
+                onValueInput={value => setDescription(value)}
                 value={description}
                 placeholder="Description"
             />
@@ -219,9 +217,9 @@ const CreateAPITokenModal: React.FC<{
                 className="flex items-start justify-start flex-col bg-white text-grayscale-800 border border-grayscale-100 rounded-[15px] ion-padding font-medium tracking-widest text-base mt-[10px] cursor-pointer mb-[10px]"
                 onClick={() =>
                     newModal(
-                        <IonList>
+                        <AppList>
                             {scopeOptions.map(option => (
-                                <IonItem
+                                <AppItem
                                     button
                                     style={{ '--border-color': 'transparent' }}
                                     className="border-b-grayscale-100! !border-b-solid border-b! last:border-0! p-1"
@@ -233,27 +231,27 @@ const CreateAPITokenModal: React.FC<{
                                     }}
                                 >
                                     {option.displayName}
-                                </IonItem>
+                                </AppItem>
                             ))}
-                        </IonList>,
+                        </AppList>,
                         { sectionClassName: 'max-w-[400px]!' }
                     )
                 }
             >
-                <IonLabel className="w-full">
+                <AppLabel className="w-full">
                     Scope*: {scopeDisplayValue || 'None selected'}
-                </IonLabel>
+                </AppLabel>
                 {scopeDisplayValue !== '' && scopeDisplayValue !== 'Custom' && (
-                    <IonLabel className="w-full">{scopeTechnicalValue}</IonLabel>
+                    <AppLabel className="w-full">{scopeTechnicalValue}</AppLabel>
                 )}
             </div>
             {scopeDisplayValue !== '' && scopeDisplayValue === 'Custom' && (
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-[10px]"
                     type="text"
                     value={customScopeValue}
-                    onIonInput={e => {
-                        setCustomScopeValue(e.detail.value!);
+                    onValueInput={value => {
+                        setCustomScopeValue(value);
                     }}
                     placeholder="Custom Scope"
                 />

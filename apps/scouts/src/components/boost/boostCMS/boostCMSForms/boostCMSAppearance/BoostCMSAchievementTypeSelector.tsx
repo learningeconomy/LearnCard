@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonGrid, IonInput } from '@ionic/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import {
     CUSTOM_BOOST_TYPE_REGEX,
@@ -16,6 +15,8 @@ import {
     boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
 } from '../../../boost-options/boostOptions';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const StateValidator = z.object({
     customType: z
@@ -97,18 +98,18 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
     };
 
     return (
-        <IonGrid
+        <AppGrid
             className={`w-full h-full ion-no-padding !bg-${color} flex justify-center items-start`}
         >
-            <IonRow
+            <AppRow
                 className={`w-full flex flex-col items-center justify-center max-w-[600px] ion-padding !bg-${color}`}
             >
                 <div className="w-full ion-padding bg-white rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         value={search}
-                        onIonInput={e => {
-                            setSearch(e.detail.value ?? '');
+                        onValueInput={value => {
+                            setSearch(value ?? '');
                             setErrors({});
                         }}
                         placeholder={m['common.search']()}
@@ -155,6 +156,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                             const customType = isCustomBoostType(type);
 
                             return (
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 <button
                                     onClick={() => setActiveType(type)}
                                     className={`relative flex items-center justify-between  rounded-full px-[10px] py-[10px] w-full shadow-lg uppercase tracking-wide max-w-[95%] mb-4 ${activeStyles}`}
@@ -231,6 +233,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                     : 'bg-grayscale-100';
 
                                 return (
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <button
                                         onClick={() => setActiveType(type)}
                                         className={`relative flex items-center justify-between  rounded-full px-[10px] py-[10px] w-full shadow-lg uppercase tracking-wide max-w-[95%] mb-4 ${activeStyles}`}
@@ -259,8 +262,8 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                             }
                         )}
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

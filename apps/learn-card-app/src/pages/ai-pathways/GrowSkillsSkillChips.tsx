@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { IonSkeletonText } from '@ionic/react';
 
 import { conditionalPluralize } from 'learn-card-base';
 
@@ -10,6 +9,7 @@ import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,
 } from '../../helpers/globalSkillFrameworks.helpers';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const SKILL_CHIP_GAP_PX = 5;
 const MIN_LAST_SKILL_WIDTH_PX = 100;
@@ -42,8 +42,8 @@ const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
     );
     const searchQuery = 'searchQuery' in props ? props.searchQuery : undefined;
     const providedSkills = 'skills' in props ? props.skills : undefined;
-    const layout = 'layout' in props ? props.layout ?? 'truncate' : 'truncate';
-    const containerClassName = 'className' in props ? props.className ?? '' : '';
+    const layout = 'layout' in props ? (props.layout ?? 'truncate') : 'truncate';
+    const containerClassName = 'className' in props ? (props.className ?? '') : '';
     const isWrapLayout = layout === 'wrap';
 
     const { data: semanticSearchSkillsData, isLoading: semanticSearchSkillsLoading } =
@@ -194,7 +194,7 @@ const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
 
                 <div className={skillRowClassName}>
                     {Array.from({ length: 2 }, (_unused: unknown, index: number) => (
-                        <IonSkeletonText
+                        <AppSkeletonText
                             key={`skill-skeleton-${index}`}
                             animated
                             style={{

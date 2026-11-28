@@ -13,7 +13,7 @@ import CircleCheckOutlineIcon from 'learn-card-base/svgs/CircleCheckOutlineIcon'
 import { ModalTypes, useModal } from 'learn-card-base';
 
 import { BadgeDataRow, ImageTrackingType } from './AdminToolsBulkBoostImportOption';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import * as m from '../../../paraglide/messages.js';
@@ -186,7 +186,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white`}
                         >
                             {showLoader ? (
-                                <IonSpinner name="crescent" className="inline mr-2" />
+                                <AppSpinner name="crescent" className="inline mr-2" />
                             ) : (
                                 <UploadIcon className="inline mr-2" strokeWidth="2" />
                             )}

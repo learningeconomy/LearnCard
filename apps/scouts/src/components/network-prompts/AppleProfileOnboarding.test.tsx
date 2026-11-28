@@ -73,29 +73,6 @@ vi.mock('learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons', 
 }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ resetQueries: vi.fn() }) }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonCol: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonSpinner: () => <span>Saving indicator</span>,
-    IonInput: ({
-        value,
-        placeholder,
-        onIonInput,
-        disabled,
-    }: {
-        value: string;
-        placeholder: string;
-        disabled?: boolean;
-        onIonInput?: (event: { detail: { value: string } }) => void;
-    }) => (
-        <input
-            value={value}
-            placeholder={placeholder}
-            disabled={disabled}
-            onChange={e => onIonInput?.({ detail: { value: e.target.value } })}
-        />
-    ),
-}));
 vi.mock('../../helpers/externalLinkHelpers', () => ({ openPP: vi.fn(), openToS: vi.fn() }));
 vi.mock('../userOptions/DeleteUserConfirmationPrompt', () => ({ default: () => null }));
 vi.mock('./hooks/useJoinLCNetworkModal', () => ({ JoinNetworkModalWrapper: () => null }));

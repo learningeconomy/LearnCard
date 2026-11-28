@@ -5,7 +5,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 
 import CustomSpinner from '../svgs/CustomSpinner';
-import { IonMenuToggle, IonList } from '@ionic/react';
+import { AppList } from 'learn-card-base/ui/list';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 
 import {
     CredentialCategoryEnum,
@@ -198,18 +199,18 @@ const SideMenuSecondaryLinks: React.FC<{
         }
 
         return (
-            <IonMenuToggle key={link.path} autoHide={false} className="relative w-full">
+            <AppMenuToggle key={link.path} autoHide={false} className="relative w-full">
                 <li className="flex items-center justify-center px-0 py-[3px]">{linkEl}</li>
                 {isWalletPath && !isPathActive(link.path) && (
                     <div className="relative w-full flex items-center justify-center pb-2">
                         <div className="bottom-0 h-[1px] bg-gray-200 w-[90%]" />
                     </div>
                 )}
-            </IonMenuToggle>
+            </AppMenuToggle>
         );
     });
 
-    return <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">{secondaryLinks}</IonList>;
+    return <AppList className="m-4 rounded-2xl h-auto pt-4 pb-4">{secondaryLinks}</AppList>;
 };
 
 export default SideMenuSecondaryLinks;

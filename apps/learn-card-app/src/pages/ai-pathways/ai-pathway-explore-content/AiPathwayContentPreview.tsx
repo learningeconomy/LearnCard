@@ -4,12 +4,12 @@ import { Browser } from '@capacitor/browser';
 
 import { Lightbox, LightboxItem } from '@learncard/react';
 import Video from 'learn-card-base/svgs/Video';
-import { IonFooter } from '@ionic/react';
 
 import { useModal, VideoMetadata, getVideoMetadata, getVideoSource } from 'learn-card-base';
 
 import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
 import { AiPathwayContent } from './ai-pathway-content.helpers';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ content }) => {
     const { closeModal } = useModal();
@@ -127,7 +127,7 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                     </section>
                 </div>
             </div>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -145,7 +145,7 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                         Start
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner, IonRow, IonGrid } from '@ionic/react';
 
 import { AddressBookHeader } from './addressBook-header/AddressBookHeader';
 import AddressBookContactList from './addressBook-contact-list/AddressBookContactList';
@@ -36,6 +35,11 @@ import Pulpo from '../../assets/lotties/cuteopulpo.json';
 import MainHeader from '../../components/main-header/MainHeader';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import type { AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
+
 const log = getLogger('address-book');
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
@@ -59,7 +63,7 @@ const AddressBook: React.FC = () => {
     const { url } = useRouteMatch();
     const { presentToast } = useToast();
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
-    const searchInputRef = useRef<HTMLIonInputElement>(null);
+    const searchInputRef = useRef<AppInputHandle>(null);
 
     // Block profile mutation
     const { mutate: blockProfile } = useBlockProfileMutation();
@@ -139,8 +143,8 @@ const AddressBook: React.FC = () => {
     // Search input handlers
     const handleSearch = useCallback((value: string) => setSearch(value), []);
     const handleSearchFocus = useCallback(() => {
-        searchInputRef.current?.blur();
-        searchInputRef.current?.setFocus();
+        void searchInputRef.current?.getInputElement().then(input => input?.blur());
+        void searchInputRef.current?.setFocus();
     }, []);
     const clearSearch = useCallback(() => setSearch(''), []);
 
@@ -186,14 +190,14 @@ const AddressBook: React.FC = () => {
     };
 
     return (
-        <IonPage className="bg-grayscale-100">
+        <AppPage className="bg-grayscale-100">
             <MainHeader
                 customClassName="bg-grayscale-100"
                 branding={BrandingEnum.scoutPass}
                 customHeaderClass="px-0"
             />
 
-            <IonContent fullscreen style={{ '--background': '#EFF0F5' }}>
+            <AppContent fullscreen style={{ '--background': '#EFF0F5' }}>
                 <AddressBookHeader
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
@@ -207,7 +211,7 @@ const AddressBook: React.FC = () => {
                 <AddressBookContactCard />
 
                 <div className="w-full max-w-[400px] sm:max-w-[600px] mx-auto my-4 rounded-2xl bg-white shadow-lg">
-                    <IonGrid className="flex flex-col items-center justify-center w-full mb-[120px] sm:mb-[0px]">
+                    <AppGrid className="flex flex-col items-center justify-center w-full mb-[120px] sm:mb-[0px]">
                         {records?.length > 0 &&
                             (selectedGroupId === 'all' ? (
                                 <button
@@ -259,10 +263,10 @@ const AddressBook: React.FC = () => {
                             blockedCount={blockedCount}
                             requestCount={requestCount}
                         />
-                        <IonRow className="flex items-center justify-center w-full max-w-[650px]">
+                        <AppRow className="flex items-center justify-center w-full max-w-[650px]">
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
-                                    <IonSpinner color="black" />
+                                    <AppSpinner color="black" />
                                     <p className="mt-2 font-bold text-lg">
                                         {m['addressBook.loading']()}
                                     </p>
@@ -324,11 +328,11 @@ const AddressBook: React.FC = () => {
                                     activeTab={activeTab}
                                 />
                             )}
-                        </IonRow>
-                    </IonGrid>
+                        </AppRow>
+                    </AppGrid>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -56,11 +56,6 @@ vi.mock('learn-card-base/helpers/video.helpers', () => ({
 
 vi.mock('../../assets/images/media-display-type.svg', () => ({ default: '' }));
 
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
-        <div {...props}>{children}</div>
-    ),
-}));
 vi.mock('@learncard/react', async importOriginal => {
     const actual = await importOriginal<typeof import('@learncard/react')>();
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { useModal } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
@@ -32,7 +32,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
     if (!contractDetails) {
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
-                <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
+                <AppSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
                 <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
             </div>
         );

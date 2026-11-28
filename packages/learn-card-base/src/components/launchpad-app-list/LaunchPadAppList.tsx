@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { IonItem, IonList } from '@ionic/react';
 import LaunchPadBecomeAnApp from './LaunchPadBecomeAnApp';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 export enum LaunchPadAppType {
     AI = 'ai',
@@ -35,7 +35,7 @@ export const LaunchPadAppList: React.FC<{ apps: LaunchPadAppListItem[] }> = ({ a
         if (!app.displayInLaunchPad) return null;
 
         return (
-            <IonItem
+            <AppItem
                 key={index}
                 lines="none"
                 className="w-[95%] max-w-[600px] ion-no-border px-[12px] py-[16px] border-gray-200 border-b-2 last:border-b-0 flex items-center justify-between notificaion-list-item"
@@ -69,15 +69,15 @@ export const LaunchPadAppList: React.FC<{ apps: LaunchPadAppListItem[] }> = ({ a
                         </div>
                     </div>
                 </div>
-            </IonItem>
+            </AppItem>
         );
     });
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-full pb-14">
+        <AppList lines="none" className="flex flex-col items-center justify-center w-full pb-14">
             {appItems}
             <LaunchPadBecomeAnApp />
-        </IonList>
+        </AppList>
     );
 };
 

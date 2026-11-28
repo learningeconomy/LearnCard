@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 import { useDeviceTypeByWidth, useFeatureConfig } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -21,6 +20,7 @@ import {
 } from './learnCardAppShortcuts';
 import useMoreApps from './useMoreApps';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 
@@ -138,7 +138,7 @@ const MyAppsLanding: React.FC = () => {
     if (hasDeepLink) return null;
 
     return (
-        <IonPage className="bg-grayscale-100">
+        <AppPage className="bg-grayscale-100">
             {/* Desktop hides the header bar entirely (the sidebar carries the LEARNCARD
                 wordmark) and renders the profile/alerts island in the content row below;
                 mobile keeps the frosted MainHeader bar. */}
@@ -153,7 +153,7 @@ const MyAppsLanding: React.FC = () => {
                     <ProfileAlertsIsland />
                 </div>
             )}
-            <IonContent fullscreen color="grayscale-100" scrollEvents onIonScroll={onHeaderScroll}>
+            <AppContent fullscreen color="grayscale-100" scrollEvents onIonScroll={onHeaderScroll}>
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12 md:pt-6">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">
@@ -217,8 +217,8 @@ const MyAppsLanding: React.FC = () => {
                         </>
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -8,7 +8,7 @@
 
 import React from 'react';
 
-import { speedometerOutline } from 'ionicons/icons';
+import { speedometerOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Termination } from '../../types';
 import { INPUT, LABEL } from '../shared/inputs';

@@ -1,15 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import {
-    IonCol,
-    IonContent,
-    IonGrid,
-    IonHeader,
-    IonInput,
-    IonPage,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
 import BoostPackSelector from './BoostPackSelector';
 import { BoostSelectMenuTabsEnum } from './NewBoostSelectMenuTabs';
 import NewBoostSelectMenuBoostPackItem from './NewBoostSelectMenuBoostPackItem';
@@ -32,6 +22,9 @@ import {
     BadgePackOptionsEnum,
     badgePacks,
 } from './badge-pack.helper';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
@@ -174,9 +167,9 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonHeader className="ion-no-border ion-no-padding">
-                <IonToolbar className="ion-no-border ion-no-padding">
+        <AppPage>
+            <AppHeader className="ion-no-border ion-no-padding">
+                <AppToolbar className="ion-no-border ion-no-padding">
                     <div className="w-full flex flex-col items-center justify-center ion-padding">
                         <div className="flex items-center justify-between w-full max-w-[600px]">
                             <h3 className="text-[22px] text-grayscale-900 font-notoSans">
@@ -206,28 +199,28 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         )}
 
                         <div className="w-full max-w-[600px] mt-6">
-                            <IonInput
+                            <AppInput
                                 value={search}
                                 placeholder={m['boost.searchPlaceholder']()}
                                 autocapitalize="on"
                                 className="bg-grayscale-100 text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
-                                onIonInput={e => setSearch(e.detail.value?.trim() || '')}
+                                onValueInput={value => setSearch(value?.trim() || '')}
                                 clearInput
                             />
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
-            <IonContent color="grayscale-100" fullscreen>
-                <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
-                    <IonGrid className="max-w-[600px]">
+            <AppContent color="grayscale-100" fullscreen>
+                <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
+                    <AppGrid className="max-w-[600px]">
                         {renderNoResults(activeTab)}
-                        <IonRow>{renderBoostItems()}</IonRow>
-                    </IonGrid>
-                </IonCol>
-            </IonContent>
-        </IonPage>
+                        <AppRow>{renderBoostItems()}</AppRow>
+                    </AppGrid>
+                </AppCol>
+            </AppContent>
+        </AppPage>
     );
 };
 

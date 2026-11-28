@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Search from 'learn-card-base/svgs/Search';
 import LearnerInsightsPopOverButton from './LearnerInsightsPopOverButton';
 
@@ -35,11 +35,11 @@ export const LearnerInsightsSearch: React.FC<RequestInsightsSearchProps> = ({
                     <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                     </div>
-                    <IonInput
+                    <AppInput
                         type="text"
                         value={searchInput}
                         placeholder={m['common.search']()}
-                        onIonInput={e => setSearchInput(e.detail.value)}
+                        onValueInput={value => setSearchInput(value)}
                         className="text-left bg-grayscale-200 text-grayscale-800 rounded-[10px] py-[4px]! font-normal !font-notoSans text-[17px] pl-[44px]!"
                     />
                 </div>

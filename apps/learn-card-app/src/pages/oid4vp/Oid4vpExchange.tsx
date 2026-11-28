@@ -13,7 +13,6 @@ import * as m from '../../paraglide/messages.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
-import { IonContent, IonPage } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('oid4vp-exchange');
 
@@ -53,6 +52,7 @@ import { loadCandidatePool, type PooledCandidate, type WalletForCandidates } fro
 import { resilientPresentCredentials } from '../../helpers/oid4vc-resilience/resilientVp';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface ParsedSdJwtForConsent {
     disclosureKeys?: string[];
@@ -436,8 +436,8 @@ const Oid4vpExchange: React.FC = () => {
 
     if (!requestUri) {
         return (
-            <IonPage>
-                <IonContent>
+            <AppPage>
+                <AppContent>
                     <ExchangeErrorDisplay
                         friendly={{
                             kind: 'request_invalid',
@@ -449,14 +449,14 @@ const Oid4vpExchange: React.FC = () => {
                         }}
                         onCancel={() => history.push('/')}
                     />
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 {phase.kind === 'loading' && <RequestLoading />}
 
                 {phase.kind === 'consent' && (
@@ -520,12 +520,12 @@ const Oid4vpExchange: React.FC = () => {
                         onCancel={() => history.push('/')}
                     />
                 )}
-            </IonContent>
+            </AppContent>
             <RecoveryPromptModal
                 prompt={resilience.pendingPrompt}
                 onResolve={resilience.resolvePrompt}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

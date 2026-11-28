@@ -12,13 +12,15 @@ import AlignmentToggle from './AlignmentToggle';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import ConfirmAlignmentDeletionModal from './ConfirmAlignmentDeletionModal';
-import { IonFooter, IonInput, IonTextarea } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 import {
     FrameworkNodeRole,
     SkillFramework,
     SkillFrameworkNode,
 } from 'apps/learn-card-app/src/components/boost/boost';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type EditAlignmentModalProps = {
     framework: SkillFramework;
@@ -222,11 +224,11 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                             <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
                                 Code
                             </label>
-                            <IonInput
-                                onIonInput={e => {
+                            <AppInput
+                                onValueInput={value => {
                                     setNode(prev => ({
                                         ...prev,
-                                        targetCode: e.detail.value ?? '',
+                                        targetCode: value,
                                     }));
                                 }}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"
@@ -240,11 +242,11 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
                             Title*
                         </label>
-                        <IonInput
-                            onIonInput={e => {
+                        <AppInput
+                            onValueInput={value => {
                                 setNode(prev => ({
                                     ...prev,
-                                    targetName: e.detail.value ?? '',
+                                    targetName: value,
                                 }));
                             }}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"
@@ -305,11 +307,11 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
                             Statement
                         </label>
-                        <IonTextarea
-                            onIonInput={e => {
+                        <AppTextarea
+                            onValueInput={value => {
                                 setNode(prev => ({
                                     ...prev,
-                                    targetDescription: e.detail.value ?? '',
+                                    targetDescription: value,
                                 }));
                             }}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"
@@ -370,7 +372,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
     ) : (
         <div className="h-full w-full relative overflow-y-auto bg-grayscale-200">
             <div className="h-full overflow-y-auto pb-[150px] pt-[60px] px-[20px] ">{content}</div>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -391,7 +393,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         </button>
                     )}
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

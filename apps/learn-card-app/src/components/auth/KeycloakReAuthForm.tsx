@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { authUserStore, currentUserStore, useSignInAdapter } from 'learn-card-base';
 import type { KeycloakSignInAdapter } from 'learn-card-base';
 import { useSendLoginVerificationCode } from 'learn-card-base/react-query/mutations/firebase';
@@ -117,7 +117,7 @@ export const KeycloakReAuthForm: React.FC<{
                     role="alert"
                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />

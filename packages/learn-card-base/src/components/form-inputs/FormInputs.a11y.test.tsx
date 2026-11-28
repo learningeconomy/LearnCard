@@ -9,67 +9,6 @@ const modalMocks = vi.hoisted(() => ({
     closeModal: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonInput: ({
-        onIonInput,
-        onIonFocus,
-        onIonBlur,
-        maxlength,
-        debounce: _debounce,
-        autocapitalize,
-        value,
-        ...props
-    }: {
-        onIonInput?: (event: { detail: { value: string } }) => void;
-        onIonFocus?: () => void;
-        onIonBlur?: () => void;
-        maxlength?: number;
-        debounce?: number;
-        autocapitalize?: string;
-        value?: string | number | null;
-    } & React.InputHTMLAttributes<HTMLInputElement>) => (
-        <input
-            {...props}
-            value={value ?? ''}
-            maxLength={maxlength}
-            autoCapitalize={autocapitalize}
-            onChange={event => onIonInput?.({ detail: { value: event.target.value } })}
-            onFocus={onIonFocus}
-            onBlur={onIonBlur}
-        />
-    ),
-    IonTextarea: ({
-        onIonInput,
-        onIonFocus,
-        onIonBlur,
-        maxlength,
-        debounce: _debounce,
-        autoGrow: _autoGrow,
-        autocapitalize,
-        value,
-        ...props
-    }: {
-        onIonInput?: (event: { detail: { value: string } }) => void;
-        onIonFocus?: () => void;
-        onIonBlur?: () => void;
-        maxlength?: number;
-        debounce?: number;
-        autoGrow?: boolean;
-        autocapitalize?: string;
-        value?: string | null;
-    } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-        <textarea
-            {...props}
-            value={value ?? ''}
-            maxLength={maxlength}
-            autoCapitalize={autocapitalize}
-            onChange={event => onIonInput?.({ detail: { value: event.target.value } })}
-            onFocus={onIonFocus}
-            onBlur={onIonBlur}
-        />
-    ),
-}));
-
 vi.mock('../modals/useModal', () => ({
     default: () => modalMocks,
 }));
@@ -123,14 +62,13 @@ describe('shared form input accessibility', () => {
         const input = screen.getByRole('textbox', { name: 'Email' });
         const textarea = screen.getByRole('textbox', { name: 'Summary' });
 
-        expect(input.parentElement?.classList.contains('custom-input-surface')).toBe(true);
-        expect(input.parentElement?.parentElement?.classList.contains('custom-input-surface')).toBe(
-            false
-        );
-        expect(textarea.parentElement?.classList.contains('custom-textarea-surface')).toBe(true);
-        expect(
-            textarea.parentElement?.parentElement?.classList.contains('custom-textarea-surface')
-        ).toBe(false);
+        // The override lands on the field surface that wraps the control, not the label wrapper.
+        const inputSurface = input.closest('.custom-input-surface');
+        const textareaSurface = textarea.closest('.custom-textarea-surface');
+        expect(inputSurface).not.toBeNull();
+        expect(inputSurface?.parentElement?.closest('.custom-input-surface')).toBeNull();
+        expect(textareaSurface).not.toBeNull();
+        expect(textareaSurface?.parentElement?.closest('.custom-textarea-surface')).toBeNull();
     });
 
     it('names search and textarea controls and keeps errors discoverable', () => {

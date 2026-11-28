@@ -1,5 +1,5 @@
 import React from 'react';
-import { mailOutline } from 'ionicons/icons';
+import { mailOutline } from 'learn-card-base/icons/ionicons';
 import { hasEmailDestination } from './model';
 import type { CampaignForm } from './types';
 import { DeliveryContentHeading, Field, inputClass } from './ui';

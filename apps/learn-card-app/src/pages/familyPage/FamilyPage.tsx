@@ -5,7 +5,6 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import { lazyWithRetry } from 'learn-card-base';
 import { m } from '../../paraglide/messages.js';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IonContent, IonPage } from '@ionic/react';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,
@@ -41,6 +40,7 @@ import { useLoadingLine } from '../../stores/loadingStore';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const FamilyPage: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -176,7 +176,7 @@ const FamilyPage: React.FC = () => {
         );
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <GenericErrorBoundary category={CredentialCategoryEnum.family}>
                 <MainHeader
                     category={CredentialCategoryEnum.family}
@@ -211,7 +211,7 @@ const FamilyPage: React.FC = () => {
                     )}
                 </MainHeader>
 
-                <IonContent
+                <AppContent
                     fullscreen
                     className={`relative bg-${backgroundSecondaryColor}`}
                     color={backgroundSecondaryColor}
@@ -222,9 +222,9 @@ const FamilyPage: React.FC = () => {
                     {activeTab === CredentialListTabEnum.Managed && (
                         <BoostManagedList {...listProps} />
                     )}
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

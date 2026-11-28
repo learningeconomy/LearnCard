@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
@@ -94,7 +94,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                     <>
                         {afterRecovery && (
                             <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
-                                <IonIcon
+                                <AppIcon
                                     icon={checkmarkCircleOutline}
                                     className="text-emerald-600 text-3xl"
                                 />

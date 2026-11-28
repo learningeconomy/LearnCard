@@ -1,7 +1,7 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 
-import { IonToggle } from '@ionic/react';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory, GenericCardWrapper, useVerifiableData } from 'learn-card-base';
@@ -205,7 +205,7 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
 
                                 <span className="flex justify-center items-center font-medium">
                                     All
-                                    <IonToggle
+                                    <AppToggle
                                         onClick={() => {
                                             if (!category?.shareAll) {
                                                 updateCategory(
@@ -222,7 +222,6 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
                                             }
                                             updateCategory('shareAll', !category?.shareAll);
                                         }}
-                                        slot="end"
                                         className="ml-[10px]"
                                         checked={category?.shareAll}
                                         aria-label={`${vcType} toggle`}

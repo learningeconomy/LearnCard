@@ -4,10 +4,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 
 const completion = vi.hoisted(() => ({ percentage: 0, isFetched: false }));
 
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('react-error-boundary', () => ({
     ErrorBoundary: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));

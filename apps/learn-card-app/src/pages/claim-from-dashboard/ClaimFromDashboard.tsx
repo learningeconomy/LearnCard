@@ -4,15 +4,9 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import {
-    IonLoading,
-    IonContent,
-    IonPage,
-    IonRow,
-    IonFooter,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-from-dashboard');
@@ -61,6 +55,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export type FromDashboardMetadata = {
     credentialName: string;
@@ -278,18 +273,21 @@ const ClaimFromDashboard: React.FC = () => {
         history.push('/');
     };
 
-    const [presentModal, dismissModal] = useIonModal(ClaimBoostLoggedOutPrompt, {
+    const [presentModal, dismissModal] = useAppOverlayModal(ClaimBoostLoggedOutPrompt, {
         handleCloseModal: () => dismissModal(),
         handleRedirectTo: handleRedirectTo,
     });
 
-    const [presentNewDataSourceModal, dismissNewDataSourceModal] = useIonModal(NewDataSource, {
-        handleCloseModal: () => {
-            history.replace('/home');
-            dismissNewDataSourceModal();
-        },
-        entryId: credential?.id,
-    });
+    const [presentNewDataSourceModal, dismissNewDataSourceModal] = useAppOverlayModal(
+        NewDataSource,
+        {
+            handleCloseModal: () => {
+                history.replace('/home');
+                dismissNewDataSourceModal();
+            },
+            entryId: credential?.id,
+        }
+    );
 
     useEffect(() => {
         (async () => {
@@ -489,15 +487,15 @@ const ClaimFromDashboard: React.FC = () => {
     const credBackground = credential?.display?.backgroundImage ?? undefined;
 
     return (
-        <IonPage>
+        <AppPage>
             {duplicateCredentialPrompt}
-            <IonLoading
+            <AppLoading
                 mode="ios"
                 message={loadingText}
                 isOpen={loading || claimingCredential || isCheckingDuplicate}
                 cssClass="[--background:none]"
             />
-            <IonContent fullscreen color="grayscale-100">
+            <AppContent fullscreen color="grayscale-100">
                 <div
                     className={`pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto ${previewHorizontalPaddingClass}`}
                     style={{
@@ -536,13 +534,13 @@ const ClaimFromDashboard: React.FC = () => {
                         </section>
                     )}
                 </div>
-            </IonContent>
-            <IonFooter
+            </AppContent>
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
             >
-                <IonToolbar color="transparent" mode="ios">
-                    <IonRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
+                <AppToolbar color="transparent" mode="ios">
+                    <AppRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
                         <button
                             onClick={() => {
                                 completeClaimAttempt(
@@ -593,10 +591,10 @@ const ClaimFromDashboard: React.FC = () => {
                                 <FatArrow direction="left" />
                             )}
                         </button>
-                    </IonRow>
-                </IonToolbar>
-            </IonFooter>
-        </IonPage>
+                    </AppRow>
+                </AppToolbar>
+            </AppFooter>
+        </AppPage>
     );
 };
 

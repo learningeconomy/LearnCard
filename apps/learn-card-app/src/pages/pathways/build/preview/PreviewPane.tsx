@@ -18,8 +18,8 @@
 
 import React, { useMemo } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { flagOutline, phonePortraitOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { flagOutline, phonePortraitOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Pathway, PathwayNode, Policy } from '../../types';
 import { summarizePolicy } from '../summarize/summarizePolicy';
@@ -104,7 +104,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
                     <div className="space-y-v3-1">
                         {isDestination && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                <IonIcon
+                                <AppIcon
                                     icon={flagOutline}
                                     aria-hidden
                                     className="text-[11px]"
@@ -167,7 +167,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
 
 const PreviewHeader: React.FC = () => (
     <header className="flex items-center gap-2 px-1">
-        <IonIcon
+        <AppIcon
             icon={phonePortraitOutline}
             aria-hidden
             className="text-grayscale-500 text-sm"

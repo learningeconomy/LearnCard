@@ -1,13 +1,12 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
-
 import { useModal } from 'learn-card-base';
 
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
 } from '../../new-ai-session/NewAiSessionButton/NewAiSessionButton';
 import { LaunchPadAppListItem } from 'learn-card-base';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiPassportAppProfileFooter: React.FC<{
     showBackButton?: boolean;
@@ -16,7 +15,7 @@ export const AiPassportAppProfileFooter: React.FC<{
     const { closeModal } = useModal();
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -46,7 +45,7 @@ export const AiPassportAppProfileFooter: React.FC<{
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

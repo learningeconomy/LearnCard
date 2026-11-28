@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonPage, IonContent } from '@ionic/react';
 import { Loader2 } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -8,6 +7,7 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { DashboardRouter } from '../dashboards';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 /**
  * IntegrationPage - Main page for viewing/managing an integration.
@@ -33,13 +33,13 @@ const IntegrationPage: React.FC = () => {
 
     if (isLoadingIntegrations) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader
                     title={m['developerPortal.shell.title']()}
                     rightContent={integrationSelector}
                 />
 
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center">
@@ -50,20 +50,20 @@ const IntegrationPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!currentIntegration) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader
                     title={m['developerPortal.shell.title']()}
                     rightContent={integrationSelector}
                 />
 
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center">
@@ -73,24 +73,24 @@ const IntegrationPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader
                 title={m['developerPortal.shell.title']()}
                 rightContent={integrationSelector}
             />
 
-            <IonContent className="ion-padding">
+            <AppContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
                     <DashboardRouter integration={currentIntegration} isLoading={false} />
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

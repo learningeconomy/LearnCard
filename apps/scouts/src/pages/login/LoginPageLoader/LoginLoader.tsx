@@ -2,12 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash';
 
-import { IonContent, IonPage, IonRow } from '@ionic/react';
-
 import ScoutPassTextLogo from '../../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../../assets/images/scoutpass-logo.svg';
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 export const LoginLoadingPage: React.FC = () => {
     const locale = useLocale();
@@ -48,9 +48,9 @@ export const LoginLoadingPage: React.FC = () => {
     }, [colors, interval]);
 
     return (
-        <IonPage>
-            <IonContent fullscreen color="emerald-700" className="flex items-center justify-center">
-                <IonRow
+        <AppPage>
+            <AppContent fullscreen color="emerald-700" className="flex items-center justify-center">
+                <AppRow
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
@@ -70,9 +70,9 @@ export const LoginLoadingPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

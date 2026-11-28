@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 import Plus from '../../svgs/Plus';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import UserEmailContactItem from './UserEmailContactItem';
 
 import { EMAIL_REGEX, useGetMyContactMethods, useAddContactMethod } from 'learn-card-base';
@@ -137,7 +137,7 @@ export const UserEmailContacts: React.FC = () => {
                             disabled={addContactMethodLoading}
                         >
                             {addContactMethodLoading ? (
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="light"
                                     className="w-[20px] h-[20px]"

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, closeOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { ShareLink, SharePayload } from '@learncard/types';
 import { useWallet } from 'learn-card-base';
 import { decryptSharePayload, validateShareManifest } from 'learn-card-base/helpers/share-links';
@@ -96,7 +96,7 @@ export const ShareLinkOwnerPreview = ({ share, onDismiss }: ShareLinkOwnerPrevie
                     onClick={onDismiss}
                     className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-grayscale-300 bg-white text-xl text-grayscale-700 transition-colors hover:bg-grayscale-10"
                 >
-                    <IonIcon icon={closeOutline} />
+                    <AppIcon icon={closeOutline} />
                 </button>
             </header>
 
@@ -115,7 +115,7 @@ export const ShareLinkOwnerPreview = ({ share, onDismiss }: ShareLinkOwnerPrevie
                     {!loading && error && (
                         <div className="rounded-[20px] border border-red-100 bg-white p-6">
                             <div className="flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="mt-0.5 shrink-0 text-lg text-red-400"
                                 />

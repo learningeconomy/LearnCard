@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import {
     useClassLinkPersonalEmail,
     useFeatureConfig,
@@ -125,7 +125,7 @@ const PersonalEmailPromptCard: React.FC = () => {
                     role="status"
                     className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={checkmarkCircleOutline}
                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                     />
@@ -148,7 +148,7 @@ const PersonalEmailPromptCard: React.FC = () => {
                             role="alert"
                             className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 className="text-red-400 text-lg mt-0.5 shrink-0"
                             />

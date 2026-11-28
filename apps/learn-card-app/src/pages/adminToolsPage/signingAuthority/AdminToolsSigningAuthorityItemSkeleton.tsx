@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const AdminToolsSigningAuthorityItemSkeleton: React.FC = () => {
     return (
@@ -7,8 +7,8 @@ export const AdminToolsSigningAuthorityItemSkeleton: React.FC = () => {
             <div className="w-full flex flex-col items-start justify-between px-4 space-y-v3-4">
                 {[...Array(3)].map((_, index) => (
                     <div key={index} className="w-full flex items-center justify-between">
-                        <IonSkeletonText animated className="w-[75%] h-[20px] rounded-md" />
-                        <IonSkeletonText animated className="w-[25px] h-[25px] rounded-md" />
+                        <AppSkeletonText animated className="w-[75%] h-[20px] rounded-md" />
+                        <AppSkeletonText animated className="w-[25px] h-[25px] rounded-md" />
                     </div>
                 ))}
             </div>

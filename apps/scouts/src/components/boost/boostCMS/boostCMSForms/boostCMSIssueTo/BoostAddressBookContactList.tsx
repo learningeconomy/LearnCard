@@ -1,11 +1,10 @@
 import React from 'react';
 
-import { IonList } from '@ionic/react';
-
 import BoostAddressBookContactItem from './BoostAddressBookContactItem';
 import { BoostUserTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
 import { BoostAddressBookEditMode } from './BoostAddressBook';
+import { AppList } from 'learn-card-base/ui/list';
 
 type BoostAddressBookContactListProps = {
     state: BoostCMSState;
@@ -49,9 +48,9 @@ export const BoostAddressBookContactList: React.FC<BoostAddressBookContactListPr
     });
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+        <AppList lines="none" className="flex flex-col items-center justify-center w-full">
             {contactItems}
-        </IonList>
+        </AppList>
     );
 };
 

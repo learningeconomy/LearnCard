@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import PersonalizationQuestionTitle from '../helpers/personalizationI18n';
 
 import { PersonalizedQuestionType } from '../personalizedQuestions.helpers';
@@ -24,13 +24,13 @@ export const PersonalizationInputModal: React.FC<{
             <p className="text-left text-grayscale-900 text-[17px] font-notoSans w-full mb-2">
                 <PersonalizationQuestionTitle questionType={question.type} />
             </p>
-            <IonInput
+            <AppInput
                 className="bg-grayscale-100 text-grayscale-900 font-poppins w-full pb-[20px]! rounded-[15px] text-[15px] px-[15px]!"
                 placeholder={placeholderText}
                 id="textInput"
                 value={answer}
-                onIonInput={e => {
-                    setAnswer(e.detail.value ?? '');
+                onValueInput={value => {
+                    setAnswer(value);
                 }}
             />
             <div className="w-full flex items-center justify-end mt-4">

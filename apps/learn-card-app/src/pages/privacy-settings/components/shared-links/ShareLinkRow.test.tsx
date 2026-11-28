@@ -5,14 +5,6 @@ import type { ShareLink } from '@learncard/types';
 
 import ShareLinkRow from './ShareLinkRow';
 
-vi.mock('@ionic/react', () => ({
-    // Forward role/aria-label/etc. so icon-based assertions (e.g. the passcode
-    // indicator) can be queried the same way they render in the real app.
-    IonIcon: ({ icon, ...rest }: { icon?: string } & React.HTMLAttributes<HTMLSpanElement>) => (
-        <span {...rest} />
-    ),
-}));
-
 afterEach(cleanup);
 
 const share = (overrides: Partial<ShareLink> = {}): ShareLink =>

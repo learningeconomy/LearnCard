@@ -3,11 +3,12 @@ import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router';
 
-import { IonContent, IonPage, IonCol } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import { BrandingEnum } from 'learn-card-base';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 type AdminPageStructureProps = {
     title: string;
@@ -26,11 +27,11 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
     const hasAdminAccess = flags.enableAdminTools;
 
     return (
-        <IonPage className="bg-grayscale-100 h-full">
+        <AppPage className="bg-grayscale-100 h-full">
             <MainHeader customClassName="bg-white" branding={BrandingEnum.learncard} />
 
-            <IonContent fullscreen className="bg-grayscale-100 h-full w-full">
-                <IonCol className="flex flex-col gap-[40px] items-center mx-auto relative w-full h-auto min-h-full bg-grayscale-100 px-[20px] py-[30px]">
+            <AppContent fullscreen className="bg-grayscale-100 h-full w-full">
+                <AppCol className="flex flex-col gap-[40px] items-center mx-auto relative w-full h-auto min-h-full bg-grayscale-100 px-[20px] py-[30px]">
                     {hasAdminAccess && (
                         <>
                             <h1 className="text-grayscale-900 text-[28px] font-notoSans font-[600] flex gap-[20px] items-center">
@@ -56,9 +57,9 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
                             </span>
                         </>
                     )}
-                </IonCol>
-            </IonContent>
-        </IonPage>
+                </AppCol>
+            </AppContent>
+        </AppPage>
     );
 };
 

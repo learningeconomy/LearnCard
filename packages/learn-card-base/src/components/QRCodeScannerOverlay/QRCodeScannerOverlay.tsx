@@ -1,9 +1,9 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 import { QRCodeScannerCloseButton } from './QRCodeScannerFooter';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export interface QRCodeScannerOverlayProps {
     title?: string;
@@ -78,7 +78,7 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
                     aria-live="polite"
                 >
                     {feedbackMessage ? (
-                        <IonIcon
+                        <AppIcon
                             icon={hasErrorFeedback ? alertCircleOutline : checkmarkCircleOutline}
                             className={`text-lg ${
                                 hasErrorFeedback ? 'text-red-400' : 'text-emerald-400'

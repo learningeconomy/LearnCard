@@ -11,7 +11,7 @@ import {
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
@@ -26,6 +26,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum StylePackCategories {
     all = BoostCategoryOptionsEnum.all,
@@ -155,9 +156,9 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         const boostOptions = boostVCTypeOptions[boostUserType];
 
         activeStep = (
-            <IonGrid>
-                <IonRow className="w-full flex items-center justify-center pb-6 mt-4">
-                    <IonCol className="w-full flex flex-col items-center justify-center">
+            <AppGrid>
+                <AppRow className="w-full flex items-center justify-center pb-6 mt-4">
+                    <AppCol className="w-full flex flex-col items-center justify-center">
                         <button
                             onClick={() => {
                                 setActiveStylePackCategory(StylePackCategories.all);
@@ -208,7 +209,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                                 );
                             }
                         )}
-                    </IonCol>
+                    </AppCol>
                     <div className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={() => setShowStylePackCategoryList(false)}
@@ -217,8 +218,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             {m['common.cancel']()}
                         </button>
                     </div>
-                </IonRow>
-            </IonGrid>
+                </AppRow>
+            </AppGrid>
         );
     } else {
         // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
@@ -278,7 +279,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                         />
                         {imageUploadLoading && (
                             <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             </div>
                         )}
                         <button onClick={handleDeleteImageUploaded} className="trash-button">
@@ -296,7 +297,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             alt="transparent grid"
                         />
                         <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                         </div>
                     </div>
                 )}
@@ -329,8 +330,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
     }
 
     return (
-        <IonRow className="flex w-full">
-            <IonCol className="boost-cms-badge-container">
+        <AppRow className="flex w-full">
+            <AppCol className="boost-cms-badge-container">
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
@@ -341,8 +342,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                 ) : (
                     activeStep
                 )}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

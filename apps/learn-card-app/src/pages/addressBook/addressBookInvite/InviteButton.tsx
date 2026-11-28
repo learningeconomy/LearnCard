@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import { type InviteSurface } from '@analytics';
@@ -31,7 +31,7 @@ const InviteButton: React.FC<{
             className={`flex h-[41px] w-full items-center justify-center gap-[6px] rounded-[15px] bg-indigo-600 px-[30px] py-[10px] font-poppins text-[14px] font-semibold text-white ${className}`}
         >
             {isSharing ? (
-                <IonSpinner name="crescent" className="h-[20px] w-[20px]" />
+                <AppSpinner name="crescent" className="h-[20px] w-[20px]" />
             ) : (
                 <>
                     <LinkChain version="thin" stroke="white" className="h-[25px] w-[25px]" />

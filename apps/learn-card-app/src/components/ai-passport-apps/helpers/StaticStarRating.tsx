@@ -1,5 +1,5 @@
-import { IonIcon } from '@ionic/react';
-import { star, starOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { star, starOutline } from 'learn-card-base/icons/ionicons';
 
 interface StaticStarRatingProps {
     // The rating value, which may include decimals (e.g., 4.7)
@@ -24,7 +24,7 @@ const StaticStarRating: React.FC<StaticStarRatingProps> = ({
     return (
         <div className="flex items-center">
             {Array.from({ length: starCount }, (_, index) => (
-                <IonIcon
+                <AppIcon
                     key={index}
                     icon={index < roundedRating ? star : starOutline}
                     color={color}

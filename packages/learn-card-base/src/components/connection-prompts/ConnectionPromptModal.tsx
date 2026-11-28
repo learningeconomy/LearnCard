@@ -1,9 +1,9 @@
 import React, { useCallback, useImperativeHandle, useState } from 'react';
-import { IonIcon } from '@ionic/react';
 import type { LCNConnectionPrompt } from '@learncard/types';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { UserProfilePicture } from '../profilePicture/ProfilePicture';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export type ConnectionPromptCopy = {
     title: (name: string) => string;
@@ -90,7 +90,7 @@ export const ConnectionPromptModal: React.FC<ConnectionPromptModalProps> = ({
                     role="alert"
                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-start"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />

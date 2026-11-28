@@ -5,7 +5,8 @@ const log = getLogger('vpr-d-i-d-auth');
 
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
-import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -59,10 +60,10 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
-                <IonRow className="w-full flex items-center justify-center h-full">
-                    <IonCol className="w-full flex flex-col items-center justify-center text-center">
+        <AppPage>
+            <AppContent fullscreen>
+                <AppRow className="w-full flex items-center justify-center h-full">
+                    <AppCol className="w-full flex flex-col items-center justify-center text-center">
                         <h2 className="mt-6 font-bold">
                             {event?.credentialRequestOrigin}
                             <br />
@@ -84,10 +85,10 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
                                 Reject
                             </button>
                         </div>
-                    </IonCol>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                    </AppCol>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

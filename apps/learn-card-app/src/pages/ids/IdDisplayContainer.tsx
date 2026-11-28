@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import MembershipSleeve from 'learn-card-base/assets/images/membership-sleeve.svg';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
@@ -119,8 +119,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 }}
                 className="bottom-0 left-0 absolute min-w-full w-full h-[55%] bg-repeat bg-contain z-50"
             >
-                <IonRow className="w-full flex items-center">
-                    <IonCol className="flex justify-start items-center pl-2">
+                <AppRow className="w-full flex items-center">
+                    <AppCol className="flex justify-start items-center pl-2">
                         {loading && (
                             <div className="flex items-start justify-start">
                                 <BoostSkeleton
@@ -133,12 +133,12 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 />
                             </div>
                         )}
-                    </IonCol>
+                    </AppCol>
 
-                    <IonCol className="flex justify-end items-center pr-2">
+                    <AppCol className="flex justify-end items-center pr-2">
                         <IDIcon className="text-white" />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         );
     } else {
@@ -189,8 +189,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 }}
                 className="bottom-0 left-0 absolute min-w-full w-full h-[55%] bg-repeat bg-contain z-50"
             >
-                <IonRow className="w-full flex items-center">
-                    <IonCol className="flex justify-start items-center pl-2 mt-1">
+                <AppRow className="w-full flex items-center">
+                    <AppCol className="flex justify-start items-center pl-2 mt-1">
                         {!loading && recipientsEl}
                         {loading && (
                             <div className="flex items-start justify-start">
@@ -204,8 +204,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 />
                             </div>
                         )}
-                    </IonCol>
-                    <IonCol className="flex justify-end items-center pr-2 mt-1">
+                    </AppCol>
+                    <AppCol className="flex justify-end items-center pr-2 mt-1">
                         {loading ? (
                             <BoostSkeleton
                                 containerClassName="small-boost-boost-btn flex boost-btn-click rounded-[40px] w-[96px] h-[40px] text-white flex justify-center items-center"
@@ -227,21 +227,21 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 Boost
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         );
     }
 
     return (
-        <IonRow
+        <AppRow
             className="flex items-center justify-center cursor-pointer mx-4 max-h-[200px] overflow-hidden"
             onClick={handlePreviewBoost}
         >
             <div className="relative id-card-sleeve-container bg-blue-400 rounded-t-[15px] px-[6px]">
                 {!loading && (
-                    <IonRow className="min-h-[55px] pb-1">
-                        <IonCol size="11" className="flex items-center justify-start z-50 mt-2">
+                    <AppRow className="min-h-[55px] pb-1">
+                        <AppCol size="11" className="flex items-center justify-start z-50 mt-2">
                             {showIssuerThumbnail && (
                                 <div className="relative mr-2">
                                     <div
@@ -286,7 +286,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 </p>
                             )} */}
                             </div>
-                        </IonCol>
+                        </AppCol>
                         <button
                             onClick={e => {
                                 e.stopPropagation();
@@ -296,12 +296,12 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                         >
                             <ThreeDots className="text-white h-[30px] p-0 m-0" />
                         </button>
-                    </IonRow>
+                    </AppRow>
                 )}
 
                 {loading && (
-                    <IonRow className="min-h-[55px] pb-1">
-                        <IonCol size="11" className="flex items-center justify-start z-50 mt-2">
+                    <AppRow className="min-h-[55px] pb-1">
+                        <AppCol size="11" className="flex items-center justify-start z-50 mt-2">
                             {showIssuerThumbnail && (
                                 <div className="relative mr-2">
                                     <div className="w-[45px] h-[45px] min-w-[45px] min-h-[45px] rounded-full bg-none flex items-center justify-center overflow-hidden relative">
@@ -322,8 +322,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                     skeletonStyles={{ width: '50%' }}
                                 />
                             </div>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
 
                 <div
@@ -349,7 +349,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 </div>
                 {idBody}
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

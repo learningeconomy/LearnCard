@@ -5,16 +5,6 @@ import { Clipboard } from '@capacitor/clipboard';
 import { useLocation, useHistory } from 'react-router-dom';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonFooter,
-    IonHeader,
-    IonPage,
-} from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import Camera from 'learn-card-base/svgs/Camera';
@@ -39,6 +29,8 @@ import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('boost-address-book-contact-options');
 
 const BoostAddressBookContactOptions: React.FC<{
@@ -48,7 +40,7 @@ const BoostAddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     footer?: React.ReactNode;
     search?: string;
     setSearch?: React.Dispatch<React.SetStateAction<string>>;
@@ -75,6 +67,7 @@ const BoostAddressBookContactOptions: React.FC<{
     const { presentToast } = useToast();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         (state as any)?.[collectionPropName]
     );
     const [walletDid, setWalletDid] = useState<string>('');
@@ -115,7 +108,9 @@ const BoostAddressBookContactOptions: React.FC<{
     const openAddressBook = () => {
         newAddressBookModal(
             <BoostAddressBook
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={state as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setState={setState as any}
                 viewMode={BoostAddressBookViewMode.full}
                 mode={BoostAddressBookEditMode.edit}
@@ -129,9 +124,11 @@ const BoostAddressBookContactOptions: React.FC<{
                 _setIssueTo={_setIssueTo}
                 search={search}
                 setSearch={setSearch}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 searchResults={searchResults as any}
                 isLoading={isLoading}
                 collectionPropName={collectionPropName}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 boostUri={(state as any).parentID?.boostUri ?? ''}
                 recipients={[]}
                 recipientsLoading={false}
@@ -221,8 +218,10 @@ const BoostAddressBookContactOptions: React.FC<{
 
             try {
                 setState(prevState => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                     const collection = (prevState as any)?.[collectionPropName] ?? [];
                     const userExistsInCollection = collection?.find(
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         (users: any) => users?.profileId === selfProfile?.profileId
                     );
 
@@ -235,6 +234,7 @@ const BoostAddressBookContactOptions: React.FC<{
                 });
 
                 handleCloseModal();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             } catch (e: any) {
                 log.debug('///Add yourself error', e);
                 throw new Error('There was an error', e);
@@ -246,7 +246,7 @@ const BoostAddressBookContactOptions: React.FC<{
         setIssueMode?.(BoostUserTypeEnum.someone);
 
         if (history) {
-            let searchParams = new URLSearchParams(window.location.search);
+            const searchParams = new URLSearchParams(window.location.search);
             searchParams.set('boostUserType', BoostUserTypeEnum.someone);
 
             history.replace({
@@ -262,8 +262,8 @@ const BoostAddressBookContactOptions: React.FC<{
 
     return (
         <div>
-            <IonGrid className="ion-padding">
-                <IonRow className="w-full flex items-center justify-center">
+            <AppGrid className="ion-padding">
+                <AppRow className="w-full flex items-center justify-center">
                     {/* desktop */}
                     <button
                         onClick={() => handleAddYoself()}
@@ -272,8 +272,8 @@ const BoostAddressBookContactOptions: React.FC<{
                         <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                         {m['boostCMS.boostMyself']()}
                     </button>
-                </IonRow>
-                <IonRow className="w-full flex items-center justify-center mt-4">
+                </AppRow>
+                <AppRow className="w-full flex items-center justify-center mt-4">
                     {/* desktop */}
                     <button
                         onClick={() => handleAddSomeoneElse()}
@@ -282,8 +282,8 @@ const BoostAddressBookContactOptions: React.FC<{
                         <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                         {m['boostCMS.boostOthers']()}
                     </button>
-                </IonRow>
-                {/* <IonCol className="w-full flex items-center justify-center">
+                </AppRow>
+                {/* <AppCol className="w-full flex items-center justify-center">
                         <button
                             onClick={() =>
                                 presentCenterModal({
@@ -309,9 +309,9 @@ const BoostAddressBookContactOptions: React.FC<{
                         >
                             <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code
                         </button>
-                    </IonCol> */}
+                    </AppCol> */}
                 {Capacitor.isNativePlatform() && (
-                    <IonCol className="w-full flex items-center justify-center mt-1">
+                    <AppCol className="w-full flex items-center justify-center mt-1">
                         <button
                             onClick={handleScan}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-medium text-2xl w-full shadow-lg modal-btn-mobile"
@@ -319,17 +319,17 @@ const BoostAddressBookContactOptions: React.FC<{
                             <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                             {m['boostCMS.scanUserCode']()}
                         </button>
-                    </IonCol>
+                    </AppCol>
                 )}
-                {/* <IonCol className="w-full flex items-center justify-center mt-1">
+                {/* <AppCol className="w-full flex items-center justify-center mt-1">
                         <button
                             onClick={handleShare}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-mouse text-3xl w-full shadow-lg uppercase tracking-wide"
                         >
                             <LinkChain className="h-[30px] w-[30px] mr-2" /> Share Code
                         </button>
-                    </IonCol> */}
-            </IonGrid>
+                    </AppCol> */}
+            </AppGrid>
         </div>
     );
 };

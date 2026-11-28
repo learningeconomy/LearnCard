@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
 import TotalSkillsCount from './TotalSkillsCount';
-import { IonContent, IonPage } from '@ionic/react';
 import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
@@ -25,6 +24,7 @@ import { SkillFramework } from '../../components/boost/boost';
 import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import SkillsTabs, { SkillsTab } from './SkillsTabs';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const SkillsPage: React.FC = () => {
     const canShowAdminPanel = useCanManageCompetencies();
@@ -91,14 +91,14 @@ const SkillsPage: React.FC = () => {
     }
 
     return (
-        <IonPage className="bg-violet-200">
+        <AppPage className="bg-violet-200">
             <GenericErrorBoundary>
                 <MainHeader
                     showBackButton
                     subheaderType={SubheaderTypeEnum.Skill}
                     hidePlusBtn={true}
                 />
-                <IonContent fullscreen className="skills-page" color="violet-200">
+                <AppContent fullscreen className="skills-page" color="violet-200">
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
                             {/* <TotalSkillsCount total={total} /> */}
@@ -115,9 +115,9 @@ const SkillsPage: React.FC = () => {
                             )}
                         </div>
                     </div>
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

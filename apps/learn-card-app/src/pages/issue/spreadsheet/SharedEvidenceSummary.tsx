@@ -1,12 +1,12 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     peopleOutline,
     documentOutline,
     imageOutline,
     videocamOutline,
     linkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { SimpleMediaAttachment, SimpleMediaType } from '../components/MediaAttachments';
 import * as m from '../../../paraglide/messages.js';
 
@@ -25,7 +25,7 @@ export const SharedEvidenceSummary: React.FC<{ attachments: SimpleMediaAttachmen
         className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-v3-3"
     >
         <div className="flex items-start gap-2.5">
-            <IonIcon
+            <AppIcon
                 icon={peopleOutline}
                 className="mt-0.5 shrink-0 text-lg text-emerald-700"
                 aria-hidden="true"
@@ -48,7 +48,7 @@ export const SharedEvidenceSummary: React.FC<{ attachments: SimpleMediaAttachmen
                         key={attachment.id}
                         className="flex items-center gap-2 rounded-xl border border-grayscale-200 bg-white px-3 py-2"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={ICONS[attachment.type] ?? linkOutline}
                             className="shrink-0 text-grayscale-600"
                             aria-hidden="true"

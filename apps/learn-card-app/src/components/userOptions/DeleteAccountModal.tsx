@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import * as m from '../../paraglide/messages.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
@@ -10,7 +10,7 @@ const DeleteAccountModal: React.FC<{}> = () => {
             role="status"
             aria-live="polite"
         >
-            <IonSpinner
+            <AppSpinner
                 name="crescent"
                 color="dark"
                 className="scale-[1] mr-1"

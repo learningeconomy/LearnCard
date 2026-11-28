@@ -12,7 +12,6 @@ import {
     generateIconsInBatches,
 } from 'learn-card-base';
 
-import { IonFooter, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
 import CodeIcon from 'learn-card-base/svgs/CodeIcon';
@@ -42,6 +41,8 @@ import {
     generateSkillId,
 } from '../../helpers/skillFramework.helpers';
 import { ReplaceSkillFrameworkSkillsResult } from '@learncard/types';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Define the base schema for SkillFrameworkNode
 const BaseSkillFrameworkNodeSchema = z.object({
@@ -601,7 +602,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
             {isSaving && (
                 <div className="absolute top-0 left-0 w-full h-full bg-white/30  backdrop-blur-[2px] z-50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-[15px]">
-                        <IonSpinner name="crescent" color="dark" className="h-[60px] w-[60px]" />
+                        <AppSpinner name="crescent" color="dark" className="h-[60px] w-[60px]" />
                         <span className="text-grayscale-900 font-poppins font-[600] text-[16px]">
                             Saving...
                         </span>
@@ -705,7 +706,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                 </div>
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] p-[20px] absolute bottom-0 left-0 bg-white/60"
             >
@@ -778,7 +779,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

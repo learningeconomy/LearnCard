@@ -47,7 +47,7 @@ test('Ionic grid gutters survive preflight and explicit utilities still win', as
     }
     await page.goto('/tests/visual/tailwind-regression.html?state=tints');
     const grid = page.getByTestId('credential-gutters');
-    const col = grid.locator('ion-col').first();
+    const col = grid.locator('.app-col').first();
     await expect(grid).toHaveCSS('padding-top', '20px');
     await expect(grid).toHaveCSS('padding-left', '5px');
     await expect(col).toHaveCSS('padding', '5px');
@@ -60,7 +60,7 @@ test('Ionic grid gutters survive preflight and explicit utilities still win', as
     expect(cards[1].x - (cards[0].x + cards[0].width)).toBe(10);
     expect(cards[2].y - (cards[0].y + cards[0].height)).toBe(10);
     await expect(page.getByTestId('explicit-grid-spacing')).toHaveCSS('padding', '0px');
-    await expect(page.getByTestId('explicit-grid-spacing').locator('ion-col')).toHaveCSS(
+    await expect(page.getByTestId('explicit-grid-spacing').locator('.app-col')).toHaveCSS(
         'padding',
         '0px'
     );

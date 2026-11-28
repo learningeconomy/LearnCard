@@ -44,7 +44,7 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { useHistory } from 'react-router-dom';
 import {
     arrowDownOutline,
@@ -58,7 +58,7 @@ import {
     linkOutline,
     removeOutline,
     timeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -146,13 +146,13 @@ const TradeoffChip: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
         <span
             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${tone.chip}`}
         >
-            <IonIcon icon={DIMENSION_ICON[tradeoff.dimension]} className={`text-xs ${tone.icon}`} />
+            <AppIcon icon={DIMENSION_ICON[tradeoff.dimension]} className={`text-xs ${tone.icon}`} />
 
             <span className={`text-[11px] font-medium ${tone.label}`}>
                 {DIMENSION_LABEL[tradeoff.dimension]}
             </span>
 
-            <IonIcon
+            <AppIcon
                 icon={DIRECTION_ICON[tradeoff.direction]}
                 className={`text-[10px] ${tone.icon}`}
             />
@@ -172,7 +172,7 @@ const TradeoffDetailRow: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
 
     return (
         <li className="flex items-start gap-2.5">
-            <IonIcon
+            <AppIcon
                 icon={DIMENSION_ICON[tradeoff.dimension]}
                 className={`text-base mt-0.5 shrink-0 ${tone.icon}`}
             />
@@ -203,7 +203,7 @@ const DeltaChip: React.FC<{
         <div
             className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${classes.chip}`}
         >
-            <IonIcon icon={DIRECTION_ICON[tone]} className={`text-xs ${classes.icon}`} />
+            <AppIcon icon={DIRECTION_ICON[tone]} className={`text-xs ${classes.icon}`} />
 
             <span className={`text-xs font-medium ${classes.label}`}>
                 {value} {label}
@@ -252,14 +252,14 @@ const BaselineCard: React.FC<{
 
         <div className="flex flex-wrap gap-2">
             <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
-                <IonIcon icon={timeOutline} className="text-sm text-grayscale-500" />
+                <AppIcon icon={timeOutline} className="text-sm text-grayscale-500" />
                 <span className="text-xs font-medium text-grayscale-700">
                     {baseline.etaMinutes !== null ? formatEta(baseline.etaMinutes) : 'No ETA yet'}
                 </span>
             </div>
 
             <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
-                <IonIcon icon={layersOutline} className="text-sm text-grayscale-500" />
+                <AppIcon icon={layersOutline} className="text-sm text-grayscale-500" />
                 <span className="text-xs font-medium text-grayscale-700">
                     {baseline.remainingSteps !== null
                         ? `${baseline.remainingSteps} ${baseline.remainingSteps === 1 ? 'step' : 'steps'} left`
@@ -441,7 +441,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                 <div className="flex flex-wrap items-center gap-1.5">
                     {simulation.etaMinutes !== null && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-grayscale-200 bg-grayscale-10 px-2 py-0.5">
-                            <IonIcon icon={timeOutline} className="text-xs text-grayscale-500" />
+                            <AppIcon icon={timeOutline} className="text-xs text-grayscale-500" />
                             <span className="text-[11px] font-medium text-grayscale-700">
                                 {formatEta(simulation.etaMinutes)}
                             </span>
@@ -523,7 +523,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                         className="inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         Take this path
-                        <IonIcon icon={arrowForwardOutline} className="text-base" />
+                        <AppIcon icon={arrowForwardOutline} className="text-base" />
                     </button>
                 </div>
             )}
@@ -782,7 +782,7 @@ const EmptyFrame: React.FC<{
 }> = ({ title, body, ctaLabel, onCta }) => (
     <div className="p-8 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center space-y-v3-3">
         <div className="inline-flex w-11 h-11 items-center justify-center rounded-full bg-white border border-grayscale-200">
-            <IonIcon icon={compassOutline} className="text-xl text-grayscale-500" />
+            <AppIcon icon={compassOutline} className="text-xl text-grayscale-500" />
         </div>
 
         <h2 className="text-lg font-semibold text-grayscale-900">{title}</h2>

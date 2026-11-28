@@ -3,7 +3,6 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import * as Sentry from '@sentry/browser';
-import { IonMenu, IonToolbar, IonHeader, IonContent, IonMenuToggle, IonFooter } from '@ionic/react';
 import NewBoostSelectMenu from '../boost/boost-select-menu/NewBoostSelectMenu';
 import ScoutPassLogoAndText from 'learn-card-base/svgs/ScoutLogoAndText';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
@@ -20,6 +19,14 @@ import { ModalTypes, useIsCurrentUserLCNUser, useModal, useScreenWidth } from 'l
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 import { getLogger } from 'learn-card-base';
+import { AppMenu } from 'learn-card-base/ui/app-shell/AppMenu';
+import {
+    AppContent,
+    AppFooter,
+    AppHeader,
+    AppMenuToggle,
+    AppToolbar,
+} from 'learn-card-base/ui/chrome';
 const log = getLogger('side-menu');
 
 const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnum.scoutPass }) => {
@@ -79,7 +86,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
         setCurrentScreen(location.pathname);
     }, [location.pathname]);
 
-    if (!isLoggedIn) return <IonMenu contentId="main" />;
+    if (!isLoggedIn) return <AppMenu contentId="main" />;
 
     const handleBoost = async () => {
         const isCurrentLCNUser =
@@ -111,10 +118,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
     const sideMenuBrandingStyles = sideMenuScoutPassStyles;
 
     return (
-        <IonMenu contentId="main" swipeGesture menuId="appSideMenu">
-            <IonContent className="scout-pass-side-menu-content">
-                <IonHeader className="learn-card-header ion-no-border ion-no-padding">
-                    <IonToolbar
+        <AppMenu contentId="main" swipeGesture menuId="appSideMenu">
+            <AppContent className="scout-pass-side-menu-content">
+                <AppHeader className="learn-card-header ion-no-border ion-no-padding">
+                    <AppToolbar
                         className="ion-no-border ion-no-padding"
                         color={`${sideMenuBrandingStyles.mainBg}`}
                     >
@@ -128,7 +135,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                                 </div>
                             </button>
                             <button className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
-                                <IonMenuToggle
+                                <AppMenuToggle
                                     role="button"
                                     autoHide={false}
                                     onClick={handleBoost}
@@ -142,7 +149,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                                         outlineStar="#FFFFFF"
                                         inlineStar="#03748D"
                                     />
-                                </IonMenuToggle>
+                                </AppMenuToggle>
                             </button>
                         </div>
 
@@ -151,16 +158,16 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                             setActiveTab={setActiveTab}
                             branding={BrandingEnum.scoutPass}
                         />
-                    </IonToolbar>
-                </IonHeader>
+                    </AppToolbar>
+                </AppHeader>
                 <SideMenuSecondaryLinks
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     branding={BrandingEnum.scoutPass}
                 />
-            </IonContent>
-            <IonFooter className="ion-no-border ion-no-padding">
-                <IonToolbar
+            </AppContent>
+            <AppFooter className="ion-no-border ion-no-padding">
+                <AppToolbar
                     color="grayscale-100"
                     className="ion-no-border ion-no-padding px-4"
                     style={{ '--border-width': '0', '--border-color': 'transparent' }}
@@ -168,9 +175,9 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                     <p className="text-grayscale-900 opacity-50 text-xs">
                         {m['sidemenu.version']({ version })}
                     </p>
-                </IonToolbar>
-            </IonFooter>
-        </IonMenu>
+                </AppToolbar>
+            </AppFooter>
+        </AppMenu>
     );
 };
 

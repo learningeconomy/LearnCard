@@ -1,11 +1,11 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
 /**
- * Inline route-transition placeholder. Intentionally NOT wrapped in
- * IonPage/IonContent — those would trigger Ionic's page-transition animation
+ * Inline route-transition placeholder. Intentionally NOT wrapped in a page
+ * shell — as IonPage/IonContent it triggered Ionic's page-transition animation
  * twice (once for this loader, once for the real destination page) and cause a
  * visible white flash between the two transitions. A plain absolutely-
  * positioned div paints instantly with the tenant background color and is
@@ -21,7 +21,7 @@ const RouteTransitionLoader: React.FC = () => {
             className="fixed inset-0 flex items-center justify-center z-[1000]"
             style={{ backgroundColor: bgColor }}
         >
-            <IonSpinner name="crescent" style={{ color: spinnerColor, width: 36, height: 36 }} />
+            <AppSpinner name="crescent" style={{ color: spinnerColor, width: 36, height: 36 }} />
         </div>
     );
 };

@@ -3,16 +3,6 @@ import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
 
 import {
-    IonRow,
-    IonCol,
-    IonGrid,
-    IonSpinner,
-    IonToggle,
-    IonDatetime,
-    IonInput,
-} from '@ionic/react';
-
-import {
     useWallet,
     walletStore,
     useToast,
@@ -28,12 +18,18 @@ import CopyStack from '../../../../svgs/CopyStack';
 import Calendar from '../../../../svgs/Calendar';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import BoostShareableQRCode from './BoostShareableQRCode';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import InfinityIcon from 'learn-card-base/svgs/Infinity';
 import useDebounce from '../../../../../hooks/useDebounce';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
 import { getLogger } from 'learn-card-base';
 import { getAppBaseUrl } from '../../../../../config/bootstrapTenantConfig';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppDatetime } from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('boost-shareable-code');
 
 export const BoostShareableCode: React.FC<{
@@ -70,7 +66,7 @@ export const BoostShareableCode: React.FC<{
     const openDatePicker = () => {
         newDatePickerModal(
             <div className="w-full h-full transparent flex items-center justify-center">
-                <IonDatetime
+                <AppDatetime
                     onIonChange={e => {
                         clearBoostLink();
                         setExpirationDate(moment(e.detail.value as string).toISOString());
@@ -160,6 +156,7 @@ export const BoostShareableCode: React.FC<{
 
                 // find existing signing authority
                 let sa = signingAuthorities?.find(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                     (signingAuthority: any) => signingAuthority?.name === 'lca-sa'
                 );
 
@@ -246,16 +243,16 @@ export const BoostShareableCode: React.FC<{
     }, [toggle]);
 
     return (
-        <IonGrid className={`w-full flex items-center justify-center flex-col ${customClassName}`}>
-            <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px] ion-padding">
+        <AppGrid className={`w-full flex items-center justify-center flex-col ${customClassName}`}>
+            <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px] ion-padding">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                     <p className="text-grayscale-900 font-medium w-10/12">
                         {m['boostCMS.generateClaimLink']()}
                     </p>
-                    <IonToggle
+                    <AppToggle
                         mode="ios"
                         color="emerald-700"
-                        onIonChange={() => {
+                        onCheckedChange={() => {
                             setToggle(!toggle);
                         }}
                         checked={toggle}
@@ -286,7 +283,7 @@ export const BoostShareableCode: React.FC<{
                                 <p className="text-grayscale-900 font-medium w-10/12 text-left pr-2">
                                     {m['boostCMS.setClaimLimit']()}
                                 </p>
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     onClick={() => {
@@ -299,16 +296,16 @@ export const BoostShareableCode: React.FC<{
 
                             {claimLimitToggle && (
                                 <div className="flex items-center">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mr-2`}
                                         placeholder={m['boostCMS.unlimited']()}
                                         type="number"
                                         min={0}
                                         value={claimLimit}
-                                        onIonInput={e => {
+                                        onValueInput={value => {
                                             clearBoostLink();
-                                            setClaimLimit(Number(e.detail.value));
+                                            setClaimLimit(Number(value));
                                         }}
                                         onKeyDown={e => {
                                             // Allow only numbers
@@ -323,9 +320,10 @@ export const BoostShareableCode: React.FC<{
                                         onPaste={e => {
                                             e.preventDefault();
                                             // Get the pasted text and remove any non-numeric characters
-                                            const pastedText = (
-                                                e.clipboardData || (window as any).Clipboard
-                                            ).getData('text');
+                                            const clipboard =
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
+                                                e.clipboardData || (window as any).Clipboard;
+                                            const pastedText = clipboard.getData('text');
                                             const numericText = pastedText.replace(/\D/g, '');
                                             if (numericText) {
                                                 setClaimLimit(Number(numericText));
@@ -354,12 +352,12 @@ export const BoostShareableCode: React.FC<{
                             <>
                                 <div className="flex items-center justify-center w-full divider-with-text" />
 
-                                <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
-                                    <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
+                                <AppRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
+                                    <AppCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                                         <div className="w-[80%] flex justify-start items-center text-left">
                                             {isLinkLoading || boostClaimLink.length === 0 ? (
                                                 <>
-                                                    <IonSpinner
+                                                    <AppSpinner
                                                         name="crescent"
                                                         color="dark"
                                                         className="scale-[1] mr-1"
@@ -382,8 +380,8 @@ export const BoostShareableCode: React.FC<{
                                         >
                                             <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                                         </div>
-                                    </IonCol>
-                                </IonRow>
+                                    </AppCol>
+                                </AppRow>
 
                                 <div className="w-full flex items-center justify-center">
                                     <button
@@ -398,8 +396,8 @@ export const BoostShareableCode: React.FC<{
                         )}
                     </>
                 )}
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

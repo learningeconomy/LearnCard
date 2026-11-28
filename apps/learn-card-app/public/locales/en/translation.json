@@ -641,7 +641,8 @@
         },
         "newAiSession": "New AI Session",
         "settings": "Settings",
-        "closeMenu": "Close menu"
+        "closeMenu": "Close menu",
+        "openMenu": "Open menu"
     },
     "myAssistant": {
         "schedules": {

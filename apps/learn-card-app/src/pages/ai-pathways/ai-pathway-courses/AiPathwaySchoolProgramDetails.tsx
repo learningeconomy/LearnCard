@@ -2,7 +2,6 @@ import React from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
-import { IonFooter } from '@ionic/react';
 import TimeCircle from 'learn-card-base/svgs/TimeCircle';
 import CareerLaptopIcon from '../../../assets/images/career.laptop.icon.png';
 import careerOneStopLogo from '../../../assets/images/career-one-stop-logo.png';
@@ -12,6 +11,7 @@ import { useModal } from 'learn-card-base';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import { getProgramLengthDisplay } from './ai-pathway-courses.helpers';
 import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { closeModal } = useModal();
@@ -112,7 +112,7 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                     </section>
                 </div>
             </div>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -130,7 +130,7 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                         Explore
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

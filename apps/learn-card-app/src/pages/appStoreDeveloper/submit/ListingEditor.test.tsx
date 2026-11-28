@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { ListingDetailsFields, StandOutSection } from './ListingEditor';
 import { EMPTY_LISTING_DETAILS } from './listingForm';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('../components/ImageUpload', () => ({
     ImageUpload: () => <div />,
     ScreenshotUpload: ({ index }: { index: number }) => <div>Screenshot slot {index + 1}</div>,

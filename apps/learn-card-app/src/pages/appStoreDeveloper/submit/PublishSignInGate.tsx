@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'learn-card-base/icons/ionicons';
 
 import { redirectStore } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -11,6 +11,7 @@ import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import useTheme from '../../../theme/hooks/useTheme';
 import { PUBLISH_RESUME_KEY } from './publishResume';
 import { describeManifest } from './appCapabilities';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const STEPS = ['Create account', 'Review', 'Publish'] as const;
 
@@ -62,8 +63,8 @@ const PublishSignInGate: React.FC = () => {
     };
 
     return (
-        <IonPage>
-            <IonContent style={{ '--background': backgroundColor } as React.CSSProperties}>
+        <AppPage>
+            <AppContent style={{ '--background': backgroundColor } as React.CSSProperties}>
                 <div className="min-h-full w-full flex items-center justify-center p-4 py-10">
                     <div className="w-full max-w-[480px] bg-white rounded-[20px] shadow-2xl font-poppins p-8 animate-fade-in-up">
                         {manifest ? (
@@ -115,7 +116,7 @@ const PublishSignInGate: React.FC = () => {
                                                     key={line}
                                                     className="flex items-start gap-2 text-sm text-grayscale-700"
                                                 >
-                                                    <IonIcon
+                                                    <AppIcon
                                                         icon={checkmarkCircle}
                                                         className="text-emerald-500 text-base mt-0.5 shrink-0"
                                                     />
@@ -131,7 +132,7 @@ const PublishSignInGate: React.FC = () => {
                                     onClick={continueToSignIn}
                                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                 >
-                                    <IonIcon icon={rocketOutline} className="text-lg" />
+                                    <AppIcon icon={rocketOutline} className="text-lg" />
                                     Create Free Account
                                 </button>
 
@@ -153,7 +154,7 @@ const PublishSignInGate: React.FC = () => {
                         ) : (
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={alertCircleOutline}
                                         className="text-red-400 text-2xl"
                                     />
@@ -175,8 +176,8 @@ const PublishSignInGate: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

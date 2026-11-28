@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 import type { ConsentFlowContract } from '@learncard/types';
 import {
@@ -112,7 +112,7 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
                 </h6>
             </div>
 
-            <IonCol size="12" className="w-full bg-white rounded-[15px] py-2 px-5">
+            <AppCol size="12" className="w-full bg-white rounded-[15px] py-2 px-5">
                 {consentFlowCategorySettingOptions.map((option, index) => {
                     const isSelected = getSelectedOption(option.type);
 
@@ -152,7 +152,7 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
                         </fieldset>
                     );
                 })}
-            </IonCol>
+            </AppCol>
         </div>
     );
 };

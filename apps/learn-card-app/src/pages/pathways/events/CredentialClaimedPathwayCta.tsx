@@ -53,8 +53,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { usePathwayProgressForCredential } from './usePathwayProgressForCredential';
 import { resolveCtaCopy, type ProgressTier } from './progressCtaCopy';
@@ -405,7 +405,7 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
             `}
         >
             <div className="flex items-start gap-3">
-                <IonIcon
+                <AppIcon
                     icon={checkmarkCircleOutline}
                     className={`
                         shrink-0

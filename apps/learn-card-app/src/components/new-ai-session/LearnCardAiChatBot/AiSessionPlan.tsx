@@ -5,7 +5,6 @@ import { m } from '../../../paraglide/messages.js';
 import { useStore } from '@nanostores/react';
 import { motion } from 'motion/react';
 
-import { IonSkeletonText } from '@ionic/react';
 import { Puzzle } from 'learn-card-base/svgs/shapes/Puzzle';
 import { BullsEye } from 'learn-card-base/svgs/BullsEye';
 import { Compass } from 'learn-card-base/svgs/Compass';
@@ -15,6 +14,7 @@ import {
     planSections,
     isLoading,
 } from 'learn-card-base/stores/nanoStores/chatStore';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const containerVariants = {
     hidden: {},
@@ -63,8 +63,8 @@ export const AiSessionPlan: React.FC = () => {
                     <h2 className="text-[29px] font-bold text-grayscale-900">{plan.welcome}</h2>
                 ) : (
                     <div className="flex flex-col gap-2">
-                        <IonSkeletonText animated style={{ width: '85%', height: 28 }} />
-                        <IonSkeletonText animated style={{ width: '60%', height: 28 }} />
+                        <AppSkeletonText animated style={{ width: '85%', height: 28 }} />
+                        <AppSkeletonText animated style={{ width: '60%', height: 28 }} />
                     </div>
                 )}
             </motion.section>
@@ -77,9 +77,9 @@ export const AiSessionPlan: React.FC = () => {
                     </p>
                 ) : (
                     <div className="flex flex-col gap-2">
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
+                        <AppSkeletonText animated />
+                        <AppSkeletonText animated />
+                        <AppSkeletonText animated />
                     </div>
                 )}
             </motion.section>
@@ -105,7 +105,7 @@ export const AiSessionPlan: React.FC = () => {
                 ) : (
                     <div className="flex flex-wrap gap-2">
                         {[1, 2, 3].map(i => (
-                            <IonSkeletonText
+                            <AppSkeletonText
                                 key={i}
                                 animated
                                 style={{
@@ -136,9 +136,9 @@ export const AiSessionPlan: React.FC = () => {
                     </ul>
                 ) : (
                     <div className="flex flex-col gap-2">
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
+                        <AppSkeletonText animated />
+                        <AppSkeletonText animated />
+                        <AppSkeletonText animated />
                     </div>
                 )}
             </motion.section>
@@ -171,9 +171,9 @@ export const AiSessionPlan: React.FC = () => {
                     <div className="flex flex-col gap-4">
                         {[1, 2].map(i => (
                             <div key={i} className="flex flex-col gap-2">
-                                <IonSkeletonText animated style={{ width: '60%' }} />
-                                <IonSkeletonText animated style={{ width: '80%' }} />
-                                <IonSkeletonText animated style={{ width: '70%' }} />
+                                <AppSkeletonText animated style={{ width: '60%' }} />
+                                <AppSkeletonText animated style={{ width: '80%' }} />
+                                <AppSkeletonText animated style={{ width: '70%' }} />
                             </div>
                         ))}
                     </div>
@@ -189,7 +189,7 @@ export const AiSessionPlan: React.FC = () => {
                         {m['aiSession.plan.readyToStart']()}
                     </h2>
                 ) : (
-                    <IonSkeletonText animated style={{ width: '55%', height: 28 }} />
+                    <AppSkeletonText animated style={{ width: '55%', height: 28 }} />
                 )}
             </motion.section>
         </motion.div>

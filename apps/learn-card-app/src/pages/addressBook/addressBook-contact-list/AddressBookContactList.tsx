@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonList, IonSpinner } from '@ionic/react';
+import { AppList } from 'learn-card-base/ui/list';
 import AddressBookContactItem from './AddressBookContactItem';
 
 import { LCNProfile } from '@learncard/types';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type AddressBookContactListProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
@@ -76,7 +77,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 
     if (!pages) {
         return (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+            <AppList lines="none" className="flex flex-col items-center justify-center w-full">
                 {contacts?.map((contact, index) => {
                     return (
                         <AddressBookContactItem
@@ -101,13 +102,13 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                         />
                     );
                 })}
-            </IonList>
+            </AppList>
         );
     }
 
     return (
         <>
-            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+            <AppList lines="none" className="flex flex-col items-center justify-center w-full">
                 {pages?.flatMap(page => (
                     <>
                         {page?.records?.map((record: LCNProfile, index: number) => (
@@ -136,7 +137,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                 ))}
                 {isFetching && (
                     <div className="w-full flex items-center justify-center">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             color="grayscale-900"
                             className="scale-[2] mb-8 mt-6"
@@ -144,7 +145,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                     </div>
                 )}
                 <div role="presentation" ref={infiniteScrollRef} />
-            </IonList>
+            </AppList>
         </>
     );
 };

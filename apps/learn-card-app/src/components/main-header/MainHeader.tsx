@@ -2,15 +2,8 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 
-import {
-    IonCol,
-    IonGrid,
-    IonHeader,
-    IonMenuToggle,
-    IonProgressBar,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import HeaderBranding from '../headerBranding/HeaderBranding';
 
 import Burger from '../svgs/Burger';
@@ -31,6 +24,8 @@ import { CredentialCategoryEnum, useIsLoggedIn } from 'learn-card-base';
 import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
 
 type MainHeaderProps = {
     category?: CredentialCategoryEnum;
@@ -114,8 +109,8 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     );
 
     return (
-        <IonHeader className="learn-card-header ion-no-border relative">
-            <IonProgressBar
+        <AppHeader className="learn-card-header ion-no-border relative">
+            <AppProgressBar
                 type="indeterminate"
                 aria-label={m['common.loading']()}
                 aria-hidden={!isLoading}
@@ -123,7 +118,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                     isLoading ? 'opacity-100' : 'opacity-0'
                 }`}
             />
-            <IonToolbar
+            <AppToolbar
                 className="ion-no-border"
                 color={statusBarColor}
                 // A page can override the toolbar background via a `--background`
@@ -137,9 +132,9 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                         : undefined
                 }
             >
-                <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
-                    <IonRow>
-                        <IonCol size="2" className="flex justify-start items-center">
+                <AppGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
+                    <AppRow>
+                        <AppCol size="2" className="flex justify-start items-center">
                             {resolvedShowBackButton && (
                                 <button
                                     aria-label="Go back"
@@ -152,14 +147,14 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                 </button>
                             )}
                             {showSideMenuButton && isLoggedIn && (
-                                <IonMenuToggle menu="appSideMenu">
+                                <AppMenuToggle menu="appSideMenu">
                                     <Burger className="text-grayscale-900 h-[35px] w-[35px] mr-2 ml-[-10px]" />
-                                </IonMenuToggle>
+                                </AppMenuToggle>
                             )}
                             {mainHeaderBranding}
-                        </IonCol>
+                        </AppCol>
 
-                        <IonCol size="10" className="flex justify-end items-center gap-2">
+                        <AppCol size="10" className="flex justify-end items-center gap-2">
                             {isLoggedIn ? (
                                 <ProfileAlertsIsland
                                     branding={branding}
@@ -172,19 +167,19 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
                             )}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                     {subheader}
                     {children}
-                </IonGrid>
-            </IonToolbar>
+                </AppGrid>
+            </AppToolbar>
             <div
                 role="presentation"
                 className={`${
                     curvedBg ? 'header-mask' : 'absolute bottom-0 left-0'
                 } ${backgroundPrimaryColor} pointer-events-none`}
             ></div>
-        </IonHeader>
+        </AppHeader>
     );
 };
 

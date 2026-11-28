@@ -3,10 +3,11 @@ import * as m from '../../../paraglide/messages.js';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
-import { IonContent, IonPage, IonRow } from '@ionic/react';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const LogoutLoadingPage: React.FC = () => {
     const { textLogo } = useTenantBrandingAssets();
@@ -25,13 +26,13 @@ export const LogoutLoadingPage: React.FC = () => {
     }, [colors, interval]);
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 className="flex items-center justify-center"
                 style={{ '--background': colors[currentColorIndex] } as React.CSSProperties}
             >
-                <IonRow
+                <AppRow
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
@@ -53,9 +54,9 @@ export const LogoutLoadingPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircle, ellipseOutline, warningOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { checkmarkCircle, ellipseOutline, warningOutline } from 'learn-card-base/icons/ionicons';
 import type { LaunchType } from '@learncard/types';
 
 import { LaunchConfigStep } from '../components/LaunchConfigStep';
@@ -132,7 +132,7 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
                     {managedByApp && typeChange === 'confirming' && (
                         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                             <div className="flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={warningOutline}
                                     className="text-amber-600 text-lg mt-0.5 shrink-0"
                                 />
@@ -182,7 +182,7 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
                                                         : 'border-grayscale-200 hover:border-grayscale-300'
                                                 }`}
                                             >
-                                                <IonIcon
+                                                <AppIcon
                                                     icon={
                                                         selected ? checkmarkCircle : ellipseOutline
                                                     }

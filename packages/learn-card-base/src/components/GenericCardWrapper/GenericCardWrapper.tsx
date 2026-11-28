@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { GenericCard } from '@learncard/react';
-import { useIonModal } from '@ionic/react';
 import {
     getImageUrlFromCredential,
     getCredentialName,
@@ -12,6 +11,7 @@ import {
     categoryMetadata,
     useGetResolvedCredential,
 } from 'learn-card-base';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays';
 
 type GenericCardWrapperProps = {
     vc?: VC;
@@ -41,7 +41,7 @@ const GenericCardWrapper: React.FC<GenericCardWrapperProps> = ({
     const { data: resolvedCredential } = useGetResolvedCredential(uri, !_vc);
     const vc = resolvedCredential || _vc;
     const [selected, setSelected] = useState<boolean | null | undefined>(initialCheckmarkState);
-    const [present, dismiss] = useIonModal(VCModal, {
+    const [present, dismiss] = useAppOverlayModal(VCModal, {
         overrideIssueeName,
         vc: vc,
         onDismiss: (data: string, role: string) => dismiss(data, role),

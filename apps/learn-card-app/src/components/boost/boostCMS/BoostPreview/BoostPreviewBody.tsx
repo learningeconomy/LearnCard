@@ -1,9 +1,7 @@
 import React from 'react';
 import { formatNumber } from '@learncard/helpers';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
-import { IonGrid, IonRow } from '@ionic/react';
-
-// import { IonSpinner } from '@ionic/react';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import { filterBoostRecipients } from '../../boostHelpers';
 
@@ -73,10 +71,10 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
     );
 
     return (
-        <IonGrid
+        <AppGrid
             className={`flex gap-[5px] rounded-[20px] w-full ${customBoostPreviewContainerClass}`}
         >
-            <IonRow
+            <AppRow
                 className={`w-full flex justify-center flex-col ${customBoostPreviewContainerRowClass}`}
             >
                 {showRecipientText && (
@@ -122,8 +120,8 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                         Edit
                     </button>
                 )}
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { IonContent, IonSpinner } from '@ionic/react';
 import ConsentFlowSyncButton from './ConsentFlowSyncButton';
 import ConsentFlowSyncCard from './ConsentFlowSyncCard';
 
@@ -23,6 +22,8 @@ import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import { useRegistryState } from '../../hooks/useRegistryEntryState';
 import * as m from '../../paraglide/messages.js';
 import { getConsentFlowDidAuthRedirect } from './issueConsentFlowDidAuth';
+import { AppContent } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Deprecated - ConsentFlow happens on LaunchPad now
 const ConsentFlowSyncData: React.FC = () => {
@@ -74,7 +75,7 @@ const ConsentFlowSyncData: React.FC = () => {
     }, [entriesLoading, contractDetails, isLoading]);
 
     return (
-        <IonContent className="fs-ion-content-fix bg-emerald-700 [&::part(scroll)]:justify-end">
+        <AppContent className="fs-ion-content-fix bg-emerald-700 [&>.app-content-scroll]:justify-end">
             <section className="max-h-full py-[20px] overflow-y-auto disable-scrollbars safe-area-top-margin">
                 <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
                     <header className="flex items-center flex-col gap-[10px] border-solid border-b border-grayscale-200 pb-[20px] w-full">
@@ -133,7 +134,7 @@ const ConsentFlowSyncData: React.FC = () => {
                             );
                         })}
 
-                        {entriesLoading && <IonSpinner />}
+                        {entriesLoading && <AppSpinner />}
                     </div>
 
                     <footer className="flex items-center w-full border-t border-solid border-r-grayscale-200 pt-[20px]">
@@ -183,7 +184,7 @@ const ConsentFlowSyncData: React.FC = () => {
                     {m['common.close']()}
                 </button>
             </section>
-        </IonContent>
+        </AppContent>
     );
 };
 

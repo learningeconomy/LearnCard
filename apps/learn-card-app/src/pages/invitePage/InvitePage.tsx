@@ -3,7 +3,6 @@ import { useHistory } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('invite-page');
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
@@ -12,6 +11,8 @@ import { generatePK } from '../../helpers/privateKeyHelpers';
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import * as m from '../../paraglide/messages.js';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const InvitePage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
@@ -68,12 +69,12 @@ const InvitePage: React.FC = () => {
     }, []);
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader customClassName="bg-white" />
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                         <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
@@ -97,8 +98,8 @@ const InvitePage: React.FC = () => {
                         challenge={challenge}
                     />
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

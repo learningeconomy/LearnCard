@@ -3,7 +3,6 @@ import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-
 import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
 
-import { IonPage } from '@ionic/react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
@@ -46,6 +45,7 @@ import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
 import * as m from '../../../../paraglide/messages.js';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type IssueHistory = {
     id?: string | number;
@@ -426,7 +426,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }
 
     return (
-        <IonPage>
+        <AppPage>
             <h1 className="sr-only">
                 {titleOverride ||
                     getCredentialName(credential) ||
@@ -482,7 +482,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     )}
                 </div>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 import { pushUtilities, useWallet } from 'learn-card-base';
 
-import { IonPage } from '@ionic/react';
-
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import UserProfileSetupHeader from './UserProfileSetupHeader';
 import UserProfileUpdateForm from './UserProfileUpdateForm';
@@ -25,6 +23,7 @@ import {
     PushNotificationSettingsEnum,
     PushNotificationsSettingsState,
 } from '../push-notification-settings/pushNotifications.helpers';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export enum UserProfileFormStateEnum {
     Account = 'account',

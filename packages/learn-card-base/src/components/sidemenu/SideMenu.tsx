@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-import {
-    IonMenu,
-    IonToolbar,
-    IonHeader,
-    IonContent,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonList,
-    IonItem,
-} from '@ionic/react';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
 import LearnCardIcon from 'learn-card-base/svgs/LearnCardIcon';
@@ -25,6 +14,10 @@ import {
     sideMenuMetaversityBrandingStyles,
 } from './sidemenuHelpers';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
+import { AppMenu } from 'learn-card-base/ui/app-shell/AppMenu';
+import { AppContent, AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -37,7 +30,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         setActiveTab(location.pathname);
     }, [location.pathname]);
 
-    if (!isLoggedIn) return <IonMenu contentId="main" />;
+    if (!isLoggedIn) return <AppMenu contentId="main" />;
 
     const sideMenuBrandingStyles =
         branding === BrandingEnum.learncard
@@ -56,7 +49,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         rootLinks = walletLink?.map(link => {
             const IconComponent = link.IconComponent;
             return (
-                <IonItem
+                <AppItem
                     key={link.id}
                     lines="none"
                     color={`${sideMenuBrandingStyles.mainBg}`}
@@ -70,12 +63,12 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                     >
                         <IconComponent /> {link.name}
                     </Link>
-                </IonItem>
+                </AppItem>
             );
         });
     } else {
         rootLinks = (
-            <IonItem
+            <AppItem
                 color={`${sideMenuBrandingStyles.mainBg}`}
                 onClick={() => setActiveTab(walletLink.path)}
                 lines="none"
@@ -88,32 +81,32 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                 >
                     <LearnCardIcon /> {walletLink.name}
                 </Link>
-            </IonItem>
+            </AppItem>
         );
     }
 
     const links = sidemenuLinks[branding];
 
     return (
-        <IonMenu contentId="main">
-            <IonHeader className="learn-card-header">
-                <IonToolbar className="ion-no-border" color={`${sideMenuBrandingStyles.mainBg}`}>
-                    <IonGrid>
-                        <IonRow className="min-h-[74px] px-[10px]">
-                            <IonCol size="2" className="flex justify-start items-center">
+        <AppMenu contentId="main">
+            <AppHeader className="learn-card-header">
+                <AppToolbar className="ion-no-border" color={`${sideMenuBrandingStyles.mainBg}`}>
+                    <AppGrid>
+                        <AppRow className="min-h-[74px] px-[10px]">
+                            <AppCol size="2" className="flex justify-start items-center">
                                 <HeaderBranding
                                     branding={branding}
                                     textColor={sideMenuBrandingStyles.brandingTextColor}
                                     spanColor={sideMenuBrandingStyles?.bradingSpanColor}
                                 />
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                    <IonList
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
+                    <AppList
                         color={`${sideMenuBrandingStyles.mainBg}`}
                         className={`${sideMenuBrandingStyles.defaultListStyles}`}
                     >
-                        {/* <IonItem
+                        {/* <AppItem
                             color={`${sideMenuBrandingStyles.mainBg}`}
                             onClick={() => setActiveTab(walletLink.path)}
                             lines="none"
@@ -126,25 +119,25 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                             >
                                 <LearnCardIcon /> {walletLink.name}
                             </Link>
-                        </IonItem> */}
+                        </AppItem> */}
                         {rootLinks}
-                    </IonList>
+                    </AppList>
                     <div className="flex items-center justify-center w-full mt-4 mb-6">
                         <div
                             className={`h-[2px] w-[90%] ${sideMenuBrandingStyles.defaultDividerStyles} `}
                         />
                     </div>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent color={`${sideMenuBrandingStyles.mainBg}`}>
-                <IonList
+                </AppToolbar>
+            </AppHeader>
+            <AppContent color={`${sideMenuBrandingStyles.mainBg}`}>
+                <AppList
                     color={`${sideMenuBrandingStyles.mainBg}`}
                     className={`${sideMenuBrandingStyles.defaultListStyles}`}
                 >
                     {links?.map(link => {
                         const IconComponent = link.IconComponent;
                         return (
-                            <IonItem
+                            <AppItem
                                 key={link.id}
                                 lines="none"
                                 color={`${sideMenuBrandingStyles.mainBg}`}
@@ -158,12 +151,12 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 >
                                     <IconComponent /> {link.name}
                                 </Link>
-                            </IonItem>
+                            </AppItem>
                         );
                     })}
-                </IonList>
-            </IonContent>
-        </IonMenu>
+                </AppList>
+            </AppContent>
+        </AppMenu>
     );
 };
 

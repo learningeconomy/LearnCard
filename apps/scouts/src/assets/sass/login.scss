@@ -186,26 +186,6 @@
     margin-top: 2px;
 }
 
-ion-toast.login-link-success-toast {
-    --background: white;
-    --color: #000000;
-    --border-radius: 14px;
-}
-
-ion-toast.login-link-success-toast::part(button) {
-    color: #00ba88 !important;
-}
-
-ion-toast.login-link-warning-toast {
-    --background: #e11d48;
-    --color: #fff;
-    --border-radius: 14px;
-}
-
-ion-toast.login-link-warning-toast::part(button) {
-    color: #fff !important;
-}
-
 .social-logins-wrap {
     & > .social-logins-title-wrap {
         text-align: left;
@@ -326,24 +306,4 @@ ion-toast.login-link-warning-toast::part(button) {
         width: 100%;
         justify-content: center;
     }
-}
-
-ion-toast.network-online-toast {
-    --background: #eff0f5;
-    --color: #00ba88;
-    --border-radius: 14px;
-}
-
-ion-toast.network-online-toast::part(button) {
-    color: #00ba88 !important;
-}
-
-ion-toast.network-offline-toast {
-    --background: #e11d48;
-    --color: #fff;
-    --border-radius: 14px;
-}
-
-ion-toast.network-offline-toast::part(button) {
-    color: #fff !important;
 }

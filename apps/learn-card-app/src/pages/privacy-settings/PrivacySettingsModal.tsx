@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { IonToggle } from '@ionic/react';
 import { Check, ChevronLeft } from 'lucide-react';
 import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
 
@@ -22,6 +21,7 @@ import {
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
@@ -342,10 +342,10 @@ const PrivacySettingsModal: React.FC = () => {
                                     {m['settings.privacy.showEmailDesc']()}
                                 </p>
                             </div>
-                            <IonToggle
+                            <AppToggle
                                 checked={showEmail}
                                 disabled={savingProfileField === 'showEmail'}
-                                onIonChange={e => handleShowEmailToggle(e.detail.checked)}
+                                onCheckedChange={checked => handleShowEmailToggle(checked)}
                                 aria-label={m['settings.privacy.showEmail']()}
                             />
                         </div>
@@ -383,16 +383,16 @@ const PrivacySettingsModal: React.FC = () => {
                                 {m['settings.aiFeaturesDesc']()}
                             </p>
                         </div>
-                        <IonToggle
+                        <AppToggle
                             checked={aiToggleChecked}
                             disabled={
                                 aiFeatureGateReason === 'disabled_minor' ||
                                 isSyncingAiConsent ||
                                 retryingAiConsent
                             }
-                            onIonChange={e =>
+                            onCheckedChange={checked =>
                                 aiFeatureGateReason !== 'disabled_minor' &&
-                                handleAiFeatureToggle(e.detail.checked)
+                                handleAiFeatureToggle(checked)
                             }
                             aria-label={m['settings.aiFeatures']()}
                         />
@@ -458,10 +458,10 @@ const PrivacySettingsModal: React.FC = () => {
                                 {m['settings.analyticsDesc']({ brand: brandName })}
                             </p>
                         </div>
-                        <IonToggle
+                        <AppToggle
                             checked={analyticsEnabled}
                             disabled={isMinor || !privacyResolved || preferencesSaving}
-                            onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
+                            onCheckedChange={checked => handleAnalyticsToggle(checked)}
                             aria-label={m['settings.analytics']()}
                         />
                     </div>
@@ -478,10 +478,10 @@ const PrivacySettingsModal: React.FC = () => {
                                 {m['settings.bugReportsDesc']()}
                             </p>
                         </div>
-                        <IonToggle
+                        <AppToggle
                             checked={bugReportsEnabled}
                             disabled={isMinor || !privacyResolved || preferencesSaving}
-                            onIonChange={e => handleBugReportsToggle(e.detail.checked)}
+                            onCheckedChange={checked => handleBugReportsToggle(checked)}
                             aria-label={m['settings.bugReports']()}
                         />
                     </div>

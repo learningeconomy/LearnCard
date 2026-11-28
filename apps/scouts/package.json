@@ -32,9 +32,6 @@
         "@datadog/browser-logs": "^4.50.1",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
-        "@ionic/core": "^8.7.2",
-        "@ionic/react": "8.7.2",
-        "@ionic/react-router": "8.7.2",
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",
         "@learncard/didkey-plugin": "workspace:*",
@@ -66,8 +63,8 @@
         "crypto-js": "^4.2.0",
         "date-fns": "^4.1.0",
         "firebase": "12.8.0",
+        "history": "4.10.1",
         "immer": "^10.1.1",
-        "ionicons": "8.0.13",
         "json-stringify-deterministic": "^1.0.12",
         "jszip": "^3.10.1",
         "jwt-decode": "^3.1.2",
@@ -135,9 +132,7 @@
         "write-test": "playwright codegen --ignore-https-errors --load-storage=demoState.json https://localhost:3000",
         "write-test-firefox": "playwright codegen --browser=firefox --ignore-https-errors --load-storage=demoState.json https://localhost:3000",
         "write-test-safari": "playwright codegen --browser=webkit --ignore-https-errors --load-storage=demoState.json https://localhost:3000",
-        "start-android": "adb reverse tcp:3000 tcp:3000 && ionic cap run android -l --port=3000",
-        "ionic:build": "vite build",
-        "ionic:serve": "vite",
+        "start-android": "adb reverse tcp:3000 tcp:3000 && cap run android --live-reload --host=localhost --port=3000",
         "appflow:install": "bun install --ignore-scripts --frozen-lockfile && bunx nx build scouts",
         "preview": "vite preview --port=3000",
         "build-and-open-android-app": "VITE_NODE_ENV=production bun install --frozen-lockfile && bun run build && bunx cap sync && bunx cap open android",
@@ -160,7 +155,6 @@
     "devDependencies": {
         "@capacitor/cli": "8.5.2",
         "@inlang/paraglide-js": "2.20.2",
-        "@ionic/cli": "^7.2.1",
         "@playwright/test": "^1.51.0",
         "@types/async": "^3.2.24",
         "@types/uuid": "^9.0.8",
@@ -178,5 +172,5 @@
         "@tailwindcss/vite": "^4.3.3",
         "autoprefixer": "^10.4.20"
     },
-    "description": "An Ionic project"
+    "description": "A Capacitor + React project"
 }

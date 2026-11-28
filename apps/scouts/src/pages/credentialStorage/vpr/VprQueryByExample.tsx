@@ -7,22 +7,14 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('vpr-query-by-example');
 
 import {
-    IonPage,
-    IonContent,
-    IonRow,
-    IonCol,
-    IonSpinner,
-    IonGrid,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonToggle,
-} from '@ionic/react';
-
-import {
     getImageUrlFromCredential,
     getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
 
 const VprQueryByExample: React.FC = ({ event, currentUser }) => {
     const [vcs, setVcs] = useState<VC[]>([]);
@@ -60,8 +52,7 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
 
     const renderCredentialList = vcs.map((vc, index) => {
         const isSelected = selectedVcs.includes(index);
-        const selectToggle = e => {
-            const checked = e?.detail?.checked;
+        const selectToggle = (checked: boolean) => {
             if (checked) {
                 addVcToSelection(index);
             } else {
@@ -69,10 +60,10 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
             }
         };
         return (
-            <IonItem key={index}>
-                <IonLabel>{vc && getCredentialName(vc)}</IonLabel>
-                <IonToggle slot="end" onIonChange={selectToggle}></IonToggle>
-            </IonItem>
+            <AppItem key={index}>
+                <AppLabel>{vc && getCredentialName(vc)}</AppLabel>
+                <AppToggle onCheckedChange={selectToggle}></AppToggle>
+            </AppItem>
         );
     });
 
@@ -132,15 +123,15 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
-                <IonRow className="w-full flex items-center justify-center h-full">
-                    <IonCol className="w-full flex flex-col items-center justify-center text-center">
+        <AppPage>
+            <AppContent fullscreen>
+                <AppRow className="w-full flex items-center justify-center h-full">
+                    <AppCol className="w-full flex flex-col items-center justify-center text-center">
                         <h2 className="mt-6 font-bold">{reason}</h2>
                         {!isLoadingCredentials && vcs.length > 0 && (
                             <>
-                                <IonList>{renderCredentialList}</IonList>
-                                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                                <AppList>{renderCredentialList}</AppList>
+                                <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                                     <div className="flex items-center justify-center w-full mt-4 mb-10">
                                         <button
                                             type="button"
@@ -159,12 +150,12 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
                                             {m['credentialStorage.reject']()}
                                         </button>
                                     </div>
-                                </IonCol>
+                                </AppCol>
                             </>
                         )}
                         {isLoadingCredentials && (
                             <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full mt-10">
-                                <IonSpinner color="dark" />
+                                <AppSpinner color="dark" />
                             </section>
                         )}
                         {!isLoadingCredentials && vcs.length === 0 && (
@@ -179,10 +170,10 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
                                 </button>
                             </section>
                         )}
-                    </IonCol>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                    </AppCol>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

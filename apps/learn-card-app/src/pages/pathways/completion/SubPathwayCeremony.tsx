@@ -25,8 +25,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { arrowForwardOutline, closeOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { arrowForwardOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 
@@ -174,7 +174,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                                text-grayscale-500 hover:text-grayscale-900
                                hover:bg-grayscale-10 transition-colors"
                     >
-                        <IonIcon icon={closeOutline} className="text-xl" />
+                        <AppIcon icon={closeOutline} className="text-xl" />
                     </button>
 
                     <div
@@ -214,7 +214,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                                     p-3.5 rounded-2xl
                                     bg-emerald-50/70 border border-emerald-100"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={arrowForwardOutline}
                                 className="shrink-0 mt-0.5 text-emerald-700 text-base"
                                 aria-hidden

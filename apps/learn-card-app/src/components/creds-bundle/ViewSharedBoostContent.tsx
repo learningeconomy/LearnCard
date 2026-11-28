@@ -5,7 +5,8 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooterLayout from '../accessibility/AccessibleBoostFooterLayout';
-import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar, useIonModal } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
@@ -46,6 +47,7 @@ import * as m from '../../paraglide/messages.js';
 const websiteLink = `${getAppBaseUrl()}/login`;
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC<{
@@ -78,7 +80,7 @@ const ViewSharedBoost: React.FC<{
     const pin = credentialInfo?.pin || _pin;
     const endorsementCredentialId = credentialInfo?.credentialId;
 
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
@@ -215,7 +217,7 @@ const ViewSharedBoost: React.FC<{
         }
     }, [pin, seed, uri, endorsementCredentialId, tryRefetch]);
 
-    const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
+    const [presentModal, dismissModal] = useAppOverlayModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),
         mode: SharedBoostVerificationBlockViewMode.modal,
         verificationItems: verificationItems,
@@ -276,10 +278,10 @@ const ViewSharedBoost: React.FC<{
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {!isLoggedIn && (
-                <IonHeader color="light">
-                    <IonToolbar className="flex">
+                <AppHeader>
+                    <AppToolbar className="flex">
                         <div className="flex justify-between items-center pl-[10px] pr-[10px] py-3 w-full relative">
                             <button
                                 type="button"
@@ -310,8 +312,8 @@ const ViewSharedBoost: React.FC<{
                                 </button>
                             </div>
                         </div>
-                    </IonToolbar>
-                </IonHeader>
+                    </AppToolbar>
+                </AppHeader>
             )}
             {isLoggedIn && <MainHeader showSideMenuButton />}
             <BoostFooterLayout
@@ -321,7 +323,7 @@ const ViewSharedBoost: React.FC<{
                     handleBack: isFront ? undefined : () => setIsFront(true),
                 }}
             >
-                <IonContent fullscreen className="share-page h-full">
+                <AppContent fullscreen className="share-page h-full">
                     {/* verification block */}
                     {boost && wallet && !loading && (
                         <SharedBoostVerificationBlock
@@ -392,9 +394,9 @@ const ViewSharedBoost: React.FC<{
                             )}
                         </section>
                     )}
-                </IonContent>
+                </AppContent>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

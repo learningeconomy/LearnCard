@@ -4,7 +4,7 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
+import { AppToast } from 'learn-card-base/ui/overlays/AppToast';
 import {
     useModal,
     ModalTypes,
@@ -44,6 +44,8 @@ import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
 import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -746,9 +748,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         launchType === 'AI_TUTOR';
 
     return (
-        <IonPage className="h-full w-full">
+        <AppPage className="h-full w-full">
             {/* Header */}
-            <IonHeader mode="ios" className="ion-no-border">
+            <AppHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
                     <div className="flex items-center gap-3 ion-padding mt-[var(--ion-safe-area-top,0px)]">
                         <div className="h-[65px] w-[65px] shrink-0">
@@ -839,9 +841,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         </div>
                     )}
                 </div>
-            </IonHeader>
+            </AppHeader>
 
-            <IonContent
+            <AppContent
                 fullscreen
                 className="ion-padding"
                 style={
@@ -993,10 +995,10 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         />
                     )}
                 </div>
-            </IonContent>
+            </AppContent>
 
             {/* Footer */}
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
@@ -1014,7 +1016,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 disabled
                                 className="py-[9px] px-[20px] rounded-[30px] bg-gray-100 text-gray-400 font-notoSans text-[17px] flex items-center justify-center flex-1"
                             >
-                                <IonSpinner name="dots" className="w-5 h-5" />
+                                <AppSpinner name="dots" className="w-5 h-5" />
                             </button>
                         ) : isInstalled || launchConfig.skipInstallation ? (
                             <>
@@ -1044,7 +1046,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom disabled:opacity-50 flex items-center justify-center flex-1`}
                             >
                                 {isProcessing ? (
-                                    <IonSpinner name="dots" className="w-5 h-5" />
+                                    <AppSpinner name="dots" className="w-5 h-5" />
                                 ) : (
                                     m['launchpad.detail.install']()
                                 )}
@@ -1052,9 +1054,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         )}
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
 
-            <IonToast
+            <AppToast
                 isOpen={showCopiedToast}
                 onDidDismiss={() => setShowCopiedToast(false)}
                 message={m['launchpad.detail.linkCopied']()}
@@ -1062,7 +1064,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 position="bottom"
                 color="success"
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

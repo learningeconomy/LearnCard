@@ -66,27 +66,6 @@ vi.mock('../../../components/learncardID-CMS/learncard-cms.helpers', () => ({
     getLearnCardIDStyleDefaults: () => ({}),
 }));
 vi.mock('@learncard/react', () => ({ Checkmark: () => null }));
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => null,
-    IonInput: ({
-        label,
-        value,
-        onIonInput,
-    }: {
-        label?: string;
-        value?: string;
-        onIonInput: (event: { detail: { value: string } }) => void;
-    }) => (
-        <label>
-            {label}
-            <input
-                value={value ?? ''}
-                onChange={event => onIonInput({ detail: { value: event.target.value } })}
-            />
-        </label>
-    ),
-}));
-
 import AdminToolsCreateProfileSimple from './AdminToolsCreateProfileSimple';
 import * as m from '../../../paraglide/messages.js';
 

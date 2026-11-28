@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 
-import { IonCol, IonRow, IonGrid, IonToolbar, IonHeader } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import BoostSearch from '../../boost-search/BoostSearch';
@@ -19,6 +18,8 @@ import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/Boo
 import ShortBoostSomeoneScreen from './ShortBoostSomeoneScreen';
 import useFirebaseAnalytics from '../../../../hooks/useFirebaseAnalytics';
 import * as m from '../../../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export enum ShortBoostStepsEnum {
     boostUserTypeOptions = 'boostUserTypeOptions',
@@ -31,6 +32,7 @@ type ShortBoostUserOptionsProps = {
     showCloseButton?: boolean;
     title?: string | React.ReactNode;
     boostCredential: VC | UnsignedVC;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     boost: any;
     boostUri: string;
     profileId: string;
@@ -141,7 +143,9 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     };
 
     if (boostCredential?.boostID) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         (shareableCodeState as any).address = boostCredential?.address;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         (shareableCodeState as any).appearance = {
             ...shareableCodeState?.appearance,
             fontColor: boostCredential?.boostID?.fontColor,
@@ -151,6 +155,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
             idIssuerThumbnail: boostCredential?.boostID?.issuerThumbnail,
             showIdIssuerImage: boostCredential?.boostID?.showIssuerThumbnail,
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         (shareableCodeState as any).basicInfo = {
             ...shareableCodeState?.basicInfo,
             issuerName: boostCredential?.boostID?.IDIssuerName,
@@ -159,25 +164,25 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
 
     return (
         <section>
-            <IonHeader className="ion-no-border bg-white pt-10">
-                <IonToolbar color="white">
-                    <IonRow className="w-full bg-white">
-                        <IonCol className="w-full flex items-center justify-end">
+            <AppHeader className="ion-no-border bg-white pt-10">
+                <AppToolbar color="white">
+                    <AppRow className="w-full bg-white">
+                        <AppCol className="w-full flex items-center justify-end">
                             {showCloseButton && (
                                 <button className="mr-[20px]" onClick={handleCloseModal}>
                                     <X className="text-grayscale-600 h-8 w-8" />
                                 </button>
                             )}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                     {title && title}
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
             {page === ShortBoostStepsEnum.boostUserTypeOptions && (
                 <section>
-                    <IonGrid className="ion-padding">
-                        <IonCol className="w-full flex items-center justify-center mt-8">
+                    <AppGrid className="ion-padding">
+                        <AppCol className="w-full flex items-center justify-center mt-8">
                             <button
                                 onClick={handleBoostSelf}
                                 className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
@@ -185,8 +190,8 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                 <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                                 {m['boost.boostMyself']()}
                             </button>
-                        </IonCol>
-                        <IonCol className="w-full flex items-center justify-center mt-1">
+                        </AppCol>
+                        <AppCol className="w-full flex items-center justify-center mt-1">
                             <button
                                 onClick={() => {
                                     setPage(ShortBoostStepsEnum.issueTo);
@@ -196,9 +201,9 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                 <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                                 {m['boost.boostOthers']()}
                             </button>
-                        </IonCol>
+                        </AppCol>
                         {boost.status === 'LIVE' && (
-                            <IonCol className="w-full flex items-center justify-center mt-1">
+                            <AppCol className="w-full flex items-center justify-center mt-1">
                                 <button
                                     onClick={() => {
                                         setPage(ShortBoostStepsEnum.generateLink);
@@ -208,7 +213,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                     <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                                     {m['boost.generateLink']()}
                                 </button>
-                            </IonCol>
+                            </AppCol>
                         )}
                         <div className="w-full flex items-center justify-center mt-8">
                             <button
@@ -218,7 +223,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                 {m['common.cancel']()}
                             </button>
                         </div>
-                    </IonGrid>
+                    </AppGrid>
                 </section>
             )}
             {page === ShortBoostStepsEnum.issueTo && (
@@ -232,6 +237,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                     handleOpenModal={handleOpenBoostSomeoneModal}
                     state={state}
                     setState={setState}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                     shareableCodeState={shareableCodeState as any}
                     boostStatus={boost?.status}
                 />
@@ -241,6 +247,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                 <section>
                     <BoostShareableCode
                         boostUri={boostUri}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         state={shareableCodeState as any}
                         customClassName="bg-white justify-start items-start p-0 m-0"
                         defaultGenerateLinkToggleState

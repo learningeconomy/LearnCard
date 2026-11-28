@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
-
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const BoostCMSAddChatForm: React.FC<{
     state: BoostCMSState;
@@ -14,6 +14,7 @@ const BoostCMSAddChatForm: React.FC<{
 
     // TODO: handle state here
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -27,14 +28,14 @@ const BoostCMSAddChatForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                     <h1 className="text-black text-2xl p-0 m-0">{m['boostCMS.addChat']()}</h1>
-                    <IonToggle
+                    <AppToggle
                         mode="ios"
                         color="indigo-700"
-                        onIonChange={() => {
+                        onCheckedChange={() => {
                             const expiresValue = !basicInfo?.credentialExpires;
                             handleStateChange('credentialExpires', expiresValue);
                             //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -46,8 +47,8 @@ const BoostCMSAddChatForm: React.FC<{
                         disabled={disabled}
                     />
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

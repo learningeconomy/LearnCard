@@ -2,19 +2,6 @@ import React, { useState } from 'react';
 import { Link, useHistory, useParams, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { useDIDAuthPresentation } from './useDIDAuthPresentation';
-import {
-    IonPage,
-    IonHeader,
-    IonButton,
-    IonToolbar,
-    IonButtons,
-    IonCol,
-    IonCard,
-    IonCardContent,
-    IonCardHeader,
-    IonCardSubtitle,
-    IonCardTitle,
-} from '@ionic/react';
 
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { sanitizeImageUrl } from '@learncard/helpers';
@@ -24,6 +11,17 @@ import useWallet from 'learn-card-base/hooks/useWallet';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
+import { AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppCol } from 'learn-card-base/ui/layout';
+import {
+    AppCard,
+    AppCardContent,
+    AppCardHeader,
+    AppCardSubtitle,
+    AppCardTitle,
+} from 'learn-card-base/ui/widgets';
 
 export const DIDAuthModal = () => {
     const { challenge } = useParams<{ challenge: string }>();
@@ -90,22 +88,22 @@ export const DIDAuthModal = () => {
         : '';
 
     return (
-        <IonPage>
+        <AppPage>
             <div className="modal-wrapper overflow-y-auto">
-                <IonHeader className="ion-no-border transparent">
-                    <IonToolbar className="qr-code-user-card-toolbar ion-no-border transparent">
-                        <IonButtons slot="start">
+                <AppHeader className="ion-no-border transparent">
+                    <AppToolbar className="qr-code-user-card-toolbar ion-no-border transparent">
+                        <AppButtons slot="start">
                             <Link to="/wallet">
-                                <IonButton className="text-grayscale-600">
+                                <AppButton className="text-grayscale-600">
                                     <LeftArrow className="w-10 h-auto text-grayscale-600" />
-                                </IonButton>
+                                </AppButton>
                             </Link>
-                        </IonButtons>
-                    </IonToolbar>
-                </IonHeader>
+                        </AppButtons>
+                    </AppToolbar>
+                </AppHeader>
 
                 <section>
-                    <IonCol size="12" className="flex justify-center items-center w-full mt-4">
+                    <AppCol size="12" className="flex justify-center items-center w-full mt-4">
                         {displayVerificationCode && (
                             <DIDAuthMessage
                                 title={'Verification Code'}
@@ -125,13 +123,13 @@ export const DIDAuthModal = () => {
                                 text={`${domain} would like to verify your DID identity.`}
                             />
                         )}
-                    </IonCol>
+                    </AppCol>
                     <div className="hidden md:block">
                         {displayVC && !authInitiated && (
                             <VCDisplayCardWrapper credential={displayVC} />
                         )}
                     </div>
-                    <IonCol size="12" className="flex justify-center items-center w-full mt-4">
+                    <AppCol size="12" className="flex justify-center items-center w-full mt-4">
                         {isLoggedIn && !authInitiated && (
                             <>
                                 <button
@@ -192,25 +190,25 @@ export const DIDAuthModal = () => {
                                 </button>
                             </>
                         )}
-                    </IonCol>
+                    </AppCol>
                 </section>
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 
 export const DIDAuthMessage = ({ title, subtitle, text, color, image }) => {
     const safeImageUrl = sanitizeImageUrl(image);
     return (
-        <IonCard color={color} style={{ maxWidth: '600px ' }}>
+        <AppCard color={color} style={{ maxWidth: '600px ' }}>
             {safeImageUrl && <img alt="Success" src={safeImageUrl} />}
-            <IonCardHeader>
-                <IonCardTitle>{title}</IonCardTitle>
-                <IonCardSubtitle>{subtitle}</IonCardSubtitle>
-            </IonCardHeader>
+            <AppCardHeader>
+                <AppCardTitle>{title}</AppCardTitle>
+                <AppCardSubtitle>{subtitle}</AppCardSubtitle>
+            </AppCardHeader>
 
-            <IonCardContent>{text}</IonCardContent>
-        </IonCard>
+            <AppCardContent>{text}</AppCardContent>
+        </AppCard>
     );
 };
 

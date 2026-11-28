@@ -1,0 +1,124 @@
+/*
+ * Page shell: port of @ionic/core 8.7.2 ion-content (content.css), the version @ionic/react loads.
+ * IonPage needs no CSS of its own: AppPage keeps the `.ion-page` class, whose global rules
+ * (Ionic's core.css, still loaded for learn-card-base) lay the page out.
+ *
+ * Cascade, as in chrome.css: ion-content's `:host` / `::slotted` rules lost to every light-DOM
+ * rule, so they live in `@layer app-chrome-host`. Its shadow-internal elements (the background
+ * and the scroll area) were out of the app CSS's reach; those rules are unlayered class
+ * selectors that beat the global element resets, kept at (0,1,0) so the former `::part()`
+ * overrides (`.x > .app-content-scroll`, (0,2,0)) still win. Ionic theme variables are read
+ * with the same fallbacks.
+ */
+
+@layer app-chrome-host {
+    div:where(.app-content) {
+        --background: var(--ion-background-color, #fff);
+        --color: var(--ion-text-color, #000);
+        --padding-top: 0px;
+        --padding-bottom: 0px;
+        --padding-start: 0px;
+        --padding-end: 0px;
+        --keyboard-offset: 0px;
+        --offset-top: 0px;
+        --offset-bottom: 0px;
+        --overflow: auto;
+        display: block;
+        position: relative;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: var(--ion-font-family, inherit);
+        contain: size style;
+    }
+
+    /* Inside ion-popover: shrink to fit so long content scrolls. */
+    div:where(.app-content.app-content-sizing) {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        contain: none;
+    }
+
+    div:where(.app-content) > :where([slot='fixed']) {
+        position: absolute;
+        transform: translateZ(0);
+    }
+}
+
+.app-content-background {
+    left: 0px;
+    right: 0px;
+    top: calc(var(--offset-top) * -1);
+    bottom: calc(var(--offset-bottom) * -1);
+    position: absolute;
+    background: var(--background);
+}
+
+.app-content-scroll {
+    left: 0px;
+    right: 0px;
+    top: calc(var(--offset-top) * -1);
+    bottom: calc(var(--offset-bottom) * -1);
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: calc(var(--padding-top) + var(--offset-top));
+    padding-bottom: calc(var(--padding-bottom) + var(--keyboard-offset) + var(--offset-bottom));
+    position: absolute;
+    color: var(--color);
+    box-sizing: border-box;
+    overflow: hidden;
+    /* The long form of `manipulation`: WebKit skips pointercancel while scrolling with it. */
+    touch-action: pan-x pan-y pinch-zoom;
+    font-family: inherit;
+}
+
+:where(.app-content.ion-color) > .app-content-scroll {
+    background: var(--ion-color-base);
+    color: var(--ion-color-contrast);
+}
+
+.app-content-scroll-y,
+.app-content-scroll-x {
+    -webkit-overflow-scrolling: touch;
+    /* Keeps the scroll area a stacking context in WebKit (layer backing sharing). */
+    z-index: 0;
+    will-change: scroll-position;
+}
+
+.app-content-scroll-y {
+    overflow-y: var(--overflow);
+    overscroll-behavior-y: contain;
+}
+
+.app-content-scroll-x {
+    overflow-x: var(--overflow);
+    overscroll-behavior-x: contain;
+}
+
+:where(.app-content-scroll).app-content-overscroll::before,
+:where(.app-content-scroll).app-content-overscroll::after {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    content: '';
+}
+
+:where(.app-content-scroll).app-content-overscroll::before {
+    bottom: -1px;
+}
+
+:where(.app-content-scroll).app-content-overscroll::after {
+    top: -1px;
+}
+
+/* Inside ion-popover the scroll area is in flow; offsets become negative margins. */
+:where(.app-content.app-content-sizing) > .app-content-scroll {
+    position: relative;
+    top: 0;
+    bottom: 0;
+    margin-top: calc(var(--offset-top) * -1);
+    margin-bottom: calc(var(--offset-bottom) * -1);
+}

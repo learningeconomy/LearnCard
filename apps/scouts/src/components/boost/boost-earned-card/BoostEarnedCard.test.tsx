@@ -28,9 +28,6 @@ vi.mock('learn-card-base', async () => {
     };
 });
 
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('../boostCMS/BoostPreview/BoostPreview', () => ({ default: () => null }));
 vi.mock('../boostCMS/BoostPreview/NonBoostPreview', () => ({ default: () => null }));
 vi.mock('../boost-options-menu/ShareBoostLink', () => ({ default: () => null }));

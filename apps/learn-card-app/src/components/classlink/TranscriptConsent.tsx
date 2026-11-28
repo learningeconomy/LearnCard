@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -50,7 +50,7 @@ export const TranscriptErrorBanner: React.FC<{ message: string }> = ({ message }
         role="alert"
         className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-left"
     >
-        <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+        <AppIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
         <span className="text-sm text-red-700 leading-relaxed">{message}</span>
     </div>
 );

@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
 import { produce } from 'immer';
 
-import { IonCol, IonRow, IonInput } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
@@ -75,8 +76,8 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
 
     return (
         <>
-            <IonRow className="flex flex-col pb-4">
-                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+            <AppRow className="flex flex-col pb-4">
+                <AppCol className="w-full flex items-center justify-between mt-8 mb-2">
                     <Icon
                         version="outlined"
                         className={`text-grayscale-800 h-[40px] max-h-[40px] max-w-[40px] mr-2`}
@@ -84,19 +85,19 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
                         {title}
                     </h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
-                    onIonInput={e => {
+                    onValueInput={value => {
                         const stateCopy = structuredClone(state.documents);
                         if (stateCopy[currentIndex]) {
-                            stateCopy[currentIndex].title = e.detail.value as string;
+                            stateCopy[currentIndex].title = value as string;
                             setState(stateCopy);
                         }
                     }}

@@ -598,7 +598,8 @@
             "pathways": "Parcours"
         },
         "settings": "Paramètres",
-        "closeMenu": "Fermer le menu"
+        "closeMenu": "Fermer le menu",
+        "openMenu": "Ouvrir le menu"
     },
     "myAssistant": {
         "schedules": {

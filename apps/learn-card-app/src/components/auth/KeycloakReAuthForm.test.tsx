@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
     refreshAuthSession: vi.fn(),
 }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => mocks.isNative } }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     authUserStore: {
         use: { currentUser: () => ({ id: 'same-user', email: 'person@example.com' }) },

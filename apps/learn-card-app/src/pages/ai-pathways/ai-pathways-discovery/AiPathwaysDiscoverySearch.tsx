@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonLabel, IonInput } from '@ionic/react';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import useTheme from '../../../theme/hooks/useTheme';
 import * as m from '../../../paraglide/messages.js';
 import TransP from '../../../i18n/TransP';
@@ -28,13 +29,12 @@ const AiPathwaysDiscoverySearch: React.FC<{
         <div className="flex items-center justify-center w-full rounded-[15px] px-4 max-w-[600px]">
             <div className="w-full bg-white rounded-lg p-4 shadow-xs flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
-                    <IonLabel className="text-grayscale-600 font-poppins text-sm">
+                    <AppLabel className="text-grayscale-600 font-poppins text-sm">
                         {m['aiPathways.discovery.enterCareerKeyword']()}
-                    </IonLabel>
-                    <IonInput
+                    </AppLabel>
+                    <AppInput
                         value={keywordInput}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        onIonInput={(e: any) => setKeywordInput(e.detail.value)}
+                        onValueInput={value => setKeywordInput(value)}
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onKeyDown={(e: any) => e.key === 'Enter' && handleSearch()}
                         autocapitalize="on"

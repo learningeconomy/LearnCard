@@ -15,7 +15,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
 import useGuardianGate from '../../hooks/useGuardianGate';
 
-import { IonToggle } from '@ionic/react';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowReadSharing from './ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
@@ -389,7 +389,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                         </p>
                                     </label>
 
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         className="[--background:white]"
                                         color="emerald-700"
@@ -452,7 +452,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     </p>
                                 </label>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     className="[--background:white]"
                                     color="emerald-700"
@@ -516,7 +516,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                         </p>
                                     </label>
 
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         className="[--background:white]"
                                         color="emerald-700"

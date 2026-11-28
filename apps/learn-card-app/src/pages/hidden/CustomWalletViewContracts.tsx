@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { PaginatedConsentFlowContracts } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import CustomWalletContractData from './CustomWalletContractData';
@@ -12,7 +12,7 @@ const CustomWalletViewContracts: React.FC<CustomWalletViewContractsProps> = ({ w
     const [contracts, setContracts] = useState<PaginatedConsentFlowContracts['records']>([]);
     const [activeUri, setActiveUri] = useState('');
 
-    const [present, dismiss] = useIonModal(CustomWalletContractData, {
+    const [present, dismiss] = useAppOverlayModal(CustomWalletContractData, {
         wallet,
         contractUri: activeUri,
         handleDismissModal: () => dismiss(),

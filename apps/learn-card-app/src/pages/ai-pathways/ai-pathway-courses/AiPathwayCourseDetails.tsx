@@ -2,13 +2,13 @@ import React from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
-import { IonFooter } from '@ionic/react';
 // import Star from 'learn-card-base/svgs/shapes/Star';
 // import TimeCircle from 'learn-card-base/svgs/TimeCircle';
 import CareerLaptopIcon from '../../../assets/images/career.laptop.icon.png';
 import openSyllabusLogo from '../../../assets/images/open-syllabus-logo.webp';
 
 import { useModal } from 'learn-card-base';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
@@ -106,7 +106,7 @@ const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
                     </section>
                 </div>
             </div>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -124,7 +124,7 @@ const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
                         Explore
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

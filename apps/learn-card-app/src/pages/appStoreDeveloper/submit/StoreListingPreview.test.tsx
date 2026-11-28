@@ -4,8 +4,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 
 import { StoreListingPreview } from './StoreListingPreview';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
-
 const renderPreview = ({
     name = 'Quiz Quest',
     tagline = 'Learn by playing',

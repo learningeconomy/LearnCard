@@ -30,7 +30,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { motion } from 'framer-motion';
 import {
     arrowForwardOutline,
@@ -39,7 +39,7 @@ import {
     lockClosedOutline,
     openOutline,
     trailSignOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
@@ -156,7 +156,7 @@ const InlineExpandableCard: React.FC<{
                                border border-emerald-100 flex items-center justify-center"
                     aria-hidden
                 >
-                    <IonIcon icon={layersOutline} className="text-emerald-700 text-sm" />
+                    <AppIcon icon={layersOutline} className="text-emerald-700 text-sm" />
                 </span>
 
                 <div className="min-w-0 flex-1">
@@ -251,7 +251,7 @@ const InlineExpandableCard: React.FC<{
                                text-sm font-medium hover:opacity-90 transition-opacity
                                flex items-center justify-center gap-1.5"
                 >
-                    <IonIcon icon={trailSignOutline} className="text-base" aria-hidden />
+                    <AppIcon icon={trailSignOutline} className="text-base" aria-hidden />
                     {progress.completed > 0 ? 'Continue' : 'Start'} {nested.title}
                 </button>
 
@@ -291,7 +291,7 @@ const LinkOutCard: React.FC<{
                 }`}
                 aria-hidden
             >
-                <IonIcon
+                <AppIcon
                     icon={locked ? lockClosedOutline : openOutline}
                     className={`text-base ${locked ? 'text-grayscale-500' : 'text-emerald-700'}`}
                 />
@@ -327,7 +327,7 @@ const LinkOutCard: React.FC<{
                                transition-colors"
                 >
                     Open {nested.title}
-                    <IonIcon icon={arrowForwardOutline} className="text-xs" aria-hidden />
+                    <AppIcon icon={arrowForwardOutline} className="text-xs" aria-hidden />
                 </button>
             </div>
         </motion.div>
@@ -353,7 +353,7 @@ const MissingPathwayCard: React.FC<{
                        flex items-center justify-center"
             aria-hidden
         >
-            <IonIcon icon={cloudDownloadOutline} className="text-amber-700 text-base" />
+            <AppIcon icon={cloudDownloadOutline} className="text-amber-700 text-base" />
         </span>
 
         <div className="min-w-0 flex-1 space-y-v3-2">
@@ -379,7 +379,7 @@ const MissingPathwayCard: React.FC<{
                            hover:opacity-90 transition-opacity"
             >
                 Go to Build
-                <IonIcon icon={arrowForwardOutline} className="text-xs" aria-hidden />
+                <AppIcon icon={arrowForwardOutline} className="text-xs" aria-hidden />
             </button>
         </div>
     </motion.div>

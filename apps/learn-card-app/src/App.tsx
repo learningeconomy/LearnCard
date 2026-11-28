@@ -1,10 +1,13 @@
 import React, { useRef, lazy } from 'react';
 
 import { createBrowserHistory } from 'history';
-import { IonReactRouter } from '@ionic/react-router';
+import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
-import { IonApp, setupIonicReact } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
+// Eager: registers the app-overlay Escape / back-button listeners (FullApp is lazy).
+import 'learn-card-base/ui/overlays/overlayStack';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
 import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';
@@ -13,21 +16,17 @@ import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
 import { Capacitor } from '@capacitor/core';
-/* Core CSS required for Ionic components to work properly */
-import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
+/* Global CSS LearnCard kept from Ionic (vendored verbatim into learn-card-base/ui/global) */
+import 'learn-card-base/ui/global/core.css';
+import 'learn-card-base/ui/global/normalize.css';
+import 'learn-card-base/ui/global/structure.css';
+import 'learn-card-base/ui/global/typography.css';
+import 'learn-card-base/ui/global/padding.css';
+import 'learn-card-base/ui/global/float-elements.css';
+import 'learn-card-base/ui/global/text-alignment.css';
+import 'learn-card-base/ui/global/text-transformation.css';
+import 'learn-card-base/ui/global/flex-utils.css';
+import 'learn-card-base/ui/global/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
@@ -40,14 +39,14 @@ import './index.scss';
 
 // base styles of swiper js
 import 'swiper/css';
-import '@ionic/react/css/ionic-swiper.css';
+import 'learn-card-base/swiper/swiper-defaults.css';
 const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
-setupIonicReact({ swipeBackEnabled: false });
+initAppPlatform();
 
 // Dynamically import the component
 const LazyFullApp = lazyWithRetry(() => import('./FullApp'));
@@ -71,13 +70,13 @@ const App: React.FC = () => {
         !/^\/s(?:\/|$)/.test(window.location.pathname)
     ) {
         return (
-            <IonReactRouter history={history}>
-                <IonApp>
+            <AppShellRouter history={history}>
+                <AppRoot>
                     <React.Suspense fallback={null}>
                         <IntroSlides />
                     </React.Suspense>
-                </IonApp>
-            </IonReactRouter>
+                </AppRoot>
+            </AppShellRouter>
         );
     } else {
         // Paint the same loader AppRouter shows during auth init while FullApp's chunks download,
@@ -85,9 +84,9 @@ const App: React.FC = () => {
         return (
             <React.Suspense
                 fallback={
-                    <IonApp>
+                    <AppRoot>
                         <LoginLoadingPage />
-                    </IonApp>
+                    </AppRoot>
                 }
             >
                 <LazyFullApp />

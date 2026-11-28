@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import { BoostCategoryOptionsEnum, ModalTypes, getBoostMetadata, useModal } from 'learn-card-base';
-import { IonRow } from '@ionic/react';
+import { AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BadgeDisplayTypeIcon from 'learn-card-base/assets/images/badge-display-type.svg';
 import CertificateDisplayTypeIcon from 'learn-card-base/assets/images/cert-display-type.svg';
@@ -76,7 +76,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
     };
 
     return (
-        <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4">
+        <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4">
             <button
                 className="w-full bg-white ion-padding rounded-[20px] flex items-center justify-between"
                 disabled={disabled}
@@ -100,7 +100,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
                 </div>
                 <CaretLeft className="rotate-180 text-grayscale-900" />
             </button>
-        </IonRow>
+        </AppRow>
     );
 };
 

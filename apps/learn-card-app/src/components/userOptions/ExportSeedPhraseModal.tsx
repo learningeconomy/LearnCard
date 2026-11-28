@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import WarningIcon from '../svgs/WarningIcon';
 import SeedPhraseModal from './SeedPhraseModal';
 
@@ -48,22 +48,22 @@ const ExportSeedPhraseModal: React.FC = () => {
 
     return (
         <div>
-            <IonRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-5">
+            <AppRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-5">
                 <h1 className="ion-text-center text-black font-medium text-2xl tracking-wider bg-white delete-user-header-title">
                     {m['profile.export.title']()}
                 </h1>
-                <IonRow className="flex flex-col items-center justify-center bg-white text-black delete-user-icon-wrap">
+                <AppRow className="flex flex-col items-center justify-center bg-white text-black delete-user-icon-wrap">
                     <span aria-hidden="true">
                         <WarningIcon className="h-[48px] w-[48px]" />
                     </span>
-                </IonRow>
-                <IonRow className="flex flex-col items-center justify-center bg-white text-black">
+                </AppRow>
+                <AppRow className="flex flex-col items-center justify-center bg-white text-black">
                     <h2 className="ion-text-center mt-2 font-bold text-2xl tracking-wider bg-white">
                         {m['profile.export.warning']()}
                     </h2>
-                </IonRow>
-            </IonRow>
-            <IonRow className="flex flex-col items-center justify-center bg-white text-black">
+                </AppRow>
+            </AppRow>
+            <AppRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
                     <TransP
                         m={m['profile.export.masterKeyWarning']}
@@ -85,8 +85,8 @@ const ExportSeedPhraseModal: React.FC = () => {
                     <br />
                     {m['profile.export.below']()}
                 </p>
-            </IonRow>
-            <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
+            </AppRow>
+            <AppRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
                 <input
                     id="export-phrase-confirmation"
                     autoCapitalize="on"
@@ -99,9 +99,9 @@ const ExportSeedPhraseModal: React.FC = () => {
                     aria-labelledby="export-phrase-confirmation-label"
                     aria-describedby="export-phrase-confirmation-description"
                 />
-            </IonRow>
-            <IonRow className="w-full bg-white">
-                <IonCol
+            </AppRow>
+            <AppRow className="w-full bg-white">
+                <AppCol
                     size="12"
                     className="w-full flex items-center justify-center flex-col pt-2 pb-4"
                 >
@@ -141,8 +141,8 @@ const ExportSeedPhraseModal: React.FC = () => {
                     >
                         {m['profile.export.button']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </div>
     );
 };

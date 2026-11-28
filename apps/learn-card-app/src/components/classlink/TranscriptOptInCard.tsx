@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, timeOutline, documentTextOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    checkmarkCircleOutline,
+    timeOutline,
+    documentTextOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import {
     useTranscriptStatus,
@@ -143,7 +147,7 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
         <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-center gap-2 mb-2">
                 <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full flex items-center gap-1">
-                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500" />
+                    <AppIcon icon={checkmarkCircleOutline} className="text-emerald-500" />
                     {m['transcriptOptIn.addedToAccount']()}
                 </span>
                 {unreadUpdate && updatedAt && (
@@ -250,7 +254,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                 data-testid="transcript-optin-banner"
                 className={`mb-4 flex items-center gap-3 rounded-[20px] px-4 py-3 font-poppins ${waiting || failed ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-800'}`}
             >
-                <IonIcon
+                <AppIcon
                     icon={waiting ? timeOutline : documentTextOutline}
                     className="shrink-0 text-xl"
                 />
@@ -315,7 +319,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
     const requestHeader = data ? (
         <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                <IonIcon icon={documentTextOutline} className="text-2xl" />
+                <AppIcon icon={documentTextOutline} className="text-2xl" />
             </div>
             <div className="flex-1">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -431,7 +435,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                     <div className="space-y-4">
                         <div className="flex items-start gap-4">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                                <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
+                                <AppIcon icon={checkmarkCircleOutline} className="text-2xl" />
                             </div>
                             <div className="flex-1">
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -455,7 +459,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                                 data-testid="transcript-optin-waiting"
                                 className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1"
                             >
-                                <IonIcon icon={timeOutline} className="text-amber-500" />
+                                <AppIcon icon={timeOutline} className="text-amber-500" />
                                 {pace === 'later' && expectedBy && !estimatePassed
                                     ? m['transcriptOptIn.delivery.expectedLabel']({
                                           when: formatExpectedDelivery(expectedBy, now, locale),

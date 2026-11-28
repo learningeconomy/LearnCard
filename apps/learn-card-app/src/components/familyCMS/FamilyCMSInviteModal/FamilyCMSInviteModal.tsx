@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-import { IonPage } from '@ionic/react';
 import FamilyCMSInviteModalButton, { FamilyInviteTypeEnum } from './FamilyCMSInviteModalButton';
 import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelModalLayout';
 

@@ -5,7 +5,7 @@ import { m } from '../../../paraglide/messages.js';
 import X from '../../svgs/X';
 import BurgerIcon from '../../svgs/Burger';
 import LearnCardTextLogo from '../../svgs/LearnCardTextLogo';
-import { IonMenuToggle } from '@ionic/react';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
@@ -31,7 +31,7 @@ export const AiSessionsDesktopHeader: React.FC<{
         <div className="flex flex-col items-center justify-center absolute bg-white backdrop-blur-[5px] w-full top-0 left-0 z-[100]">
             <div className="w-full flex flex-col max-w-[600px] relative ion-padding pt-6!">
                 <div className="w-full flex items-center justify-between px-2">
-                    <IonMenuToggle
+                    <AppMenuToggle
                         onClick={() => {
                             sideMenuStore.set.isCollapsed(!isCollapsed);
                         }}
@@ -55,7 +55,7 @@ export const AiSessionsDesktopHeader: React.FC<{
                                 }`}
                             />
                         </div>
-                    </IonMenuToggle>
+                    </AppMenuToggle>
                     {textLogoDark ? (
                         <img
                             src={textLogoDark}

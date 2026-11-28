@@ -117,11 +117,11 @@ export const consentFlowFeature: FeatureDefinition = {
             await dialog.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
             const privacy = page.getByTestId('consent-privacy-and-data');
             await expect(privacy).toBeVisible({ timeout: UI_TIMEOUT });
-            // This IonToggle has no label association; scope it to its actual labelled row.
+            // This switch has no label association; scope it to its actual labelled row.
             const anonymizeToggle = privacy
                 .getByText('Anonymize', { exact: true })
                 .locator('../..')
-                .locator('ion-toggle');
+                .getByRole('switch');
             await expect(anonymizeToggle).toHaveAttribute('aria-checked', 'true');
             await anonymizeToggle.click();
             await expect(anonymizeToggle).toHaveAttribute('aria-checked', 'false');
@@ -140,8 +140,8 @@ export const consentFlowFeature: FeatureDefinition = {
                 .getByRole('button', { name: '', exact: true })
                 .click();
             await expect(selection.getByText('Sharing 1/1', { exact: true })).toBeVisible();
-            // The category editor's real toolbar back button saves the selection (no aria label).
-            await selection.locator('ion-header button').click();
+            // The category editor's toolbar back button saves the selection.
+            await selection.getByRole('button', { name: 'Back button', exact: true }).click();
             await expect(
                 privacy.getByRole('button', { name: /^Achievements 1\/1$/ })
             ).toBeVisible();

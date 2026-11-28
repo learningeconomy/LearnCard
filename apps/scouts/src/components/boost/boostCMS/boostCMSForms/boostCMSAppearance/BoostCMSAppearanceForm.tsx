@@ -16,7 +16,6 @@ import {
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonRow, IonSpinner, IonGrid } from '@ionic/react';
 import {
     boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
@@ -25,6 +24,7 @@ import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCrede
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 import Pencil from '../../../../svgs/Pencil';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
@@ -34,6 +34,8 @@ import BoostIDCardCMSAppearanceForm from '../../BoostIDCardCMS/BoostIDCardCMSFor
 
 import { BoostCMSState } from '../../../boost';
 import BoostIDCardCMSIssuerThumbnailForm from '../../BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSIssuerThumbnailForm';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const BoostCMSAppearanceForm: React.FC<{
     state: BoostCMSState;
@@ -71,10 +73,10 @@ const BoostCMSAppearanceForm: React.FC<{
     const isID = state?.basicInfo?.type === BoostCategoryOptionsEnum.id;
     const isMembership = state?.basicInfo?.type === BoostCategoryOptionsEnum.membership;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_image, setImage] = useState<string>(state?.appearance?.backgroundImage || '');
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -144,7 +146,6 @@ const BoostCMSAppearanceForm: React.FC<{
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let achievementTypeSelected;
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -153,11 +154,14 @@ const BoostCMSAppearanceForm: React.FC<{
         );
     } else {
         achievementTypeSelected =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type as any]?.find(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 (options: any) => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formBackgroundColor: string = '';
 
     const { subColor: _subColor } =
@@ -167,13 +171,13 @@ const BoostCMSAppearanceForm: React.FC<{
         : '#353E64';
 
     return (
-        <IonGrid
+        <AppGrid
             className="w-full h-full ion-no-padding flex justify-center items-start"
             style={{
                 backgroundColor: formBackgroundColor,
             }}
         >
-            <IonRow
+            <AppRow
                 className="w-full flex flex-col items-center justify-center max-w-[600px] ion-padding"
                 style={{
                     backgroundColor: state?.appearance?.backgroundColor
@@ -252,7 +256,7 @@ const BoostCMSAppearanceForm: React.FC<{
                                     )}
                                     {(imageUploadLoading || uploadProgress !== false) && (
                                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                            <IonSpinner
+                                            <AppSpinner
                                                 name="crescent"
                                                 color="dark"
                                                 className="scale-[1.75]"
@@ -338,8 +342,8 @@ const BoostCMSAppearanceForm: React.FC<{
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

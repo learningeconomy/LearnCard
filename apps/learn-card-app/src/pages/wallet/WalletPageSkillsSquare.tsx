@@ -6,8 +6,8 @@ import { useLoadingLine } from '../../stores/loadingStore';
 
 import { WalletPageItem } from './constants';
 import useAlignments from '../../hooks/useAlignments';
-import { IonSkeletonText } from '@ionic/react';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const WalletPageSkillsSquare: React.FC<{
     handleClickSquare: (subtype: WalletCategoryTypes) => void;
@@ -60,7 +60,7 @@ const WalletPageSkillsSquare: React.FC<{
                             <DotIcon className={`${backgroundColor}`} />
                         </div>
                         {allResolvedBoostsLoading ? (
-                            <IonSkeletonText animated />
+                            <AppSkeletonText animated />
                         ) : (
                             <p className="text-white font-poppins font-semibold text-base">
                                 {numeral(total).format('0a')}

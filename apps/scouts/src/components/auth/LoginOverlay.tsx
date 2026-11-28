@@ -2,12 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash';
 
-import { IonRow } from '@ionic/react';
-
 import ScoutPassTextLogo from '../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
     const locale = useLocale();
@@ -56,7 +55,7 @@ export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
                 isTransitioning ? 'opacity-0' : 'opacity-100'
             }`}
         >
-            <IonRow
+            <AppRow
                 className="h-full w-full flex items-center justify-center text-white text-2xl"
                 style={{ backgroundColor: '#622599' }}
             >
@@ -78,7 +77,7 @@ export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
                         )}
                     </div>
                 </div>
-            </IonRow>
+            </AppRow>
         </div>
     );
 };

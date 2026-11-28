@@ -1,11 +1,11 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     briefcaseOutline,
     chatbubbleEllipsesOutline,
     closeOutline,
     gitNetworkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 
 import type { LearnCardAssistantCard, LearnCardAssistantCardType } from './learnCardAssistant.api';
@@ -108,7 +108,7 @@ export const AssistantCardDetailsModal: React.FC<{
                         className="p-2 rounded-full text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors"
                         aria-label="Close assistant card details"
                     >
-                        <IonIcon icon={closeOutline} className="text-xl" />
+                        <AppIcon icon={closeOutline} className="text-xl" />
                     </button>
                 </div>
 
@@ -146,7 +146,7 @@ export const AssistantCardDetailsModal: React.FC<{
                     <section className="rounded-[20px] border border-grayscale-200 p-4 space-y-v3-3">
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-grayscale-100 text-grayscale-700 flex items-center justify-center shrink-0">
-                                <IonIcon icon={action.icon} className="text-xl" />
+                                <AppIcon icon={action.icon} className="text-xl" />
                             </div>
                             <div>
                                 <h3 className="text-sm font-semibold text-grayscale-900">

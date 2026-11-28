@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonPage, IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
@@ -11,6 +11,7 @@ import { FromDashboardMetadata } from './ClaimFromDashboard';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export type ClaimFromDashboardLoggedOutProps = {
     metadata: FromDashboardMetadata | undefined;
@@ -36,7 +37,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
         : m['claim.received.subtitle']();
 
     return (
-        <IonPage className="bg-emerald-700 p-[30px]">
+        <AppPage className="bg-emerald-700 p-[30px]">
             <div className="flex flex-col gap-[10px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] m-auto max-w-[350px]">
                 <h3 className="text-5xl">🎉</h3>
 
@@ -74,8 +75,8 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                         {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">{m['common.tagline']()}</span>
-                    <IonRow className="flex items-center justify-center">
-                        <IonCol className="flex items-center justify-center">
+                    <AppRow className="flex items-center justify-center">
+                        <AppCol className="flex items-center justify-center">
                             <button
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
@@ -91,11 +92,11 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                             >
                                 {m['legal.termsOfService']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 </div>
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 

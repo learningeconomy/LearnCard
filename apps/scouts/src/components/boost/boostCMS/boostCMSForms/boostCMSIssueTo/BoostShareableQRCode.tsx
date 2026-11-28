@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
-
 import X from 'learn-card-base/svgs/X';
 import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearanceController';
 import BoostCMSIDAppearanceController from '../boostCMSAppearance/BoostCMSIDAppearanceController';
@@ -11,6 +9,9 @@ import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOption
 import { QRCodeSVG } from 'qrcode.react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 const BoostShareableQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -26,12 +27,12 @@ const BoostShareableQRCode: React.FC<{
     const isMembership = state?.basicInfo?.type === BoostCategoryOptionsEnum.membership;
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 className="flex items-center justify-center ion-padding boost-cms-preview"
                 fullscreen
             >
-                <IonRow className="flex flex-col items-center justify-center">
+                <AppRow className="flex flex-col items-center justify-center">
                     {' '}
                     <div className="flex items-center justify-center mb-2 vc-preview-modal-safe-area">
                         <button
@@ -81,7 +82,7 @@ const BoostShareableQRCode: React.FC<{
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center w-full px-10 py-8 gap-3">
-                                <IonSpinner name="crescent" color="dark" />
+                                <AppSpinner name="crescent" color="dark" />
 
                                 <p className="text-grayscale-500 text-sm text-center">
                                     {m['boostCMS.generatingClaimLink']()}
@@ -89,9 +90,9 @@ const BoostShareableQRCode: React.FC<{
                             </div>
                         )}
                     </div>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

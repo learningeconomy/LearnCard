@@ -4,16 +4,6 @@ import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { initLearnCard } from '@learncard/init';
 
-import {
-    IonContent,
-    IonPage,
-    IonHeader,
-    IonButton,
-    IonToolbar,
-    IonButtons,
-    IonSpinner,
-    useIonAlert,
-} from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import * as m from '../../paraglide/messages.js';
@@ -23,6 +13,11 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 const ShareBoostsBundleModal = ({
     onDismiss,
@@ -36,7 +31,7 @@ const ShareBoostsBundleModal = ({
     const [randomSeed, setRandomSeed] = useState<string>();
     const [loading, setLoading] = useState(false);
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     // VP related
     const { initWallet } = useWallet();
 
@@ -73,6 +68,7 @@ const ShareBoostsBundleModal = ({
                 ...selectedWorkHistoryIds,
             ];
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             const selectedCredentials = allCredentials?.filter((cred: any) => {
                 const selected = allSelectedCredIds.includes(cred.id);
                 return selected;
@@ -146,6 +142,7 @@ const ShareBoostsBundleModal = ({
             let currentIndex = (
                 await myWallet.invoke.learnCloudRead<{
                     bundles: { bundleId: string; pin: string; randomSeed: string; uri: string }[];
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                     credentials: any[];
                 }>({ type: 'bundleIndex' })
             )[0];
@@ -181,6 +178,7 @@ const ShareBoostsBundleModal = ({
                 buttons: [m['common.ok']()],
             });
             setLoading(false);
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error. Please try again later.');
         }
     };
@@ -217,17 +215,17 @@ const ShareBoostsBundleModal = ({
     };
 
     return (
-        <IonPage className="modal-wrapper">
-            <IonHeader className="ion-no-border ion-fixed">
-                <IonToolbar className=" ion-no-border ">
-                    <IonButtons slot="start">
-                        <IonButton className="text-graye-600" onClick={() => handleDismiss()}>
+        <AppPage className="modal-wrapper">
+            <AppHeader className="ion-no-border ion-fixed">
+                <AppToolbar className=" ion-no-border ">
+                    <AppButtons slot="start">
+                        <AppButton className="text-graye-600" onClick={() => handleDismiss()}>
                             <LeftArrow className="rtl-mirror w-10 h-auto text-gray-600" />
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="course-details-container bg-white h-full" fullscreen>
+                        </AppButton>
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent className="course-details-container bg-white h-full" fullscreen>
                 {page === 'application' && !loading && (
                     <ShareBoostsBundle onSubmit={handleSubmit} />
                 )}
@@ -235,7 +233,7 @@ const ShareBoostsBundleModal = ({
                 {loading && (
                     <div className="flex flex-col justify-center items-center w-full h-full">
                         <div className="flex flex-col justify-center items-center w-full h-full mt-[-100px]">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             <p className="mt-[30px]">{m['credsBundle.creatingBundle']()}</p>
                         </div>
                     </div>
@@ -294,8 +292,8 @@ const ShareBoostsBundleModal = ({
                         </div>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

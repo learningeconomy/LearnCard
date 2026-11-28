@@ -16,8 +16,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { createOutline, flagOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { createOutline, flagOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Pathway, PathwayNode } from '../../../types';
 import { setDestinationNode, updateNode } from '../../buildOps';
@@ -137,7 +137,7 @@ const IdentitySection: React.FC<IdentitySectionProps> = ({
                                 }
                             `}
                         >
-                            <IonIcon icon={flagOutline} aria-hidden className="text-base" />
+                            <AppIcon icon={flagOutline} aria-hidden className="text-base" />
                         </span>
 
                         <span className="min-w-0 flex-1">

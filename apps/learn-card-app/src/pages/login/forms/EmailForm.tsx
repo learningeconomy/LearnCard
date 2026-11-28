@@ -28,7 +28,7 @@ import {
 } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
 
@@ -498,7 +498,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             />
         );
         activeStep = (
-            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
+            <AppCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <AccessibleCodeInput
                     key={codeInputKey}
                     name="emailVerification"
@@ -513,7 +513,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     }`}
                 />
-            </IonCol>
+            </AppCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading || isRateLimited;
@@ -524,7 +524,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             {keycloakOverlayPhase && <KeycloakSignInOverlay phase={keycloakOverlayPhase} />}
             <form onSubmit={handleOnClick} className="w-full">
                 {formTitle && (
-                    <IonCol size="12">
+                    <AppCol size="12">
                         <div
                             className={
                                 formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
@@ -532,7 +532,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         >
                             {formTitle}
                         </div>
-                    </IonCol>
+                    </AppCol>
                 )}
 
                 {activeStep}

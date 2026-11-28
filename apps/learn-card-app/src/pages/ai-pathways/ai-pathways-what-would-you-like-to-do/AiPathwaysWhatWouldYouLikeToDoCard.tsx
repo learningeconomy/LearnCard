@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonLabel } from '@ionic/react';
+import { AppLabel } from 'learn-card-base/ui/list';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
@@ -44,9 +44,9 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
         <div className="flex items-center justify-center w-full rounded-[15px] px-4 max-w-[600px]">
             <div className="w-full bg-white rounded-lg p-4 shadow-bottom-4-4 flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
-                    <IonLabel className="text-grayscale-900 font-poppins text-xl">
+                    <AppLabel className="text-grayscale-900 font-poppins text-xl">
                         {m['launchpad.modal.whatWouldYouLikeToDo']()}
-                    </IonLabel>
+                    </AppLabel>
                     <PathwaySearchInput
                         variant="simple"
                         value={searchQuery}

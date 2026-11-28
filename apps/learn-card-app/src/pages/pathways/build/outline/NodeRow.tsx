@@ -27,8 +27,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { flagOutline, flashOutline, gitBranchOutline, peopleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { flagOutline, flashOutline, gitBranchOutline, peopleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { PathwayNode } from '../../types';
 import { summarizePolicy, type SummarizeContext } from '../summarize/summarizePolicy';
@@ -97,7 +97,7 @@ const NodeRow: React.FC<NodeRowProps> = ({
                 className="w-full text-left py-1.5 pl-3 pr-2 rounded-lg hover:bg-grayscale-10 transition-colors group"
             >
                 <div className="flex items-start gap-2">
-                    <IonIcon
+                    <AppIcon
                         icon={isComposite ? gitBranchOutline : flashOutline}
                         aria-hidden
                         className={`
@@ -121,13 +121,13 @@ const NodeRow: React.FC<NodeRowProps> = ({
                             title={`Part of a ${collectionInfo.size}-step group`}
                             className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-semibold"
                         >
-                            <IonIcon icon={peopleOutline} aria-hidden className="text-[10px]" />
+                            <AppIcon icon={peopleOutline} aria-hidden className="text-[10px]" />
                             {collectionInfo.index}/{collectionInfo.size}
                         </span>
                     )}
 
                     {isDestination && (
-                        <IonIcon
+                        <AppIcon
                             icon={flagOutline}
                             aria-hidden
                             title="Destination"
@@ -155,7 +155,7 @@ const NodeRow: React.FC<NodeRowProps> = ({
             `}
         >
             <div className="flex items-start gap-2">
-                <IonIcon
+                <AppIcon
                     icon={isComposite ? gitBranchOutline : flashOutline}
                     aria-hidden
                     className={`
@@ -200,7 +200,7 @@ const NodeRow: React.FC<NodeRowProps> = ({
                         }
                     `}
                 >
-                    <IonIcon icon={peopleOutline} aria-hidden className="text-[11px]" />
+                    <AppIcon icon={peopleOutline} aria-hidden className="text-[11px]" />
                     {collectionInfo.index}/{collectionInfo.size}
                 </span>
             )}
@@ -215,7 +215,7 @@ const NodeRow: React.FC<NodeRowProps> = ({
                         ${isSelected ? 'bg-white/15 text-white' : 'bg-emerald-50 text-emerald-700'}
                     `}
                 >
-                    <IonIcon icon={flagOutline} aria-hidden className="text-[12px]" />
+                    <AppIcon icon={flagOutline} aria-hidden className="text-[12px]" />
                 </span>
             )}
         </button>

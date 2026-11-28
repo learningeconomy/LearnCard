@@ -3,12 +3,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
+import { AppContent, AppFooter, AppPage } from 'learn-card-base/ui/chrome';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 type IssueHistory = {
     id?: string | number;
@@ -110,12 +111,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const showBackground = bgImage && isCertificate;
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
             >
-                <IonRow
+                <AppRow
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
@@ -151,13 +152,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             unknownVerifierTitle={unknownVerifierTitle}
                         />
                     </section>
-                </IonRow>
-            </IonContent>
-            <IonFooter
+                </AppRow>
+            </AppContent>
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center p-[0px] m-[0px] ion-no-border absolute bottom-0"
             >
-                <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
+                <AppRow className="relative z-10 w-full flex justify-center items-center gap-8">
                     <BoostFooter
                         handleX={handleCloseModal}
                         handleDetails={isFront ? () => setIsFront(false) : undefined}
@@ -165,9 +166,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         handleShare={handleShareBoost}
                         handleDotMenu={onDotsClick}
                     />
-                </IonRow>
-            </IonFooter>
-        </IonPage>
+                </AppRow>
+            </AppFooter>
+        </AppPage>
     );
 };
 

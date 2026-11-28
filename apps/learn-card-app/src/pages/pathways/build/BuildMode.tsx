@@ -37,13 +37,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence } from 'framer-motion';
 import {
     arrowRedoOutline,
     arrowUndoOutline,
     cloudDownloadOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLearnerDid } from '../hooks/useLearnerDid';
@@ -184,7 +184,7 @@ const BuildMode: React.FC = () => {
                         onClick={() => setImportOpen(true)}
                         className="inline-flex items-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                     >
-                        <IonIcon icon={cloudDownloadOutline} aria-hidden className="text-base" />
+                        <AppIcon icon={cloudDownloadOutline} aria-hidden className="text-base" />
                         Import from Credential Engine
                     </button>
                 </div>
@@ -430,7 +430,7 @@ const ToolbarIconButton: React.FC<{
             disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-grayscale-700
         "
     >
-        <IonIcon icon={icon} aria-hidden className="text-lg" />
+        <AppIcon icon={icon} aria-hidden className="text-lg" />
     </button>
 );
 

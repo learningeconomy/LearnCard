@@ -18,10 +18,6 @@ const mocks = vi.hoisted(() => ({
     clearRedirect: vi.fn(),
     replace: vi.fn(),
 }));
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: mocks.replace }) }));
 vi.mock('learn-card-base', () => ({
     useIsLoggedIn: () => mocks.loggedIn,

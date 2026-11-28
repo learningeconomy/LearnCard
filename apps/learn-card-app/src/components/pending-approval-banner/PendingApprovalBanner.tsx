@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { ModalTypes, useGetCurrentLCNUser, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -45,7 +45,7 @@ const PendingApprovalBanner: React.FC<PendingApprovalBannerProps> = ({ className
             data-testid="pending-guardian-approval-banner"
             className={`w-full p-4 bg-amber-50 border border-amber-200 rounded-[20px] flex items-start gap-3 font-poppins ${className}`}
         >
-            <IonIcon
+            <AppIcon
                 icon={alertCircleOutline}
                 aria-hidden="true"
                 className="text-amber-600 text-lg mt-0.5 shrink-0"

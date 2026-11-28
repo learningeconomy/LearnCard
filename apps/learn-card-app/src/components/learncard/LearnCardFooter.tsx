@@ -1,10 +1,10 @@
 import React from 'react';
 import { ModalTypes, useModal } from 'learn-card-base';
-import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type LearnCardFooterProps = {
     hideShare?: boolean;
@@ -35,7 +35,7 @@ const LearnCardFooter: React.FC<LearnCardFooterProps> = ({
     };
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -68,7 +68,7 @@ const LearnCardFooter: React.FC<LearnCardFooterProps> = ({
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

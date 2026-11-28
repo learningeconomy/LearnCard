@@ -4,10 +4,10 @@ import { useLocation } from 'react-router-dom';
 import useShareCredentials, { VcType, VC_TYPE } from 'learn-card-base/hooks/useShareCredentials';
 
 import GenericCardWrapper from 'learn-card-base/components/GenericCardWrapper/GenericCardWrapper';
-import { IonToggle } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import { VC } from '@learncard/types';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type ShareCredentialCardsProps = { preSelectedCredentials?: VC[]; viewOnly?: boolean };
 
@@ -75,7 +75,7 @@ const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
                                     {!viewOnly && (
                                         <span className="flex justify-center items-center font-medium">
                                             All
-                                            <IonToggle
+                                            <AppToggle
                                                 onClick={() => handleToggleSelectAllType(vcType)}
                                                 slot="end"
                                                 className="ml-[10px]"

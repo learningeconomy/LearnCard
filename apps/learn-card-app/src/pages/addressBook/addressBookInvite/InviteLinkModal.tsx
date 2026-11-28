@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useToast, ToastTypeEnum } from 'learn-card-base';
@@ -48,7 +48,7 @@ const InviteLinkModal: React.FC = () => {
 
             {isLoading && (
                 <div className="flex w-full items-center justify-center py-8">
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 </div>
             )}
 

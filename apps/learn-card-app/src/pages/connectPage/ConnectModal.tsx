@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('connect-modal');
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
-
 import * as m from '../../paraglide/messages.js';
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ConnectModal: React.FC<{
     profileId: string;
@@ -104,11 +104,11 @@ const ConnectModal: React.FC<{
     }, []);
 
     return (
-        <IonPage className="bg-white">
-            <IonContent fullscreen>
+        <AppPage className="bg-white">
+            <AppContent fullscreen>
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                         <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
@@ -128,8 +128,8 @@ const ConnectModal: React.FC<{
                         updateCacheOnSuccessCallback={updateCacheOnSuccessCallback}
                     />
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

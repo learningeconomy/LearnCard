@@ -21,27 +21,6 @@ const { contact, emptyPages, emptyScouts, newModal } = vi.hoisted(() => ({
     newModal: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => {
-    const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
-
-    return {
-        IonCol: Container,
-        IonContent: Container,
-        IonFooter: Container,
-        IonGrid: Container,
-        IonHeader: Container,
-        IonInput: ({ placeholder }: { placeholder?: string }) => (
-            <input placeholder={placeholder} />
-        ),
-        IonItem: Container,
-        IonList: Container,
-        IonPage: Container,
-        IonRow: Container,
-        IonSpinner: () => null,
-        IonToolbar: Container,
-    };
-});
-
 vi.mock('learn-card-base', () => ({
     BoostUserTypeEnum: { someone: 'someone' },
     ModalTypes: { Cancel: 'cancel', FullScreen: 'full-screen' },

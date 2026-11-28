@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     networkStore,
@@ -26,6 +25,8 @@ import useFirebase from '../../../hooks/useFirebase';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const log = getLogger('claim-boost-logged-out-prompt');
 
@@ -143,45 +144,45 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
 
     if (isLoading) {
         return (
-            <IonPage className="flex flex-col h-full" style={{ backgroundColor }}>
-                <IonContent
+            <AppPage className="flex flex-col h-full" style={{ backgroundColor }}>
+                <AppContent
                     fullscreen
                     className="flex flex-col grow"
                     style={{ '--background': backgroundColor } as React.CSSProperties}
                 >
-                    <IonGrid
+                    <AppGrid
                         className="h-full w-full flex items-center justify-center p-0"
                         style={{ backgroundColor }}
                     >
-                        <IonRow className="flex flex-col items-center justify-center w-full h-full p-0 m-0">
-                            <IonCol className="w-full flex flex-col items-center justify-center h-full p-0 m-0 text-white">
+                        <AppRow className="flex flex-col items-center justify-center w-full h-full p-0 m-0">
+                            <AppCol className="w-full flex flex-col items-center justify-center h-full p-0 m-0 text-white">
                                 <div className="flex flex-col items-center justify-center gap-4">
                                     <span className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     <p className="text-sm font-medium text-white/90">
                                         {m['claimBoost.loadingBoost']()}
                                     </p>
                                 </div>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                </IonContent>
-            </IonPage>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage className="flex flex-col h-full" style={{ backgroundColor }}>
-            <IonContent
+        <AppPage className="flex flex-col h-full" style={{ backgroundColor }}>
+            <AppContent
                 fullscreen
                 className="flex flex-col grow"
                 style={{ '--background': backgroundColor } as React.CSSProperties}
             >
-                <IonGrid
+                <AppGrid
                     className="h-full w-full flex items-center justify-center p-0"
                     style={{ backgroundColor }}
                 >
-                    <IonRow className="flex flex-col items-center justify-center w-full h-full p-0 m-0">
-                        <IonCol className="w-full flex flex-col items-center justify-center h-full p-0 m-0">
+                    <AppRow className="flex flex-col items-center justify-center w-full h-full p-0 m-0">
+                        <AppCol className="w-full flex flex-col items-center justify-center h-full p-0 m-0">
                             {isDesktop ? (
                                 <ClaimBoostLoggedOutPromptDesktop
                                     logo={ScoutPassLogo}
@@ -197,11 +198,11 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                                     actionLabel={boostActionLabel}
                                 />
                             )}
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -323,9 +324,9 @@ const ScoutsLoginColumn: React.FC = () => {
                         )}
                     </div>
 
-                    <IonRow className="w-full max-w-[500px] ion-padding-horizontal flex items-center justify-center">
+                    <AppRow className="w-full max-w-[500px] ion-padding-horizontal flex items-center justify-center">
                         {LoginTypeForm}
-                    </IonRow>
+                    </AppRow>
 
                     <div className="w-full flex items-center justify-center">
                         <SocialLogins

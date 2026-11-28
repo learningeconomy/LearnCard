@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 import * as m from '../../paraglide/messages.js';
 
@@ -11,6 +10,7 @@ import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { getScoutPassCategoryCopy } from './scoutPassCategoryCopy';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type CategoryDescriptorModalProps = {
     handleCloseModal: () => void;
@@ -42,7 +42,7 @@ const CategoryDescriptorModal: React.FC<CategoryDescriptorModalProps> = ({
     const ImageComponent = getCategoryIcon(category);
 
     return (
-        <IonPage>
+        <AppPage>
             <ModalLayout handleOnClick={handleCloseModal} buttonText={m['common.gotIt']()}>
                 <div className="w-full max-w-[400px] mx-auto p-[30px]">
                     <ImageComponent className="h-[100px] w-[100px] m-auto" />
@@ -55,7 +55,7 @@ const CategoryDescriptorModal: React.FC<CategoryDescriptorModalProps> = ({
                     />
                 </div>
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

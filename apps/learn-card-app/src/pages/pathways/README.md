@@ -67,12 +67,12 @@ users**:
 Out of scope for this branch — but the headline items the spec is still
 waiting on:
 
--   **No brain-service routes.** The spec calls for 11 tRPC procedures
-    (§ 9 in the architecture doc); `services/learn-card-network/brain-service/src/routes/pathways.ts`
-    does not exist yet. Phase 3b is gated on this.
--   **Mock agent dispatch** is still the default (`agents/proxy.ts`).
-    Swapping to real is a single `setAgentDispatch(brainServiceDispatch)`
-    call once the server half ships.
+- **No brain-service routes.** The spec calls for 11 tRPC procedures
+  (§ 9 in the architecture doc); `services/learn-card-network/brain-service/src/routes/pathways.ts`
+  does not exist yet. Phase 3b is gated on this.
+- **Mock agent dispatch** is still the default (`agents/proxy.ts`).
+  Swapping to real is a single `setAgentDispatch(brainServiceDispatch)`
+  call once the server half ships.
 
 Persistence (`persist.enabled = true`) is **on** for all four stores
 today (`pathwayStore`, `proposalStore`, `offlineQueueStore`,
@@ -83,21 +83,21 @@ column and recommended sequencing.
 
 ## Mount point
 
--   Route: `/pathways` (redirects to `/pathways/today` when an active pathway
-    exists, else `/pathways/onboard`).
--   Sub-routes: `/today`, `/map`, `/what-if`, `/build`, `/proposals`,
-    `/onboard`, `/node/:pathwayId/:nodeId`.
--   Gating: two-layer flag — `features.pathways` (tenant config, default
-    `false`) AND the `enableJourneys` LaunchDarkly flag (default `false`).
-    Both must be on. Centralized in `hooks/usePathwaysEnabled.ts`; consumed
-    by `Routes.tsx` (route mount) and `SideMenuSecondaryLinks.tsx` (nav
-    link) so the route and the entry point can never drift.
+- Route: `/pathways` (redirects to `/pathways/today` when an active pathway
+  exists, else `/pathways/onboard`).
+- Sub-routes: `/today`, `/map`, `/what-if`, `/build`, `/proposals`,
+  `/onboard`, `/node/:pathwayId/:nodeId`.
+- Gating: two-layer flag — `features.pathways` (tenant config, default
+  `false`) AND the `enableJourneys` LaunchDarkly flag (default `false`).
+  Both must be on. Centralized in `hooks/usePathwaysEnabled.ts`; consumed
+  by `Routes.tsx` (route mount) and `SideMenuSecondaryLinks.tsx` (nav
+  link) so the route and the entry point can never drift.
 
 ## Folder layout
 
 ```
 src/pages/pathways/
-├── PathwaysShell.tsx           # router + IonPage wrapper
+├── PathwaysShell.tsx           # router + AppPage wrapper
 ├── PathwaysHeader.tsx          # mode tabs + proposal count + switcher
 ├── PathwaySwitcher.tsx         # active-pathway dropdown (tree view over roots + composite children)
 │
@@ -193,20 +193,20 @@ Cross-cutting state: [`src/stores/pathways/`](../../stores/pathways/) —
 
 ## Design invariants (load-bearing; do not casually violate)
 
--   **Agent proposes, learner commits.** Agents never call `pathwayStore.upsertPathway`
-    or `editNode` directly. The only path from agent output to structural state is
-    `agents/proxy.ts` → `proposalStore.addProposal` → learner tap → `applyProposal`.
--   **Four surfaces, one data source.** Today / Map / What-If / Build all read
-    the same `pathwayStore` and agree on "what's next" via `chosenRoute` +
-    `selectNextAction`. Switching modes is a `history.push`, never a data fetch.
--   **Projection, not mutation.** A node never stores a VC; it stores an
-    `AchievementProjection`. A pathway never stores its CTDL form. Crypto +
-    serialization happen at the moment of issuance / export.
--   **Composition = nesting.** `policy.kind === 'composite'` + a
-    `pathway-completed` termination + a `renderStyle` flag covers both
-    "substeps inside this node" and "complete Pathway X first". One primitive.
--   **Degradation without agents.** Today / Map / Build / What-If must render
-    with `agentSignals: null`. Nothing blocks on an LLM call.
+- **Agent proposes, learner commits.** Agents never call `pathwayStore.upsertPathway`
+  or `editNode` directly. The only path from agent output to structural state is
+  `agents/proxy.ts` → `proposalStore.addProposal` → learner tap → `applyProposal`.
+- **Four surfaces, one data source.** Today / Map / What-If / Build all read
+  the same `pathwayStore` and agree on "what's next" via `chosenRoute` +
+  `selectNextAction`. Switching modes is a `history.push`, never a data fetch.
+- **Projection, not mutation.** A node never stores a VC; it stores an
+  `AchievementProjection`. A pathway never stores its CTDL form. Crypto +
+  serialization happen at the moment of issuance / export.
+- **Composition = nesting.** `policy.kind === 'composite'` + a
+  `pathway-completed` termination + a `renderStyle` flag covers both
+  "substeps inside this node" and "complete Pathway X first". One primitive.
+- **Degradation without agents.** Today / Map / Build / What-If must render
+  with `agentSignals: null`. Nothing blocks on an LLM call.
 
 ## Testing
 

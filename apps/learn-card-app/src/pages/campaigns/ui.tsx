@@ -1,6 +1,10 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline, megaphoneOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    megaphoneOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { CampaignStatus } from '@learncard/types';
 import type { CampaignSectionProps, CampaignToggleProps } from './types';
 
@@ -16,7 +20,7 @@ export const panelClass =
 
 export const CampaignMark = () => (
     <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-        <IonIcon icon={megaphoneOutline} className="text-xl" aria-hidden="true" />
+        <AppIcon icon={megaphoneOutline} className="text-xl" aria-hidden="true" />
     </span>
 );
 
@@ -56,7 +60,7 @@ export const DeliveryContentHeading: React.FC<{ title: string; icon: string }> =
     icon,
 }) => (
     <h3 className="flex items-center gap-2 border-t border-solid border-grayscale-200 pt-5 text-sm font-semibold text-grayscale-900">
-        <IonIcon icon={icon} className="shrink-0 text-xl" aria-hidden="true" />
+        <AppIcon icon={icon} className="shrink-0 text-xl" aria-hidden="true" />
         {title}
     </h3>
 );
@@ -108,7 +112,7 @@ export const Notice: React.FC<React.PropsWithChildren<{ error?: boolean }>> = ({
         role={error ? 'alert' : 'status'}
         className={`flex items-start gap-2.5 p-3 border rounded-2xl text-sm leading-relaxed ${error ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}
     >
-        <IonIcon
+        <AppIcon
             icon={error ? alertCircleOutline : checkmarkCircleOutline}
             className="mt-0.5 shrink-0 text-lg"
             aria-hidden="true"

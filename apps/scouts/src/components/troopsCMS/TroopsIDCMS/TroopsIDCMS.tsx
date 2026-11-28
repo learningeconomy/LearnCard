@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonPage } from '@ionic/react';
 import TroopsCMSLayout from '../TroopsCMSLayout';
 import TroopsCMSFooter from '../TroopsCMSFooter/TroopsCMSFooter';
 import TroopCMSContentForm from '../TroopsCMSContentForm/TroopsCMSContentForm';
@@ -10,6 +9,7 @@ import TroopIDCard from './TroopIDCard';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 
 import { TroopsCMSEditorModeEnum, TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type TroopsIDCMSProps = {
     rootViewMode: TroopsCMSViewModeEnum; // view mode of the parent IE: Global, Network, Troop
@@ -35,7 +35,7 @@ export const TroopsIDCMS: React.FC<TroopsIDCMSProps> = ({
     const [activeTab, setActiveTab] = useState<TroopsCMSTabsEnum>(TroopsCMSTabsEnum.content);
 
     return (
-        <IonPage>
+        <AppPage>
             <TroopsCMSLayout
                 state={state}
                 viewMode={rootViewMode}
@@ -88,7 +88,7 @@ export const TroopsIDCMS: React.FC<TroopsIDCMSProps> = ({
                 handleSaveID={handleSaveID}
                 editIdOnlyMode={editIdOnlyMode}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

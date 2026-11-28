@@ -1,10 +1,10 @@
 import React from 'react';
 
-import { IonCol, IonRouterLink } from '@ionic/react';
 import Web3AuthLogo from '../../assets/images/web3auth-logo.svg';
 import ExternalLinkIcon from 'learn-card-base/svgs/ExternalLink';
 import * as m from '../../paraglide/messages.js';
 import { openToS, openPP, openContactLink, openLCwebsite } from '../../helpers/externalLinkHelpers';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 interface LoginFooterProps {
     className?: string;
@@ -21,11 +21,11 @@ const LoginFooter: React.FC<LoginFooterProps> = ({
         <div className={`${className}`}>
             <div className={`ion-padding pl-6 pt-1! w-full ${wrapperClassName}`}>
                 {!hideSelfCustodialLogin && (
-                    <IonCol size="12" className="login-footer-title-wrap">
+                    <AppCol size="12" className="login-footer-title-wrap">
                         <p className="text-grayscale-600 font-medium text-base">
                             {m['login.selfCustodial']()}
                         </p>
-                    </IonCol>
+                    </AppCol>
                 )}
                 <div className="bg-grayscale-100 w-full h-[2px]" />
                 <button
@@ -35,7 +35,7 @@ const LoginFooter: React.FC<LoginFooterProps> = ({
                     {m['login.learnMoreScoutPass']()}{' '}
                     <ExternalLinkIcon className="ml-[6px] w-[20px]" color="#6366f1" />
                 </button>
-                <IonCol
+                <AppCol
                     size="12"
                     className="w-full flex items-center justify-center p-0 mt-2 login-footer-links-wrap"
                 >
@@ -57,7 +57,7 @@ const LoginFooter: React.FC<LoginFooterProps> = ({
                     >
                         {m['login.contact']()}
                     </button>
-                </IonCol>
+                </AppCol>
             </div>
         </div>
     );

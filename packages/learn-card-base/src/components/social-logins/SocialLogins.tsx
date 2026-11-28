@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
 
@@ -10,6 +9,7 @@ import DownArrow from 'learn-card-base/svgs/DownArrow';
 
 import { LoginTypesEnum } from 'learn-card-base/helpers/loginHelpers';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export const SocialLogins: React.FC<{
     branding: BrandingEnum;
@@ -48,9 +48,9 @@ export const SocialLogins: React.FC<{
     const _socialLogins = [...socialLogins, ...extraSocialLogins];
 
     return (
-        <IonRow className="w-full flex items-center justify-center social-logins-container">
+        <AppRow className="w-full flex items-center justify-center social-logins-container">
             <div className="w-full flex items-center justify-center max-w-[740px]">
-                <IonCol
+                <AppCol
                     size="12"
                     className="flex w-full items-center justify-between flex-wrap max-w-[600px] social-logins-btns-container"
                 >
@@ -102,10 +102,10 @@ export const SocialLogins: React.FC<{
                             </button>
                         </div>
                     )}
-                </IonCol>
+                </AppCol>
             </div>
             {showMore && (
-                <IonCol size="12" className="flex items-center justify-center">
+                <AppCol size="12" className="flex items-center justify-center">
                     <div className="w-full max-w-[375px] flex items-start justify-start">
                         {_socialLogins.slice(3, 8).map(socialLogin => (
                             <button onClick={socialLogin.onClick} key={socialLogin.id}>
@@ -118,14 +118,14 @@ export const SocialLogins: React.FC<{
                             </button>
                         ))}
                     </div>
-                </IonCol>
+                </AppCol>
             )}
             <div className="w-[80%] pl-[12px] pr-[12px] flex items-center justify-center flex max-w-[600px]">
                 <p className="border-b-2 border-solid border-[#EFF0F5] leading-[0.1em] mb-[20px] mt-[24px] w-full text-center">
                     <span className="bg-white py-0 px-[10px]">OR</span>
                 </p>
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

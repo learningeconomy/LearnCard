@@ -20,12 +20,6 @@ vi.mock('learn-card-base/hooks/useRegistry', () => ({
 vi.mock('../earned-and-managed-tabs/EarnedAndManagedTabs', () => ({
     BoostPageViewMode: { Card: 'card', List: 'list' },
 }));
-
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div {...props}>{children}</div>
-    ),
-}));
 vi.mock('@learncard/react', () => ({
     isDid: (value: string) => value.startsWith('did:'),
     BoostGenericCard: ({ title, issuerName }: { title?: string; issuerName?: string }) => (

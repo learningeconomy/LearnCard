@@ -70,8 +70,8 @@ vi.mock('../components/debug/authDebugEvents', () => ({
     emitAuthSuccess: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({
-    useIonAlert: () => [mocks.presentAlert],
+vi.mock('learn-card-base/ui/overlays/useAppAlert', () => ({
+    useAppAlert: () => [mocks.presentAlert],
 }));
 
 vi.mock('learn-card-base', () => ({

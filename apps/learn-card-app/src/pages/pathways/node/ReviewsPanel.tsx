@@ -26,8 +26,8 @@
 
 import React, { useMemo } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { timeOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { timeOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 
 import { pathwayStore } from '../../../stores/pathways';
@@ -164,7 +164,7 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ pathwayId, node }) => {
     return (
         <section className="space-y-v3-3 p-4 rounded-2xl border border-grayscale-200 bg-white">
             <div className="flex items-center gap-2 text-xs text-grayscale-600">
-                <IonIcon icon={timeOutline} className="text-base" aria-hidden />
+                <AppIcon icon={timeOutline} className="text-base" aria-hidden />
 
                 <span>{dueStateLabel(current.dueAt, nowMs)}</span>
 

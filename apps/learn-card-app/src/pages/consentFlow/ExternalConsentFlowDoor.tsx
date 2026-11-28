@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { IonPage, IonCol, IonRow, IonSkeletonText, IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
 
@@ -44,6 +44,9 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
 } from '@analytics';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 enum Step {
     landing,
@@ -228,16 +231,16 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
     if (isPending) {
         return (
-            <IonPage className="bg-emerald-700 p-[30px] flex items-center justify-center">
+            <AppPage className="bg-emerald-700 p-[30px] flex items-center justify-center">
                 <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
                     <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
                 </div>
-            </IonPage>
+            </AppPage>
         );
     }
 
@@ -255,10 +258,10 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     }
 
     return (
-        <IonPage className="bg-emerald-700 p-[30px]">
+        <AppPage className="bg-emerald-700 p-[30px]">
             <div className="flex flex-col gap-[15px] items-center px-[40px] pb-[30px] pt-[40px] bg-white shadow-bottom rounded-[24px] m-auto max-w-[400px]">
                 {isPending && !error ? (
-                    <IonSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
+                    <AppSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
                 ) : (
                     <img
                         className="w-[60px] h-[60px] object-cover rounded-[10px]"
@@ -270,8 +273,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 <div className="flex flex-col items-center font-poppins w-full gap-[2px]">
                     {isPending && !error ? (
                         <>
-                            <IonSkeletonText animated className="h-[20px]" />
-                            <IonSkeletonText animated className="h-[17px]" />
+                            <AppSkeletonText animated className="h-[20px]" />
+                            <AppSkeletonText animated className="h-[17px]" />
                         </>
                     ) : (
                         <>
@@ -396,8 +399,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     <span className="text-grayscale-700 text-[14px]">
                         Universal Learning & Work Portfolio
                     </span>
-                    <IonRow className="flex items-center justify-center">
-                        <IonCol className="flex items-center justify-center">
+                    <AppRow className="flex items-center justify-center">
+                        <AppCol className="flex items-center justify-center">
                             <button
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-semibold text-[12px]`}
@@ -413,11 +416,11 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             >
                                 {m['legal.termsOfService']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 </div>
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 

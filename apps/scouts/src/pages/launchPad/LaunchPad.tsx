@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
 import { BrandingEnum, ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
-import { IonContent, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import * as m from '../../paraglide/messages.js';
 
@@ -22,6 +21,7 @@ import AlertsIcon from '../../assets/icons/AlertsIcon';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 import { useCheckIfUserInNetwork } from '../../components/network-prompts/hooks/useCheckIfUserInNetwork';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('launch-pad');
 
 type CapacitorBundle = {
@@ -151,14 +151,14 @@ const LaunchPad: React.FC = () => {
     ];
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader
                 customClassName="bg-white px-0"
                 branding={BrandingEnum.scoutPass}
                 customHeaderClass="px-0"
             />
 
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 <div className="w-full flex justify-center px-4">
                     <RecoveryBanner
                         recoveryMethodCount={recoveryMethodCount}
@@ -218,8 +218,8 @@ const LaunchPad: React.FC = () => {
                         <ScoutsNewsList />
                     </div>
                 </section>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

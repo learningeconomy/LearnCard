@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonPage } from '@ionic/react';
 import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelModalLayout';
 import Checkmark from '../../../svgs/Checkmark';
 

@@ -11,7 +11,7 @@
 
 import React from 'react';
 
-import { constructOutline } from 'ionicons/icons';
+import { constructOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Policy } from '../../types';
 import { INPUT, LABEL } from '../shared/inputs';

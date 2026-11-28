@@ -2,7 +2,7 @@ import { AnnouncementPreferences } from './AnnouncementPreferences';
 import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
-import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
+import { useViewWillEnter } from 'learn-card-base/ui/app-shell/AppOutlet';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 import {
@@ -44,6 +44,7 @@ import type {
     ProfileVisibilityValue,
     SavedCredentialCollection,
 } from './DataSharingCenter.types';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type PrivacySettingsProfile = {
     profileVisibility?: ProfileVisibilityValue;
@@ -77,7 +78,7 @@ const PrivacySettingsPage: React.FC = () => {
     const [openSavedOnEntry, setOpenSavedOnEntry] = useState(false);
     const [savingField, setSavingField] = useState<string | null>(null);
 
-    useIonViewWillEnter(() => {
+    useViewWillEnter(() => {
         const requested = new URLSearchParams(history.location.search).get('view') === 'saved';
         setOpenSavedOnEntry(requested);
         if (hasEnteredRef.current) {
@@ -323,8 +324,8 @@ const PrivacySettingsPage: React.FC = () => {
     ]);
 
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 <DataSharingCenterView
                     vm={vm}
                     announcements={
@@ -345,8 +346,8 @@ const PrivacySettingsPage: React.FC = () => {
                         />
                     }
                 />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import BoostCMSAppearanceFormHeader from './BoostCMSAppearanceFormHeader';
 import BoostCMSCategoryAndTypeSelector from './BoostCMSAchievementTypeSelector';
 

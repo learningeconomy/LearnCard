@@ -1,12 +1,12 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AdminToolsOptionItemLoader: React.FC = () => {
     return (
         <div className="bg-white rounded-[20px] w-[500px] h-[200px] flex flex-col gap-[5px] items-center justify-center">
-            <IonSpinner color="grayscale-900" name="crescent" className="w-[50px] h-[50px]" />
+            <AppSpinner color="grayscale-900" name="crescent" className="w-[50px] h-[50px]" />
             <span className="text-grayscale-900 font-notoSans text-xl mt-2 font-semibold">
                 {m['common.loading']()}
             </span>

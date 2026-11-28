@@ -3,17 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-guardian-issue-to-list');
 
-import {
-    IonCol,
-    IonContent,
-    IonFooter,
-    IonGrid,
-    IonHeader,
-    IonPage,
-    IonRow,
-    IonToolbar,
-    useIonAlert,
-} from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactItem from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
 
@@ -24,6 +15,7 @@ import { updateAdminList, useWallet } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { m } from '../../../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const FamilyGuardianIssueToList: React.FC<{
     state: ShortBoostState;
@@ -36,7 +28,7 @@ const FamilyGuardianIssueToList: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     const queryClient = useQueryClient();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { initWallet } = useWallet();
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -91,9 +83,9 @@ const FamilyGuardianIssueToList: React.FC<{
     };
 
     return (
-        <IonPage>
-            <IonHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
-                <IonCol className="w-full flex items-center justify-center">
+        <AppPage>
+            <AppHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
+                <AppCol className="w-full flex items-center justify-center">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] max-w-[600px]">
                         <p className="boost-issue-to-text font-poppins text-2xl text-grayscale-900">
                             {m['family.guardianInvite.inviteGuardians']()}
@@ -102,18 +94,18 @@ const FamilyGuardianIssueToList: React.FC<{
                             <Plus className="text-grayscale-900 round-bottom-shadow-btn w-[50px] h-[50px] shrink-0 p-[8px] flex justify-center items-center" />
                         </div>
                     </div>
-                </IonCol>
-            </IonHeader>
-            <IonContent fullscreen>
-                <IonGrid className="pl-4 bg-white pt-0">
-                    <IonCol className="pt-0 w-full flex items-center justify-center">
+                </AppCol>
+            </AppHeader>
+            <AppContent fullscreen>
+                <AppGrid className="pl-4 bg-white pt-0">
+                    <AppCol className="pt-0 w-full flex items-center justify-center">
                         {renderIssuedTo}
-                    </IonCol>
-                </IonGrid>
-            </IonContent>
-            <IonFooter>
-                <IonToolbar color="light" className="ion-no-border">
-                    <IonRow className="w-full flex items-center justify-center px-4">
+                    </AppCol>
+                </AppGrid>
+            </AppContent>
+            <AppFooter>
+                <AppToolbar color="light" className="ion-no-border">
+                    <AppRow className="w-full flex items-center justify-center px-4">
                         <div className="boost-issue-container w-full flex items-center justify-center max-w-[600px]">
                             <button
                                 onClick={handleCancel}
@@ -132,10 +124,10 @@ const FamilyGuardianIssueToList: React.FC<{
                                 {isLoading ? m['common.loading']() : m['common.invite']()}
                             </button>
                         </div>
-                    </IonRow>
-                </IonToolbar>
-            </IonFooter>
-        </IonPage>
+                    </AppRow>
+                </AppToolbar>
+            </AppFooter>
+        </AppPage>
     );
 };
 

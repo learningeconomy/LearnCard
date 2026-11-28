@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { IonPage } from '@ionic/react';
 import TroopsNetworkListItem from './TroopsNetworkListItem';
 import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelModalLayout';
 
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { VC } from '@learncard/types';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type TroopsNetworkListProps = {
     handleCloseModal: () => void;
@@ -23,7 +23,7 @@ const TroopsNetworkList: React.FC<TroopsNetworkListProps> = ({
     nationalNetworkIds,
 }) => {
     return (
-        <IonPage>
+        <AppPage>
             <ModalLayout handleOnClick={handleCloseModal} containerClass="pt-6! px-[10px]">
                 {nationalNetworkIds?.map(networkBoost => {
                     const uri = networkBoost?.boostId;
@@ -40,7 +40,7 @@ const TroopsNetworkList: React.FC<TroopsNetworkListProps> = ({
                     );
                 })}
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

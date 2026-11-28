@@ -1,21 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import {
-    useIonModal,
-    IonInput,
-    IonRow,
-    IonCol,
-    IonGrid,
-    IonSpinner,
-    IonList,
-    IonItem,
-    IonContent,
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonFooter,
-} from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
@@ -34,6 +23,8 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
 
 import { useBrandingConfig } from 'learn-card-base';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum BoostAddressBookEditMode {
     edit = 'edit',
@@ -141,44 +132,50 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         }
     }, [state]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostAddressBookContactOptions, {
-        state: state,
-        setState: setState,
-        setIssueMode,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        title: (
-            <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
-                {m['boost.shortBoost.selectRecipient']()}
-            </p>
-        ),
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
-    });
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(
+        BoostAddressBookContactOptions,
+        {
+            state: state,
+            setState: setState,
+            setIssueMode,
+            handleCloseModal: () => dismissCenterModal(),
+            showCloseButton: true,
+            title: (
+                <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
+                    {m['boost.shortBoost.selectRecipient']()}
+                </p>
+            ),
+            search,
+            setSearch,
+            searchResults,
+            isLoading,
+            collectionPropName,
+        }
+    );
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostAddressBookContactOptions, {
-        state: state,
-        setState: setState,
-        setIssueMode,
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                {m['boost.cms.issueTo.whoToBoost']()}
-            </p>
-        ),
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
-    });
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(
+        BoostAddressBookContactOptions,
+        {
+            state: state,
+            setState: setState,
+            setIssueMode,
+            handleCloseModal: () => dismissSheetModal(),
+            showCloseButton: false,
+            title: (
+                <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
+                    {m['boost.cms.issueTo.whoToBoost']()}
+                </p>
+            ),
+            search,
+            setSearch,
+            searchResults,
+            isLoading,
+            collectionPropName,
+        }
+    );
 
     // modal call for directly accessing the addressbook
-    const [presentAddressBook, dismissAddressbook] = useIonModal(BoostAddressBook, {
+    const [presentAddressBook, dismissAddressbook] = useAppOverlayModal(BoostAddressBook, {
         state: state,
         setState: setState,
         viewMode: BoostAddressBookViewMode.full,
@@ -236,13 +233,13 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     if (viewMode === BoostAddressBookViewMode.full) {
         return (
-            <IonPage className="bg-white">
-                <IonHeader className="learn-card-header ion-no-border bg-white w-full">
-                    <IonToolbar color="white" className="ion-no-border w-full">
-                        <IonGrid className="bg-white">
-                            <IonRow className="w-full flex items-center justify-center bg-white">
-                                <IonRow className="flex flex-col w-full max-w-[600px]">
-                                    <IonCol className="flex flex-1 justify-start items-center">
+            <AppPage className="bg-white">
+                <AppHeader className="learn-card-header ion-no-border bg-white w-full">
+                    <AppToolbar color="white" className="ion-no-border w-full">
+                        <AppGrid className="bg-white">
+                            <AppRow className="w-full flex items-center justify-center bg-white">
+                                <AppRow className="flex flex-col w-full max-w-[600px]">
+                                    <AppCol className="flex flex-1 justify-start items-center">
                                         <button
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => {
@@ -258,30 +255,30 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                 count: contactCount ?? 0,
                                             })}
                                         </h3>
-                                    </IonCol>
+                                    </AppCol>
 
                                     <div className="flex items-center justify-start w-full">
-                                        <IonInput
+                                        <AppInput
                                             autocapitalize="on"
                                             placeholder={m['boost.cms.issueTo.searchNetwork']({
                                                 name: brandingConfig?.name || '',
                                             })}
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                            onIonInput={e => handleSearch(e?.detail?.value ?? '')}
+                                            onValueInput={value => handleSearch(value)}
                                             debounce={500}
                                             type="text"
                                         />
                                     </div>
-                                </IonRow>
-                            </IonRow>
-                        </IonGrid>
-                    </IonToolbar>
-                </IonHeader>
-                <IonContent fullscreen>
+                                </AppRow>
+                            </AppRow>
+                        </AppGrid>
+                    </AppToolbar>
+                </AppHeader>
+                <AppContent fullscreen>
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -314,7 +311,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
                     {isLoading && search?.length > 0 && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -336,12 +333,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 <strong>{m['boost.cms.issueTo.noSearchResults']()}</strong>
                             </section>
                         )}
-                </IonContent>
-                <IonFooter className="bg-white">
-                    <IonToolbar className="w-full ion-no-border bg-white pt-5">
-                        <IonRow className="w-full flex items-center justify-center">
+                </AppContent>
+                <AppFooter className="bg-white">
+                    <AppToolbar className="w-full ion-no-border bg-white pt-5">
+                        <AppRow className="w-full flex items-center justify-center">
                             <div className="w-full max-w-[600px] flex items-center justify-center">
-                                <IonCol
+                                <AppCol
                                     size="12"
                                     className="w-full flex items-center justify-between"
                                 >
@@ -351,20 +348,20 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     >
                                         {m['common.save']()}
                                     </button>
-                                </IonCol>
+                                </AppCol>
                             </div>
-                        </IonRow>
-                    </IonToolbar>
-                </IonFooter>
-            </IonPage>
+                        </AppRow>
+                    </AppToolbar>
+                </AppFooter>
+            </AppPage>
         );
     }
 
     return (
         <>
-            <IonGrid className="w-full flex items-center justify-center flex-col">
-                <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                    <IonCol size="12" className="w-full bg-white rounded-[20px]">
+            <AppGrid className="w-full flex items-center justify-center flex-col">
+                <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                    <AppCol size="12" className="w-full bg-white rounded-[20px]">
                         <div className="flex items-center justify-between w-full ion-padding">
                             <h1 className="font-poppins text-black text-xl p-0 m-0">{title}</h1>
 
@@ -468,33 +465,33 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             collectionPropName={collectionKey}
                             showRecipientAttachments={collectionKey === 'issueTo'}
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 {recipientsLoading && recipients?.length === 0 && (
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
                         <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                         </section>
-                    </IonRow>
+                    </AppRow>
                 )}
                 {!recipientsLoading && recipients?.length > 0 && (
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <div className="flex items-center justify-between w-full ion-padding">
                                 <h1 className="font-poppins text-black text-xl p-0 m-0">
                                     Issue Log
                                 </h1>
                             </div>
 
-                            <IonList
+                            <AppList
                                 lines="none"
                                 className="flex flex-col items-center justify-center w-full"
                             >
                                 {recipients?.map(recipient => {
                                     return (
                                         // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
-                                        <IonItem
+                                        <AppItem
                                             lines="none"
                                             className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px]`}
                                         >
@@ -523,14 +520,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                     </p>
                                                 </div>
                                             </div>
-                                        </IonItem>
+                                        </AppItem>
                                     );
                                 })}
-                            </IonList>
-                        </IonCol>
-                    </IonRow>
+                            </AppList>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonGrid>
+            </AppGrid>
 
             {!hideBoostShareableCode && (
                 <BoostShareableCode

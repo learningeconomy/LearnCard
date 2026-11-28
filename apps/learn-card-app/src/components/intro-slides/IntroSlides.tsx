@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonContent, IonPage, IonicSlides, IonSpinner } from '@ionic/react';
+import { SwiperDefaults } from 'learn-card-base/swiper/swiperDefaults';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInterface } from 'swiper/types';
 import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
@@ -18,7 +18,9 @@ import 'swiper/css';
 import 'swiper/css/keyboard';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
-import '@ionic/react/css/ionic-swiper.css';
+import 'learn-card-base/swiper/swiper-defaults.css';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const IntroSlides: React.FC = () => {
     const { getColorSet } = useTheme();
@@ -89,11 +91,11 @@ const IntroSlides: React.FC = () => {
     return (
         <>
             <style>{paginationStyles}</style>
-            <IonPage>
-                <IonContent fullscreen>
+            <AppPage>
+                <AppContent fullscreen>
                     <div style={{ position: 'relative', height: '100%' }}>
                         <Swiper
-                            modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
+                            modules={[Keyboard, Pagination, Scrollbar, SwiperDefaults, Navigation]}
                             keyboard={true}
                             pagination={pagination}
                             grabCursor={true}
@@ -134,8 +136,8 @@ const IntroSlides: React.FC = () => {
                         </Swiper>
                     </div>
                     <div className="swiper-pagination intro-slides-pagination"></div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         </>
     );
 };
@@ -300,7 +302,7 @@ const LearnCardSlide4: React.FC<LearnCardSlideProps> = ({ handleNextSlide, handl
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center base-gradient">
                 <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="mt-4" />
-                <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
+                <AppSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
             </section>
         </>
     );

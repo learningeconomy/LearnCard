@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircle, ellipseOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { checkmarkCircle, ellipseOutline } from 'learn-card-base/icons/ionicons';
 
 import { VC, UnsignedVC } from '@learncard/types';
 import {
@@ -53,7 +53,7 @@ const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({ c
                                 index > 0 ? 'border-t border-grayscale-200' : ''
                             }`}
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={isSelected ? checkmarkCircle : ellipseOutline}
                                 className={`text-[28px] shrink-0 mt-0.5 ${
                                     isSelected ? 'text-emerald-600' : 'text-grayscale-300'

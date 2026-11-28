@@ -1,7 +1,7 @@
 import React, { useId, useState } from 'react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { MediaAttachments, type SimpleMediaAttachment } from '../components/MediaAttachments';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     peopleOutline,
@@ -11,7 +11,7 @@ import {
     cloudUploadOutline,
     lockClosedOutline,
     chevronForwardOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useScreenWidth } from 'learn-card-base/hooks/useScreenWidth';
 import { SpreadsheetDialog, useSpreadsheetDialog } from './SpreadsheetDialog';
 import * as m from '../../../paraglide/messages.js';
@@ -62,7 +62,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
         <section className="rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins space-y-v3-4">
             <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                    <IonIcon icon={peopleOutline} className="h-6 w-6" aria-hidden="true" />
+                    <AppIcon icon={peopleOutline} className="h-6 w-6" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
                     <h3 className="text-base font-semibold text-grayscale-900">
@@ -80,7 +80,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                 <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${issues ? 'bg-grayscale-100 text-grayscale-700' : 'bg-emerald-50 text-emerald-700'}`}
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={issues ? alertCircleOutline : checkmarkCircleOutline}
                         className={issues ? 'text-red-600' : undefined}
                         aria-hidden="true"
@@ -96,7 +96,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                 className="flex w-full items-center justify-between gap-3 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
                 {m['issueFlow.sheet.design.reviewPeople']()}
-                <IonIcon icon={chevronForwardOutline} aria-hidden="true" />
+                <AppIcon icon={chevronForwardOutline} aria-hidden="true" />
             </button>
         </section>
     );
@@ -165,7 +165,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                 className="flex items-start gap-1.5 text-xs leading-relaxed text-red-700"
                 role="status"
             >
-                <IonIcon icon={alertCircleOutline} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <AppIcon icon={alertCircleOutline} className="mt-0.5 shrink-0" aria-hidden="true" />
                 {[...new Set(errors)].map(spreadsheetProblem).join(' · ')}
             </p>
         ) : null;
@@ -244,7 +244,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         {recipientDisplayName(recipient)}
                     </span>
                     {props.locked(recipientKey(recipient)) && (
-                        <IonIcon
+                        <AppIcon
                             icon={lockClosedOutline}
                             className="text-grayscale-500"
                             aria-label={m['issueFlow.sheet.design.locked']()}
@@ -415,7 +415,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                             }}
                             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium ${onlyIssues ? 'bg-grayscale-200 text-grayscale-900' : 'bg-grayscale-100 text-grayscale-700'}`}
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 className={issues ? 'text-red-600' : 'text-grayscale-500'}
                                 aria-hidden="true"
@@ -430,7 +430,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                             disabled={disabled}
                             className="inline-flex items-center gap-1.5 py-2 text-xs font-medium text-grayscale-700 disabled:opacity-40"
                         >
-                            <IonIcon icon={downloadOutline} aria-hidden="true" />
+                            <AppIcon icon={downloadOutline} aria-hidden="true" />
                             {m['issueFlow.sheet.download']()}
                         </button>
                         <button
@@ -442,13 +442,13 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                             disabled={disabled}
                             className="inline-flex items-center gap-1.5 py-2 text-xs font-medium text-grayscale-700 disabled:opacity-40"
                         >
-                            <IonIcon icon={cloudUploadOutline} aria-hidden="true" />
+                            <AppIcon icon={cloudUploadOutline} aria-hidden="true" />
                             {m['issueFlow.sheet.upload']()}
                         </button>
                     </div>
                 </div>
                 <label className="relative block">
-                    <IonIcon
+                    <AppIcon
                         icon={searchOutline}
                         className="pointer-events-none absolute inset-s-4 top-4 text-grayscale-500"
                         aria-hidden="true"

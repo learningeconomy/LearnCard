@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { useQueryClient } from '@tanstack/react-query';
 import { shuffle } from 'lodash-es';
 import { getLogger } from 'learn-card-base';
@@ -7,6 +7,7 @@ const log = getLogger('admin-tools-network');
 
 import * as m from '../../../paraglide/messages.js';
 import GenericLoader from '../../../components/generic/GenericLoader';
+import { AppRadio, AppRadioGroup } from 'learn-card-base/ui/controls/AppRadio';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 
@@ -179,9 +180,9 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
                 <AdminToolsOptionItemHeader option={option} className="pb-1!" />
 
                 <div className="w-full flex flex-col items-center justify-center px-4">
-                    <IonRadioGroup
+                    <AppRadioGroup
                         value={selectedType}
-                        onIonChange={e => setSelectedType(e.detail.value as NetworkType)}
+                        onValueChange={value => setSelectedType(value as NetworkType)}
                         className="w-full"
                     >
                         {networkOptionsList.map((opt, index) => {
@@ -208,7 +209,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
                                                     : 'bg-grayscale-100 text-transparent'
                                             }`}
                                         >
-                                            <IonRadio
+                                            <AppRadio
                                                 value={opt.type}
                                                 className="w-full h-full ml-2"
                                                 color="white"
@@ -222,14 +223,14 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
                                             onClick={e => e.stopPropagation()}
                                             onMouseDown={e => e.stopPropagation()}
                                         >
-                                            <IonInput
+                                            <AppInput
                                                 type="url"
                                                 inputmode="url"
                                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-sm w-full"
                                                 placeholder="Enter network URL (e.g., https://network.example.com)"
                                                 value={customEndpoint}
-                                                onIonInput={e =>
-                                                    setCustomEndpoint(String(e.detail.value ?? ''))
+                                                onValueInput={value =>
+                                                    setCustomEndpoint(String(value))
                                                 }
                                                 debounce={0}
                                             />
@@ -244,7 +245,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
                                 </fieldset>
                             );
                         })}
-                    </IonRadioGroup>
+                    </AppRadioGroup>
                 </div>
             </section>
 

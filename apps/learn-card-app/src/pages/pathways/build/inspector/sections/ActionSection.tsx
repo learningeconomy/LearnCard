@@ -54,7 +54,7 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     compassOutline,
@@ -64,7 +64,7 @@ import {
     searchOutline,
     sparklesOutline,
     terminalOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { AppStoreListing } from '@learncard/types';
 
 import type {
@@ -342,7 +342,7 @@ const VariantEditor: React.FC<VariantEditorProps> = ({
 
 const NoneExplainer: React.FC = () => (
     <div className="flex items-start gap-2.5 p-3 rounded-xl bg-grayscale-10 border border-grayscale-200">
-        <IonIcon
+        <AppIcon
             icon={informationCircleOutline}
             aria-hidden
             className="text-grayscale-500 text-base mt-0.5 shrink-0"
@@ -529,7 +529,7 @@ const AppListingEditor: React.FC<{
                             <ResolvedListingCard listing={resolved} />
                         ) : (
                             <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     aria-hidden
                                     className="text-amber-600 text-sm mt-0.5 shrink-0"
@@ -552,7 +552,7 @@ const AppListingEditor: React.FC<{
                 <label className={LABEL}>Quick-pick</label>
 
                 <div className="relative">
-                    <IonIcon
+                    <AppIcon
                         icon={searchOutline}
                         aria-hidden
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-400 text-base"
@@ -749,7 +749,7 @@ const AiSessionEditor: React.FC<{
 
             {topicsDrifted && (
                 <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         aria-hidden
                         className="text-amber-600 text-sm mt-0.5 shrink-0"

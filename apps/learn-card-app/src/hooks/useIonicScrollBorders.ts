@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { produce } from 'immer';
-import { IonContentCustomEvent, ScrollDetail } from '@ionic/core';
+
+import type { AppContentScrollEvent } from 'learn-card-base/ui/chrome/AppContent';
 
 export const useIonicScrollBorders = ({
     topShowClassName = 'border-t border-t-grayscale-200',
@@ -15,7 +16,7 @@ export const useIonicScrollBorders = ({
 } = {}) => {
     const [classNames, setClassNames] = useState([topHideClassName, bottomHideClassName]);
 
-    const onIonScroll = async (event: IonContentCustomEvent<ScrollDetail>) => {
+    const onIonScroll = async (event: AppContentScrollEvent) => {
         const scrollElement = await event.target.getScrollElement();
 
         // Top border

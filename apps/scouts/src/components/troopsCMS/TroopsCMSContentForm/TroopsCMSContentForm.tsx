@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-import { IonInput, IonTextarea, IonToggle } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 
 import {
@@ -17,6 +16,9 @@ import countriesRegions from '../../../constants/countries_organisations_regions
 import { useModal, ModalTypes } from 'learn-card-base';
 import Checkmark from '../../svgs/Checkmark';
 import X from '../../svgs/X';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type TroopCMSContentFormProps = {
     state: TroopsCMSState;
@@ -84,8 +86,11 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
 
     const countryOptions = useMemo(
         () =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             [...((countriesRegions as any)?.Countries ?? [])]
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 .sort((a: any, b: any) => (a?.Country || '').localeCompare(b?.Country || ''))
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 .map((c: any) => c?.Country)
                 .filter(Boolean),
         []
@@ -93,8 +98,11 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
 
     const regionOptions = useMemo(
         () =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             [...((countriesRegions as any)?.Regions ?? [])]
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 .sort((a: any, b: any) => (a?.Region || '').localeCompare(b?.Region || ''))
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 .map((r: any) => r?.Region)
                 .filter(Boolean),
         []
@@ -219,6 +227,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
         });
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleSetState = (key: string, value: any) => {
         setState(prevState => {
             return {
@@ -231,6 +240,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
         });
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleSetIDState = (key: string, value: any) => {
         if (isInMemberViewMode) {
             setState(prevState => {
@@ -278,7 +288,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         {m['troops.memberType']()}
                     </h3>
 
-                    <IonInput
+                    <AppInput
                         value={getMemberTypeText(rootViewMode, viewMode)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder troops-cms-readonly-input"
                         placeholder={m['troops.memberTypePlaceholder']()}
@@ -294,10 +304,10 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         {m['troops.namePlaceholder']({ mode: currentMode })}
                     </h3>
 
-                    <IonInput
+                    <AppInput
                         value={troopNumber}
-                        onIonInput={e => {
-                            const _networkName = e.detail.value;
+                        onValueInput={value => {
+                            const _networkName = value;
                             setTroopNumber(_networkName);
                             handleSetState('name', _networkName);
                             setErrors?.({});
@@ -390,10 +400,10 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         {m['troops.troopNumber']()}
                     </h3>
 
-                    <IonInput
+                    <AppInput
                         value={troopNumber}
-                        onIonInput={e => {
-                            const _troopNumber = e.detail.value;
+                        onValueInput={value => {
+                            const _troopNumber = value;
                             setTroopNumber(_troopNumber);
                             handleSetState('name', Number(_troopNumber));
                             setErrors?.({});
@@ -439,10 +449,10 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                             )}
                             {m['troops.useNetworkDescription']()}
                         </div>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             className="troops-cms-toggle"
-                            onIonChange={e => {
+                            onCheckedChange={checked => {
                                 setToggleDefaultDescription(!toggleDefaultDescription);
                                 handleSetDefaultContent(!toggleDefaultDescription);
                             }}
@@ -457,12 +467,12 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                 )}
                 {!isInIDMode && !toggleDefaultDescription && (
                     <>
-                        <IonTextarea
+                        <AppTextarea
                             autoGrow
                             autocapitalize="on"
                             value={description}
-                            onIonInput={e => {
-                                const _description = e.detail.value;
+                            onValueInput={value => {
+                                const _description = value;
                                 setDescription(_description);
                                 handleSetState('description', _description);
                                 setErrors?.({});
@@ -499,10 +509,10 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                             )}
                             {m['troops.useSourcedDescription']({ source: defaultDescriptionNoun })}
                         </div>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             className="troops-cms-toggle"
-                            onIonChange={e => {
+                            onCheckedChange={checked => {
                                 setToggleDefaultIDDescription(!toggleDefaultIDDescription);
                                 handleSetDefaultContentForID(!toggleDefaultIDDescription);
                             }}
@@ -517,12 +527,12 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                 )}
                 {isInIDMode && (!toggleDefaultIDDescription || !defaultDescription) && (
                     <>
-                        <IonTextarea
+                        <AppTextarea
                             autoGrow
                             autocapitalize="on"
                             value={idDescription}
-                            onIonInput={e => {
-                                const _description = e.detail.value;
+                            onValueInput={value => {
+                                const _description = value;
                                 setIdDescription(_description);
                                 handleSetIDState('idDescription', _description);
                                 setErrors?.({});

@@ -18,10 +18,6 @@ vi.mock('@learncard/sss-key-manager', () => ({
     isWebAuthnSupported: () => mocks.webAuthnSupported,
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ className }: { className?: string }) => <span className={className} />,
-}));
-
 vi.mock('@analytics', () => ({
     AnalyticsEvents: {
         DASHBOARD_RECOVERY_PROMPT_INTERACTED: 'dashboard_recovery_prompt_interacted',

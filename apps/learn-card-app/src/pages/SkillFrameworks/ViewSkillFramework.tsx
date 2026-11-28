@@ -1,6 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { SkillFramework, SkillFrameworkNode } from 'apps/learn-card-app/src/components/boost/boost';
-import { IonFooter } from '@ionic/react';
 import { useModal } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
@@ -9,6 +8,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { getLogger } from 'learn-card-base';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 const log = getLogger('view-skill-framework');
 
 type ViewSkillFrameworkProps = {
@@ -404,7 +404,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                 )}
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-grayscale-100/80 border-solid border border-white"
             >
@@ -434,7 +434,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                         <ThreeDotVertical className="w-[20px] h-[20px]" />
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

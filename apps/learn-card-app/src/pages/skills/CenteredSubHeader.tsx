@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import SKillsShield from '../../assets/images/skills-shield.png';
 
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
@@ -23,14 +23,14 @@ export const CenteredSubHeader: React.FC<{ subheaderType: SubheaderTypeEnum }> =
     }
 
     return (
-        <IonRow className="flex items-center justify-center w-full">
-            <IonCol size={'9'} className="flex flex-col items-center justify-center">
+        <AppRow className="flex items-center justify-center w-full">
+            <AppCol size={'9'} className="flex flex-col items-center justify-center">
                 {icon}
                 <h2 className="select-none text-center font-poppins font-[600] text-[22px] text-grayscale-900 mt-2">
                     {title}
                 </h2>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

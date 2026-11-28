@@ -16,9 +16,6 @@ const { modals, closeModalById } = vi.hoisted(() => ({
     closeModalById: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ icon, ...rest }: Record<string, unknown>) => React.createElement('span', rest),
-}));
 vi.mock('qrcode.react', () => ({
     QRCodeSVG: ({ role, 'aria-label': ariaLabel }: { role?: string; 'aria-label'?: string }) =>
         React.createElement('img', { role, 'aria-label': ariaLabel }),

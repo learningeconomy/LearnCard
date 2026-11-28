@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     flashOutline,
     checkmarkOutline,
@@ -8,13 +8,14 @@ import {
     chevronUpOutline,
     closeOutline,
     checkmarkCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { WALLET_CATEGORIES, PERSONAL_FIELDS } from '@learncard/partner-connect-core';
 import type {
     ConsentRequest,
     WalletCategory,
     PersonalField,
 } from '@learncard/partner-connect-core';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 interface ConsentDesignerCardProps {
     appName: string;
@@ -166,10 +167,10 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                     onClick={onDismiss}
                     className="absolute top-3 right-3 p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-full transition-colors"
                 >
-                    <IonIcon icon={closeOutline} className="w-4 h-4" />
+                    <AppIcon icon={closeOutline} className="w-4 h-4" />
                 </button>
                 <div className="flex items-start gap-3 mb-4">
-                    <IonIcon
+                    <AppIcon
                         icon={checkmarkCircleOutline}
                         className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5"
                     />
@@ -223,7 +224,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                         className="text-xs font-medium text-emerald-700 hover:text-emerald-900 transition-colors flex items-center gap-1"
                     >
                         Prefer code?
-                        <IonIcon
+                        <AppIcon
                             icon={showCode ? chevronUpOutline : chevronDownOutline}
                             className="w-3 h-3"
                         />
@@ -241,7 +242,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                         >
                             {copied ? (
                                 <>
-                                    <IonIcon
+                                    <AppIcon
                                         icon={checkmarkOutline}
                                         className="w-3.5 h-3.5 text-emerald-500"
                                     />
@@ -249,7 +250,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                                 </>
                             ) : (
                                 <>
-                                    <IonIcon icon={copyOutline} className="w-3.5 h-3.5" />
+                                    <AppIcon icon={copyOutline} className="w-3.5 h-3.5" />
                                     Copy code
                                 </>
                             )}
@@ -268,11 +269,11 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                 aria-label="Dismiss"
                 className="absolute top-3 right-3 p-1 text-grayscale-400 hover:text-grayscale-600 hover:bg-grayscale-100 rounded-full transition-colors"
             >
-                <IonIcon icon={closeOutline} className="w-4 h-4" />
+                <AppIcon icon={closeOutline} className="w-4 h-4" />
             </button>
 
             <div className="flex items-start gap-3 mb-5">
-                <IonIcon icon={flashOutline} className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <AppIcon icon={flashOutline} className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div>
                     <h4 className="text-sm font-semibold text-grayscale-900 mb-1">
                         Set up consent
@@ -397,7 +398,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                     >
                         {isEnabling ? (
                             <>
-                                <IonSpinner name="crescent" className="w-4 h-4" />
+                                <AppSpinner name="crescent" className="w-4 h-4" />
                                 Setting up...
                             </>
                         ) : (

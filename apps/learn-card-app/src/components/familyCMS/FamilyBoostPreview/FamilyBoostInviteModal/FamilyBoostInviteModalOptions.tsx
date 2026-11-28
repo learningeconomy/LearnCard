@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import FamilyInviteGuardian from './FamilyInviteGuardian';
 import AddUser from '../../../svgs/AddUser';
 
@@ -38,7 +38,7 @@ const FamilyBoostInviteModalOptions: React.FC<{
     const { mutate: createChildAccount } = useCreateChildAccount();
     const { refetch: refetchChildrenProfiles } = useGetBoostChildrenProfileManagers(boostUri);
 
-    const [openGuardianInviteModal, dismissGuardianInviteModal] = useIonModal(
+    const [openGuardianInviteModal, dismissGuardianInviteModal] = useAppOverlayModal(
         FamilyInviteGuardian,
         {
             boostUri: credential?.boostId,

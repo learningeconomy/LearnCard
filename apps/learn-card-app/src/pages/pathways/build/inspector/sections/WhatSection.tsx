@@ -26,7 +26,7 @@
 
 import React, { useMemo } from 'react';
 
-import { flashOutline } from 'ionicons/icons';
+import { flashOutline } from 'learn-card-base/icons/ionicons';
 
 import { pathwayStore } from '../../../../../stores/pathways';
 import type { Pathway, PathwayNode, Policy } from '../../../types';

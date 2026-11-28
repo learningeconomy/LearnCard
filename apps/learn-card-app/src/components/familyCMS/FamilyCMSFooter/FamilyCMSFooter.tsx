@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { IonFooter, IonToolbar } from '@ionic/react';
 import { FamilyCMSEditorModeEnum } from '../familyCMSState';
 import { m } from '../../../paraglide/messages.js';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const FamilyCMSFooter: React.FC<{
     handleCreateFamily: () => void;
@@ -23,11 +23,11 @@ export const FamilyCMSFooter: React.FC<{
 
     return (
         <>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
-                <IonToolbar color="transparent" mode="ios">
+                <AppToolbar color="transparent" mode="ios">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-between max-w-[600px] pb-0 px-4 pt-2">
                             <button
@@ -44,8 +44,8 @@ export const FamilyCMSFooter: React.FC<{
                             </button>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonFooter>
+                </AppToolbar>
+            </AppFooter>
         </>
     );
 };

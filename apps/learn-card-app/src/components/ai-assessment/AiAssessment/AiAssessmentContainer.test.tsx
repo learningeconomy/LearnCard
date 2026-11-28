@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => ({
     summary: vi.fn(),
     enriched: vi.fn(),
 }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: mocks.logError }),

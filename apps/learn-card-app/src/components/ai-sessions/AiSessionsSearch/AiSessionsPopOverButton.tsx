@@ -3,7 +3,8 @@ import React, { useState, useRef } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import AiSessionsFilterSortingOptionsModal from './AiSessionsFilterSortingOptionsModal';
-import { IonItem, IonList, IonPopover } from '@ionic/react';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import { Checkmark } from '@learncard/react';
 
@@ -74,13 +75,13 @@ export const AiSessionsPopOverButton: React.FC<{
                 />
             </button>
             {!isMobile && (
-                <IonPopover
+                <AppPopover
                     onDidDismiss={() => setShowSortPopover(false)}
                     reference="trigger"
                     trigger="trigger-button"
                     className="launchpad-popover"
                 >
-                    <IonList>
+                    <AppList>
                         {AI_SESSIONS_SORT_OPTIONS.map(option => {
                             if (filteringType === AiFilteringTypes.sessions) {
                                 if (option.type === AiSessionsSortOptionsEnum.mostSessions)
@@ -88,7 +89,7 @@ export const AiSessionsPopOverButton: React.FC<{
                             }
 
                             return (
-                                <IonItem
+                                <AppItem
                                     className="font-notoSans text-sm flex items-center justify-start text-left"
                                     key={option.id}
                                     lines="none"
@@ -102,7 +103,7 @@ export const AiSessionsPopOverButton: React.FC<{
                                         <div className="w-[24px] h-[24px] mr-1" />
                                     )}
                                     {m['ai.sortBy']()} {option.title}
-                                </IonItem>
+                                </AppItem>
                             );
                         })}
                         {showFilteringOptions && (
@@ -113,7 +114,7 @@ export const AiSessionsPopOverButton: React.FC<{
                         {showFilteringOptions &&
                             AI_SESSIONS_FILTER_OPTIONS.map(option => {
                                 return (
-                                    <IonItem
+                                    <AppItem
                                         className="font-notoSans text-sm flex items-center justify-start text-left"
                                         key={option.id}
                                         lines="none"
@@ -127,11 +128,11 @@ export const AiSessionsPopOverButton: React.FC<{
                                             <div className="w-[24px] h-[24px] mr-1" />
                                         )}
                                         {option.title}
-                                    </IonItem>
+                                    </AppItem>
                                 );
                             })}
-                    </IonList>
-                </IonPopover>
+                    </AppList>
+                </AppPopover>
             )}
         </>
     );

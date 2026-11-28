@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 // import Pencil from '../../svgs/Pencil';
-import { IonToggle, IonRow } from '@ionic/react';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import EndorsementDeletedCard from './EndorsementDeletedCard';
 import DeleteEndorsementOverlay from './DeleteEndorsementOverlay';
@@ -211,10 +212,10 @@ export const EndorsementFullView: React.FC<{
                             </h1>
                         </div>
 
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const showEndorsementValue = showEndorsement;
                                 setShowEndorsement(!showEndorsementValue);
                                 setVisibility?.(!showEndorsementValue);
@@ -328,7 +329,7 @@ export const EndorsementFullView: React.FC<{
                     <p className="text-xs font-medium text-grayscale-600 mb-1">
                         {m['endorsement.fullview.supportingMedia']()}
                     </p>
-                    <IonRow className="w-full flex flex-col items-center justify-center gap-2">
+                    <AppRow className="w-full flex flex-col items-center justify-center gap-2">
                         {attachments?.map((attachment, index) => {
                             return (
                                 <EndorsementAttachmentListItem
@@ -342,7 +343,7 @@ export const EndorsementFullView: React.FC<{
                                 />
                             );
                         })}
-                    </IonRow>
+                    </AppRow>
                 </div>
             )}
         </div>

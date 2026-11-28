@@ -14,7 +14,6 @@ import {
     useModal,
     UserProfilePicture,
 } from 'learn-card-base';
-import { useIonModal } from '@ionic/react';
 
 import { VC } from '@learncard/types';
 import { FamilyMembersListTabsEnum } from '../../FamilyCMSMembersList/FamilyCMSMembersList';

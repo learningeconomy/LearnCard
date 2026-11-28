@@ -3,7 +3,7 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
 
-import { IonCol, IonGrid, IonRow } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import X from 'learn-card-base/svgs/X';
 
@@ -120,8 +120,8 @@ export const NotificationsSubHeader: React.FC<{
 
     return (
         <div className="backdrop-blur-[5px] border-b border-solid border-white">
-            <IonGrid className="w-full flex items-center justify-center px-3">
-                <IonRow className="w-full max-w-[600px]">
+            <AppGrid className="w-full flex items-center justify-center px-3">
+                <AppRow className="w-full max-w-[600px]">
                     <button
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
@@ -139,7 +139,7 @@ export const NotificationsSubHeader: React.FC<{
                             {m['alerts.title']()}
                         </span>
                     </button>
-                </IonRow>
+                </AppRow>
                 {!isEmptyState && (
                     <button
                         onClick={handleMarkAllRead}
@@ -148,10 +148,10 @@ export const NotificationsSubHeader: React.FC<{
                         {m['alerts.archive']()} <X className="ml-[5px] w-[15px] h-[15px]" />
                     </button>
                 )}
-            </IonGrid>
+            </AppGrid>
             <div className="w-full flex items-center justify-center px-3">
-                <IonRow class="w-full max-w-[600px]">
-                    <IonCol className="flex items-center justify-start w-full">
+                <AppRow className="w-full max-w-[600px]">
+                    <AppCol className="flex items-center justify-start w-full">
                         <button
                             onClick={() => {
                                 setTab('active');
@@ -176,8 +176,8 @@ export const NotificationsSubHeader: React.FC<{
                         >
                             {!isLoading ? numberArchived : ''} {m['alerts.archived']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         </div>
     );

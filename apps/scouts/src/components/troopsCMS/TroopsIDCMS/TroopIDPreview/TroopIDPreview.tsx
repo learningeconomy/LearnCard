@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 
-import { IonFooter, IonPage, IonToolbar } from '@ionic/react';
 import * as m from '../../../../paraglide/messages.js';
 import TroopsCMSLayout from '../../TroopsCMSLayout';
 import TroopIDPreviewFrontFace from './TroopIDPreviewFrontFace';
 import TroopIDPreviewBackFace from './TroopIDPreviewBackFace';
 
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../../troopCMSState';
+import { AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const TroopIDPreview: React.FC<{
     rootViewMode: TroopsCMSViewModeEnum;
@@ -17,7 +17,7 @@ const TroopIDPreview: React.FC<{
     const [isFront, setIsFront] = useState<boolean>(true);
 
     return (
-        <IonPage>
+        <AppPage>
             <TroopsCMSLayout
                 state={state}
                 viewMode={rootViewMode}
@@ -38,11 +38,11 @@ const TroopIDPreview: React.FC<{
                 )}
             </TroopsCMSLayout>
             <>
-                <IonFooter
+                <AppFooter
                     mode="ios"
                     className="w-full flex justify-center items-center ion-no-border pb-[15px] absolute bottom-0"
                 >
-                    <IonToolbar className="w-full" color="transparent" mode="ios">
+                    <AppToolbar className="w-full" color="transparent" mode="ios">
                         <div className="w-full flex items-center justify-center">
                             <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                                 <button
@@ -59,14 +59,14 @@ const TroopIDPreview: React.FC<{
                                 </button>
                             </div>
                         </div>
-                    </IonToolbar>
-                </IonFooter>
+                    </AppToolbar>
+                </AppFooter>
                 <div
                     role="presentation"
                     className="absolute bottom-0 h-32 w-full gradient-mask-t-0 bg-white/90"
                 />
             </>
-        </IonPage>
+        </AppPage>
     );
 };
 

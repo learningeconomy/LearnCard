@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { flaskOutline, informationCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { flaskOutline, informationCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { AddressProblem } from './launchSettings';
 import { displayHost } from './testAddress';
@@ -47,7 +47,7 @@ export const AddressGuidance: React.FC<AddressGuidanceProps> = ({
     return (
         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl" role="status">
             <div className="flex items-start gap-2.5">
-                <IonIcon
+                <AppIcon
                     icon={informationCircleOutline}
                     className="text-amber-600 text-lg mt-0.5 shrink-0"
                 />
@@ -63,7 +63,7 @@ export const AddressGuidance: React.FC<AddressGuidanceProps> = ({
                         onClick={onKeepForTesting}
                         className="inline-flex items-center gap-1.5 py-2 px-4 rounded-[20px] bg-white border border-amber-200 text-amber-900 font-medium text-sm hover:bg-amber-100 transition-colors"
                     >
-                        <IonIcon icon={flaskOutline} />
+                        <AppIcon icon={flaskOutline} />
                         Keep {displayHost(address)} for testing
                     </button>
                     <p className="mt-1.5 text-xs text-amber-700">

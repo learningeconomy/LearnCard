@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -28,16 +29,16 @@ const BoostCMSAIMissionForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                     <h1 className="text-black text-2xl p-0 m-0">
                         {m['boost.cms.aiMission.title']()}
                     </h1>
-                    <IonToggle
+                    <AppToggle
                         mode="ios"
                         color="indigo-700"
-                        onIonChange={() => {
+                        onCheckedChange={() => {
                             const expiresValue = !basicInfo?.credentialExpires;
                             handleStateChange('credentialExpires', expiresValue);
                             //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -49,8 +50,8 @@ const BoostCMSAIMissionForm: React.FC<{
                         disabled={disabled}
                     />
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

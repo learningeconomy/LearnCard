@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
-import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { getLogger, useWallet } from 'learn-card-base';
@@ -11,6 +11,8 @@ import { AppStatusView } from '../submit/AppStatusView';
 import { getListingMode, withPendingChanges } from '../submit/listingLifecycle';
 import { getAppStatusPath } from './myApps';
 import { DeleteAppMenu } from './DeleteAppMenu';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const log = getLogger('app-status-page');
 
@@ -38,22 +40,22 @@ const AppStatusPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Your app" />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!data) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Your app" />
-                <IonContent>
+                <AppContent>
                     <div className="max-w-md mx-auto mt-16 p-6 text-center font-poppins">
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
                             We couldn't find this app
@@ -69,8 +71,8 @@ const AppStatusPage: React.FC = () => {
                             Back to Your Apps
                         </button>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -116,9 +118,9 @@ const AppStatusPage: React.FC = () => {
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Your app" />
-            <IonContent>
+            <AppContent>
                 <div className="px-4 sm:px-6 pt-6">
                     <div className="max-w-[560px] mx-auto">
                         <div className="flex items-center justify-between gap-2">
@@ -127,7 +129,7 @@ const AppStatusPage: React.FC = () => {
                                 onClick={() => history.push('/app-store/developer')}
                                 className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
-                                <IonIcon icon={arrowBackOutline} />
+                                <AppIcon icon={arrowBackOutline} />
                                 Your apps
                             </button>
                             <DeleteAppMenu
@@ -140,7 +142,7 @@ const AppStatusPage: React.FC = () => {
                         </div>
                         {error && (
                             <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-red-400 text-lg mt-0.5 shrink-0"
                                 />
@@ -166,8 +168,8 @@ const AppStatusPage: React.FC = () => {
                         }
                     />
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

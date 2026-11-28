@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 
@@ -28,8 +29,8 @@ const BoostIDCardCMSMembersForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins text-black text-xl p-0 m-0">Member Options</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
@@ -38,17 +39,17 @@ const BoostIDCardCMSMembersForm: React.FC<{
                         }`}
                     />
                 </button>
-            </IonCol>
+            </AppCol>
             {showAbout && (
                 <>
                     <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                         <p className="text-grayscale-900 font-medium w-10/12">
                             Publicly display members
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const publiclyDisplayMembers =
                                     !memberOptions?.publiclyDisplayMembers;
                                 handleStateChange('publiclyDisplayMembers', publiclyDisplayMembers);
@@ -61,10 +62,10 @@ const BoostIDCardCMSMembersForm: React.FC<{
                         <p className="text-grayscale-900 font-medium w-10/12">
                             Automatically connect members in contacts
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const autoConnectMembersInContacts =
                                     !memberOptions?.autoConnectMembersInContacts;
                                 handleStateChange(
@@ -78,7 +79,7 @@ const BoostIDCardCMSMembersForm: React.FC<{
                     </div>
                 </>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

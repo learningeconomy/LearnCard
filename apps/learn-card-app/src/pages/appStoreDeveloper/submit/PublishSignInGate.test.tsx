@@ -22,12 +22,6 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({ colors: { defaults: {} } }),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonIcon: () => <span />,
-}));
-
 const manifest: CapturedAppManifest = {
     manifestVersion: 1,
     appUrl: 'https://abc123.lovableproject.com/',

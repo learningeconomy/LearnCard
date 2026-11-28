@@ -10,7 +10,7 @@ import ChildInviteModalSimple from '../../../components/familyCMS/FamilyCMSInvit
 import AdminToolsFamilySelectorButton from './AdminToolsFamilySelectorButton';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import Pencil from '../../../components/svgs/Pencil';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { Checkmark } from '@learncard/react';
 import X from 'learn-card-base/svgs/X';
 
@@ -56,6 +56,7 @@ import { LearnCardIDCMSTabsEnum } from 'apps/learn-card-app/src/components/learn
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type AdminToolsCreateProfileSimpleProps = { profileType: 'child' | 'organization' };
 
@@ -415,7 +416,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                     >
                         {imageUploading && (
                             <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-whiteborder-white">
-                                <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             </div>
                         )}
                     </UserProfilePicture>
@@ -437,15 +438,15 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                 )}
 
                 <div className="flex flex-col items-center justify-center w-full">
-                    <IonInput
+                    <AppInput
                         style={placeholderStyles}
                         autocapitalize="on"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                             errors.name ? 'login-input-email-error' : ''
                         }`}
-                        onIonInput={e => {
+                        onValueInput={value => {
                             setErrors({});
-                            setName(e.detail.value);
+                            setName(value);
                         }}
                         value={name}
                         placeholder={
@@ -466,15 +467,15 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
 
                 {profileType === 'child' && (
                     <div className="flex flex-col items-center justify-center w-full pb-2">
-                        <IonInput
+                        <AppInput
                             style={placeholderStyles}
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                                 errors.shortBio ? 'login-input-email-error' : ''
                             }`}
-                            onIonInput={e => {
+                            onValueInput={value => {
                                 setErrors({});
-                                setShortBio(e.detail.value);
+                                setShortBio(value);
                             }}
                             value={shortBio}
                             placeholder={m['createProfile.taglinePlaceholder']()}
@@ -503,12 +504,12 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                 <span className="pl-4 pr-0! text-grayscale-500 select-none font-semibold">
                                     <HandleIcon className="w-[20px] h-[20px] text-grayscale-700" />
                                 </span>
-                                <IonInput
+                                <AppInput
                                     style={placeholderStyles}
                                     autocapitalize="on"
                                     className={`flex-1 bg-transparent text-grayscale-800 pr-4! pl-2! py-[6px]! font-medium tracking-widest text-base text-left `}
-                                    onIonInput={e => {
-                                        handleProfileIdInput(e.detail.value);
+                                    onValueInput={value => {
+                                        handleProfileIdInput(value);
                                     }}
                                     value={profileId}
                                     placeholder={m['createProfile.organizationProfileId']()}
@@ -546,7 +547,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
 
                             <p className="flex items-center gap-1 text-grayscale-700 text-xs font-normal min-h-[20px] h-[20px]">
                                 {isCheckingUnique && (
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         className="h-[20px] w-[20px] scale-[0.75]"
                                     />

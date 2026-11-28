@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useModal, useWallet } from 'learn-card-base';
-import { IonSpinner, IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
 import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
 import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import { getLogger } from 'learn-card-base';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('manage-framework-admins-modal');
 
 type ManageFrameworkAdminsModalProps = {
@@ -98,8 +99,8 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                         {m['skillFrameworks.addNewAdmin']()}
                     </p>
                     <div className="flex gap-[10px]">
-                        <IonInput
-                            onIonInput={e => setNewAdminProfileId(e.detail.value ?? '')}
+                        <AppInput
+                            onValueInput={value => setNewAdminProfileId(value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]! flex-1"
                             placeholder={m['skillFrameworks.enterPid']()}
                             value={newAdminProfileId}
@@ -124,7 +125,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
 
                     {isLoading ? (
                         <div className="flex items-center justify-center py-[40px]">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : isError ? (
                         <div className="text-center py-[40px]">

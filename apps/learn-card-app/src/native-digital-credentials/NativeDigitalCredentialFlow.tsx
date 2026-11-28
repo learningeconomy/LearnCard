@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useIsLoggedIn, useWallet, redirectStore } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
@@ -17,6 +16,7 @@ import type { DigitalCredentialWallet } from './inventory';
 import type { PendingDigitalCredentialRequest } from './types';
 import { markStartupPhase } from '../helpers/startupDiagnostics';
 import { NativeRequestState } from './NativeRequestState';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type Prepared = Awaited<ReturnType<typeof prepareAccountPresentation>>;
 
@@ -112,8 +112,8 @@ export default function NativeDigitalCredentialFlow() {
 
     if (!accountReady && !error) return <LoginPage />;
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 {prepared && !error && (
                     <RequestConsent
                         request={prepared.request}
@@ -143,7 +143,7 @@ export default function NativeDigitalCredentialFlow() {
                         onCancel={() => void cancel()}
                     />
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 }

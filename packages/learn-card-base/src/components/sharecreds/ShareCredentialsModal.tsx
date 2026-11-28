@@ -4,16 +4,6 @@ import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { initLearnCard } from '@learncard/init';
 
-import {
-    IonContent,
-    IonPage,
-    IonHeader,
-    IonButton,
-    IonToolbar,
-    IonButtons,
-    IonSpinner,
-    useIonAlert,
-} from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import { UnsignedVP, VP } from '@learncard/types';
@@ -27,6 +17,11 @@ import {
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareCredentials from './ShareCredentials';
 import { getLogger } from '../../logging/logger';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('share-credentials-modal');
 
 const ShareCredentialsModal = ({
@@ -41,7 +36,7 @@ const ShareCredentialsModal = ({
     const [randomSeed, setRandomSeed] = useState<string>();
     const [loading, setLoading] = useState(false);
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     // VP related
     const { initWallet } = useWallet();
     const [vp, setVP] = useState<any>();
@@ -215,23 +210,23 @@ const ShareCredentialsModal = ({
     };
 
     return (
-        <IonPage className="modal-wrapper">
-            <IonHeader className="ion-no-border ion-fixed">
-                <IonToolbar className=" ion-no-border ">
-                    <IonButtons slot="start">
-                        <IonButton className="text-graye-600" onClick={() => handleDismiss()}>
+        <AppPage className="modal-wrapper">
+            <AppHeader className="ion-no-border ion-fixed">
+                <AppToolbar className=" ion-no-border ">
+                    <AppButtons slot="start">
+                        <AppButton className="text-graye-600" onClick={() => handleDismiss()}>
                             <LeftArrow className="w-10 h-auto text-gray-600" />
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="course-details-container bg-white h-full" fullscreen>
+                        </AppButton>
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent className="course-details-container bg-white h-full" fullscreen>
                 {page === 'application' && !loading && <ShareCredentials onSubmit={handleSubmit} />}
 
                 {loading && (
                     <div className="flex flex-col justify-center items-center w-full h-full">
                         <div className="flex flex-col justify-center items-center w-full h-full mt-[-100px]">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             <p className="mt-[30px]">Creating your boost bundle....</p>
                         </div>
                     </div>
@@ -287,8 +282,8 @@ const ShareCredentialsModal = ({
                         </div>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

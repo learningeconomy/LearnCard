@@ -38,7 +38,6 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: vi.fn() }),
     useShareBoostMutation: mocks.legacy,
 }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('./useResumePreselection', () => ({ useResumePreselection: vi.fn() }));
 vi.mock('./resume-builder-history.helpers', () => ({ buildResumeHydrationState: vi.fn() }));
 vi.mock('../../stores/resumeBuilderStore', () => ({

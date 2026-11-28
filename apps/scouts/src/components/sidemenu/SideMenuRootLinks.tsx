@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import { IonMenu, IonList, IonItem, IonMenuToggle } from '@ionic/react';
 import LearnCardIcon from 'learn-card-base/svgs/LearnCardIcon';
 
 import {
@@ -16,6 +15,9 @@ import { useGetUnreadUserNotifications } from 'learn-card-base';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import * as m from '../../paraglide/messages.js';
 import { getScoutPassSideMenuLinkLabel } from './scoutPassSideMenuLabels';
+import { AppMenu } from 'learn-card-base/ui/app-shell/AppMenu';
+import { AppMenuToggle } from 'learn-card-base/ui/chrome';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 type SideMenuRootLinksProps = {
     activeTab: string;
@@ -36,9 +38,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
 
     const { data } = useGetUnreadUserNotifications();
 
-    if (!isLoggedIn) return <IonMenu contentId="main" />;
+    if (!isLoggedIn) return <AppMenu contentId="main" />;
 
-    let sideMenuBrandingStyles = sideMenuScoutPassStyles;
+    const sideMenuBrandingStyles = sideMenuScoutPassStyles;
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
@@ -51,6 +53,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
     const walletLink = sideMenuRootLinks?.[branding];
     const unreadCount = data?.notifications?.length;
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let rootLinks = null;
 
     if (Array.isArray(walletLink)) {
@@ -99,7 +102,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
             }
 
             return (
-                <IonMenuToggle key={link.path} autoHide={false} className="w-full">
+                <AppMenuToggle key={link.path} autoHide={false} className="w-full">
                     <li
                         color={sideMenuBrandingStyles?.mainBg}
                         onClick={() => setActiveTab(link?.path)}
@@ -107,13 +110,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
                     >
                         {linkEl}
                     </li>
-                </IonMenuToggle>
+                </AppMenuToggle>
             );
         });
     } else {
         rootLinks = (
-            <IonMenuToggle autoHide={false} className="w-full">
-                <IonItem
+            <AppMenuToggle autoHide={false} className="w-full">
+                <AppItem
                     color={sideMenuBrandingStyles?.mainBg}
                     onClick={() => setActiveTab(walletLink?.path)}
                     lines="none"
@@ -126,12 +129,12 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
                     >
                         <LearnCardIcon /> {walletLink?.name}
                     </Link>
-                </IonItem>
-            </IonMenuToggle>
+                </AppItem>
+            </AppMenuToggle>
         );
     }
 
-    return <IonList className="m-3 rounded-[24px] p-[10px]">{rootLinks}</IonList>;
+    return <AppList className="m-3 rounded-[24px] p-[10px]">{rootLinks}</AppList>;
 };
 
 export default SideMenuRootLinks;

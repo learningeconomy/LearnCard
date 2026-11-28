@@ -1,7 +1,8 @@
-import { IonLoading, IonRow, IonCol } from '@ionic/react';
 import useLogout from '../../hooks/useLogout';
 import { BrandingEnum } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppLoading } from 'learn-card-base/ui/overlays';
 
 const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();
@@ -12,7 +13,7 @@ const ErrorLogout: React.FC = () => {
 
     return (
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonRow className="flex h-full flex-col items-center justify-center px-[20px]">
+            <AppRow className="flex h-full flex-col items-center justify-center px-[20px]">
                 <div
                     className={`shadow-3xl relative p-[20px] flex w-full max-w-[400px] flex-col items-start justify-start overflow-hidden rounded-[20px] bg-white`}
                 >
@@ -28,7 +29,7 @@ const ErrorLogout: React.FC = () => {
                         </button>
                     </div>
                 </div>
-            </IonRow>
+            </AppRow>
         </div>
     );
 };

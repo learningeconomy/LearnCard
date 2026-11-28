@@ -11,10 +11,6 @@ import { useSharedLinksStore } from './sharedLinksStore';
 import SharedLinksAllSheet from './SharedLinksAllSheet';
 import SharedWithYouAllSheet from './SharedWithYouAllSheet';
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ icon, ...rest }: Record<string, unknown>) => <span {...rest} />,
-}));
-
 vi.mock('learn-card-base', () => ({ useGetProfile: () => ({ data: undefined }) }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({ default: () => null }));
 

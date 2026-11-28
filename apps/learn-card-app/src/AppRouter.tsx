@@ -6,7 +6,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
 
-import { IonSplitPane } from '@ionic/react';
+import { AppSplitPane } from 'learn-card-base/ui/app-shell/AppSplitPane';
 import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
@@ -74,7 +74,6 @@ import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials
 import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
-import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
 
 const log = getLogger('app-router');
@@ -579,7 +578,7 @@ const AppRouter: React.FC = () => {
                             >
                                 Skip to main content
                             </a>
-                            <IonSplitPane
+                            <AppSplitPane
                                 contentId="main"
                                 className={
                                     collapsed
@@ -595,13 +594,12 @@ const AppRouter: React.FC = () => {
                                         <MobileNavBar />
                                     </div>
                                 </GenericErrorBoundary>
-                            </IonSplitPane>
+                            </AppSplitPane>
                         </>
                     )}
                 </div>
             </GenericErrorBoundary>
             <Modals />
-            <ReducedMotionManager />
         </SharedI18nProvider>
     );
 };

@@ -13,14 +13,14 @@ test('only scanner controls remain visible, focusable, and accessible during a s
             .qr-code-scanner-overlay { position: fixed; inset: 0; }
         </style>
         <div id="root">
-            <ion-app>
+            <div class="app-root">
                 <div id="app-router"><button id="route">Background route</button></div>
                 <button id="widget" class="explicitly-visible">Background widget</button>
                 <div class="qr-code-scanner-overlay">
                     <h1>Scan QR Code</h1>
                     <button id="close">Close scanner</button>
                 </div>
-            </ion-app>
+            </div>
         </div>
         <div id="modal-mid-root">
             <button id="modal" class="explicitly-visible">Background modal</button>

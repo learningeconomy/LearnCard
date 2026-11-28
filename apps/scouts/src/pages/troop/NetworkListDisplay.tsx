@@ -14,12 +14,14 @@ import TroopsCMSWrapper from '../../components/troopsCMS/TroopsCMSWrapper';
 import TroopListItemCard from './TroopListItemCard';
 
 import { OrangeScoutsNetworkTent } from 'learn-card-base/svgs/ScoutsNetworkTent';
-import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
 import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
 import { selectLocalePlural } from '../../i18n/formatters';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export enum TroopParentLevel {
     global,
@@ -105,14 +107,14 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
             <section className="flex flex-col h-full w-full bg-white items-center shadow-bottom-1-4 ">
                 <section className="bg-grayscale-100 grow w-full flex flex-col items-center">
                     <div className="flex items-center justify-between w-full max-w-[600px] px-[15px]">
-                        <IonRow className="w-full max-w-[600px] mt-6 ion-no-padding">
-                            <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
-                                <IonInput
+                        <AppRow className="w-full max-w-[600px] mt-6 ion-no-padding">
+                            <AppCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
+                                <AppInput
                                     autocapitalize="on"
                                     placeholder={m['troops.membersList.startPlaceholder']()}
                                     value={search}
                                     className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
-                                    onIonInput={e => setSearch(e?.detail?.value as string)}
+                                    onValueInput={value => setSearch(value as string)}
                                     type="text"
                                     clearInput
                                 />
@@ -122,8 +124,8 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
                                 >
                                     <Plus className="h-[25px] w-[25px] text-white" />
                                 </button>
-                            </IonCol>
-                        </IonRow>
+                            </AppCol>
+                        </AppRow>
                     </div>
                     <div className="w-full max-w-[600px]">
                         <NetworkList search={search} uri={uri} parentLevel={parentLevel} />
@@ -170,6 +172,7 @@ const NetworkList: React.FC<TroopListProps> = ({
             })
         ) ?? [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const onScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '0px', [
         boostChildren?.pages?.[0]?.records?.length,
     ]);
@@ -183,7 +186,7 @@ const NetworkList: React.FC<TroopListProps> = ({
     if (!boostChildren && boostChildrenLoading) {
         return (
             <div className="w-full px-[20px] flex justify-center">
-                <IonSpinner />
+                <AppSpinner />
             </div>
         );
     }
@@ -193,7 +196,7 @@ const NetworkList: React.FC<TroopListProps> = ({
             {renderTroopsList}
             {isFetching && (
                 <div className="w-full flex items-center justify-center">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"

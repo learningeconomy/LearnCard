@@ -1,6 +1,5 @@
 import React from 'react';
-
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const AiPathwaySessionsSkeletonLoader: React.FC = () => {
     return (
@@ -9,21 +8,21 @@ export const AiPathwaySessionsSkeletonLoader: React.FC = () => {
                 {[...Array(3)].map((_, i) => (
                     <div key={i} className="w-full mb-6">
                         <div className="flex items-center justify-between w-full">
-                            <IonSkeletonText
+                            <AppSkeletonText
                                 animated
                                 style={{ width: '70%', height: '20px', borderRadius: '4px' }}
                             />
 
-                            <IonSkeletonText
+                            <AppSkeletonText
                                 animated
                                 style={{ width: '24px', height: '20px', borderRadius: '4px' }}
                             />
                         </div>
 
                         <div className="w-full mt-4 space-y-v3-2">
-                            <IonSkeletonText animated style={{ width: '100%', height: '14px' }} />
-                            <IonSkeletonText animated style={{ width: '90%', height: '14px' }} />
-                            <IonSkeletonText animated style={{ width: '80%', height: '14px' }} />
+                            <AppSkeletonText animated style={{ width: '100%', height: '14px' }} />
+                            <AppSkeletonText animated style={{ width: '90%', height: '14px' }} />
+                            <AppSkeletonText animated style={{ width: '80%', height: '14px' }} />
                         </div>
 
                         <div className="w-full overflow-x-auto whitespace-nowrap mt-4 flex space-x-v3-2">
@@ -38,7 +37,7 @@ export const AiPathwaySessionsSkeletonLoader: React.FC = () => {
                                         overflow: 'hidden',
                                     }}
                                 >
-                                    <IonSkeletonText
+                                    <AppSkeletonText
                                         animated
                                         style={{ width: '100%', height: '100%' }}
                                     />

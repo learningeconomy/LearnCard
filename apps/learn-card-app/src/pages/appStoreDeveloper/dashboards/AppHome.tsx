@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    chevronForwardOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { LCNIntegration, AppStoreListing, CapturedTemplateRecord } from '@learncard/types';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { ManifestDiffPanel } from './components/ManifestDiffPanel';
@@ -305,7 +309,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
 
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />

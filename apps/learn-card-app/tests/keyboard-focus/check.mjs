@@ -101,7 +101,7 @@ for (const [engine, name] of [
             await page.setViewportSize({ width, height: 667 });
             await page.goto(`${origin}/tests/keyboard-focus/resume.html`);
             await page.getByRole('heading', { name: 'Your Resume' }).waitFor();
-            const header = page.locator('ion-header');
+            const header = page.locator('.app-header');
             const before = await header.boundingBox();
             const buttons = await header.locator('button').evaluateAll(elements =>
                 elements.map(element => {
@@ -117,14 +117,16 @@ for (const [engine, name] of [
             assert.ok(buttons.every(button => button.left >= -1 && button.right <= width + 1));
             assert.ok(buttons.every(button => button.width >= 43 && button.height >= 43));
             if (width === 1280) {
-                const padding = await header.locator('ion-toolbar > div.border-b').evaluate(el => {
-                    const style = getComputedStyle(el);
-                    return {
-                        left: style.paddingLeft,
-                        right: style.paddingRight,
-                        top: style.paddingTop,
-                    };
-                });
+                const padding = await header
+                    .locator('.app-toolbar-content > div.border-b')
+                    .evaluate(el => {
+                        const style = getComputedStyle(el);
+                        return {
+                            left: style.paddingLeft,
+                            right: style.paddingRight,
+                            top: style.paddingTop,
+                        };
+                    });
                 assert.deepEqual(padding, { left: '20px', right: '72px', top: '12px' });
             }
             await page.getByRole('button', { name: 'Preview', exact: true }).waitFor();

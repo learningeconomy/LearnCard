@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
-import { IonPopover } from '@ionic/react';
 import BecomeTrustedIssuerForm from './LazyBecomeTrustedIssuerForm';
 
 import useModal from '../modals/useModal';
 
 import { ModalTypes } from '../modals/types/Modals';
 import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
+import { AppPopover } from 'learn-card-base/ui/overlays';
+import { dismissClosestOverlay } from 'learn-card-base/ui/overlays/overlayStack';
 
 type CredentialIssuerPopoverProps = {
     enabled: boolean;
@@ -100,12 +101,6 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
         e.stopPropagation();
         stopPopoverInteraction(e);
 
-        // Dismiss the popover before opening the modal. We dismiss the host
-        // ion-popover directly so it closes in both trigger modes (event-based
-        // and triggerId), then open the modal once it has gone away.
-        const popover = e.currentTarget.closest('ion-popover') as
-            (HTMLElement & { dismiss?: () => Promise<void> }) | null;
-
         const open = () =>
             newModal(
                 <BecomeTrustedIssuerForm issuerDid={issuerDid} />,
@@ -113,15 +108,12 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
 
-        if (popover?.dismiss) {
-            popover.dismiss().then(() => {
-                onDidDismiss?.();
-                open();
-            });
-        } else {
-            onDidDismiss?.();
+        // Dismiss the popover before opening the modal so it closes in both
+        // trigger modes (event-based and triggerId), then open the modal once dismissed.
+        void dismissClosestOverlay(e.currentTarget).then(dismissed => {
+            if (!dismissed) onDidDismiss?.();
             open();
-        }
+        });
     };
 
     const openTrustRegistriesDocs = (e: React.MouseEvent<HTMLButtonElement>): void => {
@@ -183,7 +175,6 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     const popoverTriggerProps = triggerId
         ? {
               trigger: triggerId,
-              triggerAction: 'click' as const,
               reference: 'trigger' as const,
           }
         : {
@@ -194,7 +185,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
           };
 
     return (
-        <IonPopover
+        <AppPopover
             {...popoverTriggerProps}
             side="bottom"
             alignment="center"
@@ -224,7 +215,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                     </button>
                 </div>
             </div>
-        </IonPopover>
+        </AppPopover>
     );
 };
 

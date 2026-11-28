@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, closeCircleOutline, syncOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    checkmarkCircleOutline,
+    closeCircleOutline,
+    syncOutline,
+} from 'learn-card-base/icons/ionicons';
 
 import { ErrorBoundary } from '@sentry/react';
 import { UserProfilePicture, useGetProfile, useModal } from 'learn-card-base';
@@ -136,7 +140,7 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
                                         className="flex items-start gap-3 relative z-10"
                                     >
                                         <div className="shrink-0 w-[22px] h-[22px] rounded-full bg-white border border-grayscale-200 flex items-center justify-center mt-0.5">
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={icon}
                                                 className={`text-[12px] ${colorClass}`}
                                             />

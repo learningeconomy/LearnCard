@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { NewAppSheet } from './NewAppSheet';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('learn-card-base', () => ({
     Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));

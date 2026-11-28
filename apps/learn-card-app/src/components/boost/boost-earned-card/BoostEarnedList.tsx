@@ -5,7 +5,7 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
 import {
@@ -21,6 +21,7 @@ import {
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
 import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlaceHolder';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type CategoryType = CredentialCategory | 'Hidden';
 
@@ -174,12 +175,12 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
             )}
             {!showSkeleton && (
                 <>
-                    <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                    <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
-                            <IonGrid className="max-w-[600px] pt-[20px]">
+                            <AppGrid className="max-w-[600px] pt-[20px]">
                                 {(searching || boostError) && searchResultsElement}
-                                <IonRow>{credentials}</IonRow>
-                            </IonGrid>
+                                <AppRow>{credentials}</AppRow>
+                            </AppGrid>
                         )}
                         {!isCardView && (
                             <div className="flex flex-col gap-[10px] w-full max-w-[600px] px-[20px] pt-[25px]">
@@ -191,7 +192,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                         <div role="presentation" ref={infiniteScrollRef} className="h-px w-full" />
                         {credentialsFetching && (
                             <div className="w-full flex items-center justify-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="grayscale-900"
                                     className="scale-[2] mb-8 mt-6"
@@ -201,7 +202,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                         <div
                             className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
-                    </IonCol>
+                    </AppCol>
                 </>
             )}
         </>

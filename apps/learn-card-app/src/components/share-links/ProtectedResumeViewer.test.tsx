@@ -39,13 +39,6 @@ vi.mock('react-router-dom', () => ({
     useLocation: () => ({ hash: '#PRIVATE', pathname: '/share/id' }),
     useHistory: () => mocks.history,
 }));
-vi.mock('@ionic/react', () => ({
-    IonIcon: () => null,
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonHeader: ({ children }: { children: React.ReactNode }) => <header>{children}</header>,
-    IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
-}));
 vi.mock('./ShareCredentialsIllustration', () => ({ ShareCredentialsIllustration: () => null }));
 vi.mock('./sharePrivacy', () => ({ enterSharePrivacy: mocks.privacy }));
 vi.mock('./shareLinkFlow', () => ({

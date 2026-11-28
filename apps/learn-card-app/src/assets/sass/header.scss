@@ -31,7 +31,8 @@
     }
 }
 
-ion-modal.main-header-modal {
+ion-modal.main-header-modal,
+div:where(.app-modal).main-header-modal {
     // --max-height: 500px;
     // --max-width: 500px;
     --height: auto;

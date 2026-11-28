@@ -1,0 +1,636 @@
+/*
+ * Page chrome: ports of @ionic/core 8.7.2 ion-header, ion-footer, ion-toolbar, ion-title and
+ * ion-back-button (the versions @ionic/react loads).
+ *
+ * Cascade, matching what Ionic's CSS did:
+ * - ion-header / ion-footer had no shadow DOM; their CSS was global, unlayered and keyed on tag
+ *   names. Tag selectors become `div:where(.app-header)` (and `div:where([data-app-footer])`,
+ *   which survives callers that rewrite the footer's className), so specificity is unchanged.
+ *   `ion-toolbar:first-of-type` becomes `:nth-child(1 of :where(.app-toolbar))`, also (0,1,0).
+ * - ion-toolbar, ion-title and ion-back-button used shadow DOM. Their `:host` and `::slotted`
+ *   rules lost to every light-DOM rule (Tailwind preflight, utilities, call-site classes), so
+ *   they live in `@layer app-chrome-host`, which every unlayered rule beats.
+ * - Their shadow-internal elements were out of the app CSS's reach. Those rules are unlayered,
+ *   with class selectors that beat the global element resets.
+ * - Class names are `app-`-prefixed: Ionic's global header and footer CSS is still injected for
+ *   learn-card-base's IonHeader, and its class-only rules (`.header-md`, `.footer-background`, ...)
+ *   would otherwise reach these elements.
+ * - Ionic theme variables the app never sets resolve to Ionic's fallbacks, written directly.
+ *   `--ion-background-color` is still read: wallet pages and DevCli set it per page.
+ * - Safe-area insets come from the surface-layer `--app-safe-area-*` tokens (theme/variables.css),
+ *   which are re-derived on these elements so local inset resets still apply.
+ */
+
+/* ---------------------------------------------------- ion-header (global, header.*.css) */
+div:where(.app-header) {
+    display: block;
+    position: relative;
+    order: -1;
+    width: 100%;
+    z-index: 10;
+}
+
+div:where(.app-header) div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
+    padding-top: var(--app-safe-area-top, 0px);
+}
+
+.app-header-ios div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
+    --border-width: 0 0 0.55px;
+}
+
+@supports (backdrop-filter: blur(0)) {
+    .app-header-background {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: absolute;
+        backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .app-header-translucent-ios div:where(.app-toolbar) {
+        --opacity: 0.8;
+    }
+}
+
+.app-header-ios.ion-no-border div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
+    --border-width: 0;
+}
+
+.app-header-collapse-fade div:where(.app-toolbar) {
+    --opacity-scale: inherit;
+}
+
+.app-header-md {
+    box-shadow:
+        0 2px 4px -1px rgba(0, 0, 0, 0.2),
+        0 4px 5px 0 rgba(0, 0, 0, 0.14),
+        0 1px 10px 0 rgba(0, 0, 0, 0.12);
+}
+
+.app-header-md.ion-no-border {
+    box-shadow: none;
+}
+
+/* ---------------------------------------------------- ion-footer (global, footer.*.css) */
+div:where([data-app-footer]) {
+    display: block;
+    position: relative;
+    order: 1;
+    width: 100%;
+    z-index: 10;
+}
+
+div:where([data-app-footer]).app-footer-toolbar-padding
+    div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
+    padding-bottom: var(--app-safe-area-bottom, 0px);
+}
+
+.app-footer-ios div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
+    --border-width: 0.55px 0 0;
+}
+
+@supports (backdrop-filter: blur(0)) {
+    .app-footer-background {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: absolute;
+        backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .app-footer-translucent-ios div:where(.app-toolbar) {
+        --opacity: 0.8;
+    }
+}
+
+.app-footer-ios.ion-no-border div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
+    --border-width: 0;
+}
+
+.app-footer-collapse-fade div:where(.app-toolbar) {
+    --opacity-scale: inherit;
+}
+
+.app-footer-md {
+    box-shadow:
+        0 2px 4px -1px rgba(0, 0, 0, 0.2),
+        0 4px 5px 0 rgba(0, 0, 0, 0.14),
+        0 1px 10px 0 rgba(0, 0, 0, 0.12);
+}
+
+.app-footer-md.ion-no-border {
+    box-shadow: none;
+}
+
+@layer app-chrome-host {
+    /* ------------------------------------------------------------------ ion-toolbar :host */
+    .app-toolbar {
+        --border-width: 0;
+        --border-style: solid;
+        --opacity: 1;
+        --opacity-scale: 1;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+        display: block;
+        position: relative;
+        width: 100%;
+        padding-right: var(--app-safe-area-right, 0px);
+        padding-left: var(--app-safe-area-left, 0px);
+        color: var(--color);
+        /* Ionic: var(--ion-font-family, inherit); index.scss's `* { font-family }` wins either way. */
+        contain: content;
+        z-index: 10;
+        box-sizing: border-box;
+    }
+
+    .app-toolbar.ion-color {
+        color: var(--ion-color-contrast);
+    }
+
+    .app-toolbar-ios {
+        /* var(--ion-toolbar-background, var(--ion-color-step-50, ...)): the app sets none. */
+        --background: #f7f7f7;
+        --color: #000;
+        --border-color: rgba(0, 0, 0, 0.2);
+        --padding-top: 3px;
+        --padding-bottom: 3px;
+        --padding-start: 4px;
+        --padding-end: 4px;
+        --min-height: 44px;
+    }
+
+    .app-toolbar-md {
+        --background: var(--ion-background-color, #fff);
+        --color: #424242;
+        --border-color: #c1c4cd;
+        --padding-top: 0;
+        --padding-bottom: 0;
+        --padding-start: 0;
+        --padding-end: 0;
+        --min-height: 56px;
+    }
+
+    /* ------------------------------------------------------------- ion-toolbar ::slotted */
+    .app-toolbar-container > :is(ion-progress-bar, .app-progress-bar),
+    .app-toolbar-content > :is(ion-progress-bar, .app-progress-bar) {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        position: absolute;
+    }
+
+    .app-toolbar-container > [slot='start'] {
+        order: 2;
+    }
+
+    .app-toolbar-ios > .app-toolbar-container > [slot='secondary'] {
+        order: 3;
+    }
+
+    .app-toolbar-md > .app-toolbar-container > [slot='secondary'] {
+        order: 4;
+    }
+
+    .app-toolbar-container > [slot='primary'] {
+        order: 5;
+        text-align: end;
+    }
+
+    .app-toolbar-container > [slot='end'] {
+        order: 6;
+        text-align: end;
+    }
+
+    /* -------------------------------------------------------------------- ion-title :host */
+    .app-title {
+        --color: initial;
+        display: flex;
+        flex: 1;
+        align-items: center;
+        transform: translateZ(0);
+        color: var(--color);
+    }
+
+    .app-title.ion-color {
+        color: var(--ion-color-base);
+    }
+
+    /* The 90px / 20px side padding is zeroed by preflight, as it was for ion-title's host. */
+    .app-title-ios {
+        top: 0;
+        padding-inline: 90px;
+        padding-top: var(--padding-top);
+        padding-bottom: var(--padding-bottom);
+        position: absolute;
+        inset-inline-start: 0;
+        width: 100%;
+        height: 100%;
+        font-size: min(1.0625rem, 20.4px);
+        font-weight: 600;
+        text-align: center;
+        box-sizing: border-box;
+        pointer-events: none;
+    }
+
+    .app-title-ios.app-title-small {
+        padding-inline: 9px;
+        padding-top: 6px;
+        padding-bottom: 16px;
+        position: relative;
+        font-size: min(0.8125rem, 23.4px);
+        font-weight: normal;
+    }
+
+    .app-title-ios.app-title-large {
+        padding-inline: 12px;
+        padding-top: 2px;
+        padding-bottom: 4px;
+        transform-origin: left center;
+        position: static;
+        align-items: flex-end;
+        min-width: 100%;
+        font-size: min(2.125rem, 61.2px);
+        font-weight: 700;
+        text-align: start;
+    }
+
+    .app-title-md {
+        padding-inline: 20px;
+        padding-top: 0;
+        padding-bottom: 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+        letter-spacing: 0.0125em;
+    }
+
+    .app-title-md.app-title-small {
+        width: 100%;
+        height: 100%;
+        font-size: 0.9375rem;
+        font-weight: normal;
+    }
+
+    /* -------------------------------------------------------------- ion-back-button :host */
+    .app-back-button {
+        --background: transparent;
+        --color-focused: currentColor;
+        --color-hover: currentColor;
+        --icon-margin-top: 0;
+        --icon-margin-bottom: 0;
+        --icon-padding-top: 0;
+        --icon-padding-end: 0;
+        --icon-padding-bottom: 0;
+        --icon-padding-start: 0;
+        --margin-top: 0;
+        --margin-end: 0;
+        --margin-bottom: 0;
+        --margin-start: 0;
+        --min-width: auto;
+        --min-height: auto;
+        --padding-top: 0;
+        --padding-end: 0;
+        --padding-bottom: 0;
+        --padding-start: 0;
+        --opacity: 1;
+        --ripple-color: currentColor;
+        --transition: background-color, opacity 100ms linear;
+        display: none;
+        min-width: var(--min-width);
+        min-height: var(--min-height);
+        color: var(--color);
+        text-align: center;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        text-transform: none;
+        white-space: nowrap;
+        user-select: none;
+        font-kerning: none;
+    }
+
+    .app-back-button.app-show-back-button,
+    .can-go-back > div:where(.app-header) .app-back-button {
+        display: block;
+    }
+
+    .app-back-button.app-back-button-disabled {
+        cursor: default;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .app-back-button.app-in-toolbar:not(.app-in-toolbar-color) {
+        color: var(--color);
+    }
+
+    .app-back-button-md {
+        --border-radius: 4px;
+        --background-focused: currentColor;
+        --background-focused-opacity: 0.12;
+        --background-hover: currentColor;
+        --background-hover-opacity: 0.04;
+        --color: currentColor;
+        --icon-margin-end: 0;
+        --icon-margin-start: 0;
+        --icon-font-size: 1.5rem;
+        --icon-font-weight: normal;
+        --min-height: 32px;
+        --min-width: 44px;
+        --padding-start: 12px;
+        --padding-end: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .app-back-button-md.app-back-button-has-icon-only {
+        --border-radius: 50%;
+        min-width: 48px;
+        min-height: 48px;
+        aspect-ratio: 1/1;
+    }
+
+    .app-back-button-ios {
+        --background-hover: transparent;
+        --background-hover-opacity: 1;
+        --background-focused: currentColor;
+        --background-focused-opacity: 0.1;
+        --border-radius: 4px;
+        /* var(--ion-color-primary, #0054e9); variables.css sets #3880ff. */
+        --color: var(--app-color-primary, #3880ff);
+        --icon-margin-end: 1px;
+        --icon-margin-start: -4px;
+        --icon-font-size: 1.6em;
+        --min-height: 32px;
+        font-size: clamp(17px, 1.0625rem, 21.998px);
+    }
+
+    @media (any-hover: hover) {
+        .app-back-button-ios:hover {
+            opacity: 0.6;
+        }
+    }
+}
+
+/* ----------------------------------------------------- ion-toolbar shadow internals */
+.app-toolbar > .app-toolbar-container {
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    display: flex;
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--min-height);
+    contain: content;
+    overflow: hidden;
+    z-index: 10;
+    box-sizing: border-box;
+    /* Shadow content inherited the host font; keep index.scss's `* { font-family }` off it. */
+    font-family: inherit;
+}
+
+.app-toolbar > .app-toolbar-background {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    transform: translateZ(0);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    background: var(--background);
+    contain: strict;
+    opacity: calc(var(--opacity) * var(--opacity-scale));
+    z-index: -1;
+    pointer-events: none;
+    /* Shadow content inherited the host font; keep index.scss's `* { font-family }` off it. */
+    font-family: inherit;
+}
+
+.app-toolbar.ion-color > .app-toolbar-background {
+    background: var(--ion-color-base);
+}
+
+.app-toolbar-ios > .app-toolbar-container > .app-toolbar-content {
+    flex: 1;
+    order: 4;
+    min-width: 0;
+}
+
+.app-toolbar-md > .app-toolbar-container > .app-toolbar-content {
+    flex: 1;
+    order: 3;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.app-toolbar-ios.app-toolbar-title-large > .app-toolbar-container {
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.app-toolbar-ios.app-toolbar-title-large
+    > .app-toolbar-container
+    > .app-toolbar-content
+    > .app-title {
+    flex: 1;
+    order: 8;
+    min-width: 100%;
+}
+
+.app-toolbar-container > .app-toolbar-content,
+.app-back-button-inner > .app-back-button-text {
+    font-family: inherit;
+}
+
+/* ------------------------------------------------------- ion-title shadow internals */
+.app-title > .app-title-inner {
+    display: block;
+    width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: auto;
+    /* Shadow content inherited the host font; keep index.scss's `* { font-family }` off it. */
+    font-family: inherit;
+}
+
+.app-title.app-title-small > .app-title-inner {
+    white-space: normal;
+}
+
+.app-title.app-title-large > .app-title-inner {
+    transform-origin: inherit;
+    width: auto;
+}
+
+/* ------------------------------------------------- ion-back-button shadow internals */
+/*
+ * (0,1,1): beats the element resets, but call-site rules on `.x > .app-back-button-native`
+ * (DevCli's, formerly `::part(native)`) win, as ::part rules beat the shadow styles.
+ */
+div:where(.app-back-button) > .app-back-button-native {
+    border-radius: var(--border-radius);
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    margin-inline-start: var(--margin-start);
+    margin-inline-end: var(--margin-end);
+    margin-top: var(--margin-top);
+    margin-bottom: var(--margin-bottom);
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-decoration: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    color: inherit;
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    transition: var(--transition);
+    border: 0;
+    outline: none;
+    background: var(--background);
+    line-height: 1;
+    cursor: pointer;
+    opacity: var(--opacity);
+    overflow: hidden;
+    user-select: none;
+    z-index: 0;
+    appearance: none;
+}
+
+div:where(.app-back-button-md) > .app-back-button-native {
+    box-shadow: none;
+}
+
+div:where(.app-back-button-ios) > .app-back-button-native {
+    transform: translateZ(0);
+    overflow: visible;
+    z-index: 99;
+}
+
+div:where(.app-back-button-ios[data-activated]) > .app-back-button-native {
+    opacity: 0.4;
+}
+
+div:where(.app-back-button.ion-color) > .app-back-button-native {
+    color: var(--ion-color-base);
+}
+
+.app-back-button-native > .app-back-button-inner {
+    display: flex;
+    position: relative;
+    flex-flow: row nowrap;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    /* Shadow content inherited the host font; keep index.scss's `* { font-family }` off it. */
+    font-family: inherit;
+}
+
+/* The shadow tree's `ion-icon` rules beat the icon's own `:host` rules. */
+.app-back-button-inner > .app-icon {
+    padding-inline-start: var(--icon-padding-start);
+    padding-inline-end: var(--icon-padding-end);
+    padding-top: var(--icon-padding-top);
+    padding-bottom: var(--icon-padding-bottom);
+    margin-inline-start: var(--icon-margin-start);
+    margin-inline-end: var(--icon-margin-end);
+    margin-top: var(--icon-margin-top);
+    margin-bottom: var(--icon-margin-bottom);
+    display: inherit;
+    font-size: var(--icon-font-size);
+    font-weight: var(--icon-font-weight);
+    pointer-events: none;
+}
+
+.app-back-button-md .app-back-button-inner > .app-icon {
+    line-height: 0.67;
+    text-align: start;
+}
+
+.app-back-button-md .app-back-button-inner > .app-back-button-text {
+    padding-inline: 4px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.app-back-button-native::after {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    content: '';
+    opacity: 0;
+}
+
+/* Ionic's `.ion-focused` (keyboard focus) is `:focus-visible` on the native button. */
+div:where(.app-back-button) > .app-back-button-native:focus-visible {
+    color: var(--color-focused);
+}
+
+.app-back-button-native:focus-visible::after {
+    background: var(--background-focused);
+    opacity: var(--background-focused-opacity);
+}
+
+@media (any-hover: hover) {
+    div:where(.app-back-button:hover) > .app-back-button-native {
+        color: var(--color-hover);
+    }
+
+    .app-back-button:hover > .app-back-button-native::after {
+        background: var(--background-hover);
+        opacity: var(--background-hover-opacity);
+    }
+
+    div:where(.app-back-button.ion-color:hover) > .app-back-button-native {
+        color: var(--ion-color-base);
+    }
+
+    .app-back-button-md.ion-color:hover > .app-back-button-native::after {
+        background: var(--ion-color-base);
+    }
+}
+
+div:where(.app-back-button.ion-color) > .app-back-button-native:focus-visible {
+    color: var(--ion-color-base);
+}
+
+.app-back-button-md.ion-color > .app-back-button-native:focus-visible::after {
+    background: var(--ion-color-base);
+}
+
+/* ion-ripple-effect: bounded (the shared ripple helpers in controls/). */
+.app-back-button-native > .app-ripple-effect {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    contain: strict;
+    pointer-events: none;
+    color: var(--ripple-color);
+}

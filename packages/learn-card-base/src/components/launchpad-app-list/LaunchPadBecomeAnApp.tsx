@@ -3,8 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 import LEFLogo from 'learn-card-base/assets/images/lef-logo.png';
-
-import { IonItem } from '@ionic/react';
+import { AppItem } from 'learn-card-base/ui/list';
 
 const BECOME_AN_APP_DOCS_LINK = 'https://docs.learncard.com/tutorials/create-a-connected-website';
 
@@ -21,7 +20,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
     };
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-[95%] max-w-[600px] ion-no-border px-[12px] py-[16px] border-gray-200 border-b-2 last:border-b-0 flex items-center justify-between notificaion-list-item"
         >
@@ -44,7 +43,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </IonItem>
+        </AppItem>
     );
 };
 

@@ -21,7 +21,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     addCircleOutline,
@@ -31,7 +31,7 @@ import {
     layersOutline,
     searchOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { wouldCreateCycle, type PathwayMap } from '../../core/composition';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
@@ -151,7 +151,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                 >
                     {/* Header — sticky glass (matches the Section primitive). */}
                     <header className="px-5 py-4 border-b border-grayscale-200/60 backdrop-blur-md bg-white/80 flex items-center gap-3">
-                        <IonIcon
+                        <AppIcon
                             icon={layersOutline}
                             aria-hidden
                             className="text-grayscale-700 text-lg"
@@ -174,7 +174,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                             aria-label={m['common.close']()}
                             className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full text-grayscale-500 hover:bg-grayscale-100 hover:text-grayscale-800 transition-colors"
                         >
-                            <IonIcon icon={closeOutline} aria-hidden className="text-lg" />
+                            <AppIcon icon={closeOutline} aria-hidden className="text-lg" />
                         </button>
                     </header>
 
@@ -185,7 +185,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                     {candidates.length > 0 && (
                         <div className="px-5 py-3 border-b border-grayscale-200">
                             <div className="relative">
-                                <IonIcon
+                                <AppIcon
                                     icon={searchOutline}
                                     aria-hidden
                                     className="absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-400 text-base pointer-events-none"
@@ -299,7 +299,7 @@ const PickerRow: React.FC<{
                         }
                     `}
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={isCurrent ? checkmarkCircleOutline : sparklesOutline}
                         aria-hidden
                     />
@@ -331,7 +331,7 @@ const PickerRow: React.FC<{
 
                         {destination && (
                             <span className="inline-flex items-center gap-1">
-                                <IonIcon
+                                <AppIcon
                                     icon={flagOutline}
                                     aria-hidden
                                     className="text-[11px]"
@@ -372,7 +372,7 @@ const CreateNewRow: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew }) =>
     >
         <div className="flex items-center gap-3">
             <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-600 text-white text-base">
-                <IonIcon icon={addCircleOutline} aria-hidden />
+                <AppIcon icon={addCircleOutline} aria-hidden />
             </span>
 
             <div className="min-w-0 flex-1">

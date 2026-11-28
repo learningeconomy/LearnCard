@@ -1,6 +1,6 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ToastTypeEnum, useToast } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
@@ -187,7 +187,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                     >
                         {isSchoolView ? (
                             isValidating ? (
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     className="h-5 w-5"
                                     aria-hidden="true"

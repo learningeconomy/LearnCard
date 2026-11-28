@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowBackOutline,
     chatbubbleEllipsesOutline,
@@ -7,7 +7,7 @@ import {
     mailOutline,
     eyeOutline,
     paperPlaneOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { Link, Prompt, useHistory } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { setInAppMessageOverride } from 'learn-card-base/in-app-messages/debugOverrideStore';
@@ -170,7 +170,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                     to="/admin/campaigns"
                     className="inline-flex items-center gap-2 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
-                    <IonIcon icon={arrowBackOutline} aria-hidden="true" /> Back to campaigns
+                    <AppIcon icon={arrowBackOutline} aria-hidden="true" /> Back to campaigns
                 </Link>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">
@@ -250,7 +250,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                             key={key}
                                             className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors ${form[key] ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 bg-white hover:bg-grayscale-10'}`}
                                         >
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={icon}
                                                 aria-hidden="true"
                                                 className={`mt-0.5 shrink-0 text-xl ${form[key] ? 'text-emerald-700' : 'text-grayscale-600'}`}
@@ -429,7 +429,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                 <span className="font-medium uppercase tracking-widest">
                                     Message overview
                                 </span>
-                                <IonIcon icon={eyeOutline} className="text-lg" aria-hidden="true" />
+                                <AppIcon icon={eyeOutline} className="text-lg" aria-hidden="true" />
                             </div>
                             <div className="space-y-3 rounded-2xl border border-grayscale-200 bg-white p-5 shadow-sm">
                                 <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
@@ -472,7 +472,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         if (preview?.success) setInAppMessageOverride(preview.data);
                                     }}
                                 >
-                                    <IonIcon icon={eyeOutline} aria-hidden="true" />
+                                    <AppIcon icon={eyeOutline} aria-hidden="true" />
                                     Preview message
                                 </button>
                                 <button
@@ -528,7 +528,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         disabled={transitionLocked}
                                         onClick={() => setConfirmation('test')}
                                     >
-                                        <IonIcon icon={paperPlaneOutline} aria-hidden="true" />
+                                        <AppIcon icon={paperPlaneOutline} aria-hidden="true" />
                                         Send Test to Me
                                     </button>
                                     <p className="text-xs leading-relaxed text-grayscale-600">

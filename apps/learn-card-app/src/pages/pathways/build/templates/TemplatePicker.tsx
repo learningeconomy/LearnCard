@@ -18,7 +18,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 import type { ActionDescriptor, Policy, Termination } from '../../types';
 import {
@@ -95,7 +95,7 @@ const TemplatePicker: React.FC<TemplatePickerProps> = ({
                                         }
                                     `}
                                 >
-                                    <IonIcon icon={template.icon} aria-hidden />
+                                    <AppIcon icon={template.icon} aria-hidden />
                                 </span>
 
                                 <span className="min-w-0 flex-1">

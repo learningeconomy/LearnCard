@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronUp, CircleHelp, LockKeyhole, Plus, X } from 'lucide-react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import type {
     ConsentFlowContractDetails,
     ConsentFlowContractUpdatePreview,
@@ -455,7 +455,7 @@ export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProp
                             <Check aria-hidden size={18} />
                         ) : busy ? (
                             <>
-                                <IonSpinner name="crescent" />
+                                <AppSpinner name="crescent" />
                                 {mDynamic('consentUpdate.ui.saving')}
                             </>
                         ) : confirmDecline ? (

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
 import CaretDown from '../../../components/svgs/CaretDown';
 import BulkBoostParentSelectorModal from './BulkBoostParentSelectorModal';
 
@@ -14,6 +13,7 @@ import {
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { SetState } from 'packages/shared-types/dist';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BulkBoostParentSelectorProps = { parentUri?: string; setParentUri: SetState<string> };
 
@@ -69,7 +69,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
                         <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">
                             {isLoading ? (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[1] mt-1"

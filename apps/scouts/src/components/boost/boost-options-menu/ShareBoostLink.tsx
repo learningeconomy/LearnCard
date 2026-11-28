@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { IonGrid, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import {
     BoostCategoryOptionsEnum,
@@ -33,6 +32,8 @@ import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
 import * as m from '../../../paraglide/messages.js';
 import { formatLocaleDate } from '../../../i18n/formatters';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid } from 'learn-card-base/ui/layout';
 
 const ShareBoostLink: React.FC<{
     handleClose: () => void;
@@ -182,7 +183,7 @@ const ShareBoostLink: React.FC<{
 
     return (
         <>
-            <IonGrid
+            <AppGrid
                 className={`w-full max-w-[440px] px-[20px] ${customClassName} overflow-y-auto vc-preview-modal-safe-area disable-scrollbars`}
             >
                 <div
@@ -218,7 +219,7 @@ const ShareBoostLink: React.FC<{
 
                             {(isLinkLoading || shareLink?.length === 0) && (
                                 <div className="min-w-[300px] min-h-[300px] h-full w-full relative flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1]"
@@ -306,7 +307,7 @@ const ShareBoostLink: React.FC<{
                         <div className="bg-grayscale-300 h-[1px] w-[90%]" />
                     </div>
                 </div>
-            </IonGrid>
+            </AppGrid>
         </>
     );
 };

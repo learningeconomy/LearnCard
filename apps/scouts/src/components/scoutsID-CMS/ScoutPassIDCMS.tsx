@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 import * as m from '../../paraglide/messages.js';
 
-import { IonPage, IonToggle } from '@ionic/react';
 import ScoutPassIDCMSLayout from './ScoutPassIDCMSLayout';
 import ScoutPassIDCMSFooter from './ScoutPassIDCMSFooter';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
@@ -23,6 +22,8 @@ import {
     getScoutPassIDBackgroundColor,
     getScoutPassIDStyleDefaults,
 } from './scouts-cms.helpers';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 // different editor modes the CMS can be opened in
 export enum ScoutPassIdCMSEditorModeEnum {
@@ -58,6 +59,7 @@ export const ScoutPassIDCMS: React.FC<{
         }
     }, []);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleSetState = (key: string, value: any) => {
         _setScoutPassID(prevState => {
             return {
@@ -86,7 +88,7 @@ export const ScoutPassIDCMS: React.FC<{
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <ScoutPassIDCMSLayout
                 scoutPassID={_scoutPassID}
                 layoutClassName="max-w-[375px]! mt-[var(--ion-safe-area-top,0px)]"
@@ -171,10 +173,10 @@ export const ScoutPassIDCMS: React.FC<{
                                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                             {m['scoutsId.fadeImage']()}
                                         </p>
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             className="family-cms-toggle"
-                                            onIonChange={e => {
+                                            onCheckedChange={checked => {
                                                 handleSetState(
                                                     'dimIdBackgroundImage',
                                                     !_scoutPassID?.dimIdBackgroundImage
@@ -189,10 +191,10 @@ export const ScoutPassIDCMS: React.FC<{
                                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                             {m['scoutsId.darkText']()}
                                         </p>
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             className="family-cms-toggle"
-                                            onIonChange={e => {
+                                            onCheckedChange={checked => {
                                                 handleSetState(
                                                     'fontColor',
                                                     _scoutPassID.fontColor === '#EFF0F5'
@@ -267,10 +269,10 @@ export const ScoutPassIDCMS: React.FC<{
                                 <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                     {m['scoutsId.repeatBg']()}
                                 </p>
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     className="family-cms-toggle"
-                                    onIonChange={e => {
+                                    onCheckedChange={checked => {
                                         handleSetState(
                                             'repeatBackgroundImage',
                                             !_scoutPassID?.repeatBackgroundImage
@@ -289,7 +291,7 @@ export const ScoutPassIDCMS: React.FC<{
                 handleSave={handleSave}
                 handleCloseModal={handleCloseModal}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

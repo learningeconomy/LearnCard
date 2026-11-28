@@ -2,9 +2,10 @@ import React from 'react';
 import { Updater, useImmer } from 'use-immer';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonGrid, IonCol, IonRow, IonToolbar, IonHeader, IonToggle } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BrokenLink from '../../components/svgs/BrokenLink';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import ConsentFlowReadSharing from '../consentFlow/ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from '../consentFlow/ConsentFlowWriteSharing';
 
@@ -22,6 +23,7 @@ import {
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',
@@ -173,12 +175,12 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
 
     return (
         <section className="bg-grayscale-900 pt-[15px] min-h-full">
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="ion-no-border" color="grayscale-900">
-                    <IonGrid className="bg-grayscale-900">
-                        <IonRow className="w-full flex flex-col items-center justify-center">
-                            <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                <IonCol className="flex flex-1 justify-start items-center">
+            <AppHeader className="ion-no-border">
+                <AppToolbar className="ion-no-border" color="grayscale-900">
+                    <AppGrid className="bg-grayscale-900">
+                        <AppRow className="w-full flex flex-col items-center justify-center">
+                            <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-white p-0 mr-[10px]"
                                         aria-label="Back button"
@@ -206,16 +208,16 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                             {contractDetails?.name}
                                         </h3>
                                     </div>
-                                </IonCol>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14 gap-5">
+                                </AppCol>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14 gap-5">
                 {contractDetails?.reasonForAccessing && (
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol
                             size="12"
                             className="flex flex-col items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                         >
@@ -226,12 +228,12 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                             <p className="text-grayscale-600 text-sm w-full text-left">
                                 {contractDetails?.reasonForAccessing}
                             </p>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
 
-                <IonRow className="w-full max-w-[600px]">
-                    <IonCol
+                <AppRow className="w-full max-w-[600px]">
+                    <AppCol
                         size="12"
                         className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                     >
@@ -257,7 +259,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                         </p>
                                     </label>
 
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         className="[--background:white]"
                                         color="emerald-700"
@@ -279,12 +281,12 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 {brandingConfig?.name}
                             </p>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 {contractReadDataExists && (
-                    <IonRow className="w-full max-w-[600px]">
-                        <IonCol
+                    <AppRow className="w-full max-w-[600px]">
+                        <AppCol
                             size="12"
                             className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                         >
@@ -294,12 +296,12 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 setState={updateSlice('read')}
                                 contractOwnerDid={contractDetails.owner.did}
                             />
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
 
-                <IonRow className="w-full max-w-[600px]">
-                    <IonCol
+                <AppRow className="w-full max-w-[600px]">
+                    <AppCol
                         size="12"
                         className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                     >
@@ -325,7 +327,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                         </p>
                                     </label>
 
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         className="[--background:white]"
                                         color="emerald-700"
@@ -340,12 +342,12 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 This contract is not writing any data to your {brandingConfig?.name}
                             </p>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 {contractWriteDataExists && (
-                    <IonRow className="w-full max-w-[600px]">
-                        <IonCol
+                    <AppRow className="w-full max-w-[600px]">
+                        <AppCol
                             size="12"
                             className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                         >
@@ -354,13 +356,13 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 terms={terms.write}
                                 setState={updateSlice('write')}
                             />
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
 
                 {contractReadDataExists && (
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
-                        <IonCol
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
+                        <AppCol
                             size="12"
                             className="flex items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                         >
@@ -370,23 +372,23 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 </h1>
                             </div>
 
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="emerald-700"
                                 onClick={handleToggleAnonymize}
                                 checked={terms.read.anonymize}
                             />
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
 
                 {termsUri && (
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px]">
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px]">
                         <div className="w-full flex items-center justify-center mt-6 mb-4">
                             <div className="bg-grayscale-100 w-full h-[1px]" />
                         </div>
 
-                        <IonCol
+                        <AppCol
                             size="12"
                             className="flex flex-col items-center justify-between w-full ion-padding"
                         >
@@ -399,10 +401,10 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 <BrokenLink className="mr-2" />{' '}
                                 {isWithdrawingConsent ? 'Disconnecting...' : 'Disconnect'}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonGrid>
+            </AppGrid>
         </section>
     );
 };

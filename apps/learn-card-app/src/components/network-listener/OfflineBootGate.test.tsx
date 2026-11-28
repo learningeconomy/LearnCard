@@ -17,8 +17,6 @@ vi.mock('learn-card-base', () => ({
     Overlay: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
-
 vi.mock('../../paraglide/messages.js', () => ({
     'connectivity.offlineTitle': () => "You're offline",
     'connectivity.offlineBody': () => "Sign in works once you're back online.",

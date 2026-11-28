@@ -1,5 +1,5 @@
 import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     sparklesOutline,
     linkOutline,
@@ -13,7 +13,7 @@ import {
     alertCircleOutline,
     checkmarkOutline,
     eyeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { getLogger } from 'learn-card-base';
 
@@ -176,7 +176,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                 role="alert"
                 className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3 text-start"
             >
-                <IonIcon
+                <AppIcon
                     icon={alertCircleOutline}
                     aria-hidden="true"
                     className="mt-0.5 h-5 w-5 shrink-0 text-red-400"
@@ -221,7 +221,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                     aria-label={m['common.close']()}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-600 transition-colors hover:bg-grayscale-100 focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                    <IonIcon icon={closeOutline} aria-hidden="true" className="h-5 w-5" />
+                    <AppIcon icon={closeOutline} aria-hidden="true" className="h-5 w-5" />
                 </button>
             </header>
 
@@ -275,7 +275,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                                 className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
                                             />
                                         ) : (
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={cloudUploadOutline}
                                                 aria-hidden="true"
                                                 className="h-5 w-5"
@@ -321,7 +321,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                             >
                                 <div className="flex items-center gap-3">
                                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-grayscale-100 text-grayscale-700">
-                                        <IonIcon
+                                        <AppIcon
                                             icon={clipboardOutline}
                                             aria-hidden="true"
                                             className="h-6 w-6"
@@ -371,7 +371,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 <div aria-live="polite" className="text-xs">
                                     {canResolve ? (
                                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={KIND_ICON[detected.kind]}
                                                 aria-hidden="true"
                                                 className="h-4 w-4"
@@ -401,7 +401,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                     ) : (
                                         <>
                                             {m['issueFlow.bringItIn']()}
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={arrowForwardOutline}
                                                 aria-hidden="true"
                                                 className="h-4 w-4 rtl:rotate-180"
@@ -446,7 +446,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                             </section>
                         </div>
                         <p className="mt-5 flex items-start justify-center gap-2 text-xs leading-relaxed text-grayscale-600">
-                            <IonIcon
+                            <AppIcon
                                 icon={eyeOutline}
                                 aria-hidden="true"
                                 className="h-4 w-4 shrink-0"
@@ -467,7 +467,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                             </p>
                         )}
                         <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
-                            <IonIcon
+                            <AppIcon
                                 icon={checkmarkOutline}
                                 aria-hidden="true"
                                 className="w-4 h-4"
@@ -484,7 +484,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 />
                             ) : (
                                 <div className="w-14 h-14 rounded-xl bg-grayscale-100 flex items-center justify-center shrink-0">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={sparklesOutline}
                                         aria-hidden="true"
                                         className="w-6 h-6 text-grayscale-400"
@@ -510,7 +510,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
 
                         {credential.provenance.source === 'credential-engine' && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-700">
-                                <IonIcon
+                                <AppIcon
                                     icon={libraryOutline}
                                     aria-hidden="true"
                                     className="w-3.5 h-3.5"

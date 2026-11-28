@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import {
@@ -11,17 +10,18 @@ import {
 } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const CurrenciesPage: React.FC = () => {
     const imgSrc = categoryMetadata[CredentialCategoryEnum.currency].defaultImageSrc;
     return (
-        <IonPage className="bg-cyan-700">
+        <AppPage className="bg-cyan-700">
             <MainHeader
                 showBackButton
                 subheaderType={SubheaderTypeEnum.Currency}
                 branding={BrandingEnum.scoutPass}
             ></MainHeader>
-            <IonContent fullscreen className="currencies-page" color={'cyan-700'}>
+            <AppContent fullscreen className="currencies-page" color={'cyan-700'}>
                 <CurvedBackdropEl className="bg-cyan-300" />
                 <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
                     <img
@@ -31,8 +31,8 @@ const CurrenciesPage: React.FC = () => {
                     />
                     <strong className="relative">{m['currencies.none']()}</strong>
                 </section>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

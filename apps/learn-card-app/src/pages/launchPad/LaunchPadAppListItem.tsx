@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonItem } from '@ionic/react';
+import { AppItem } from 'learn-card-base/ui/list';
 
 import {
     useModal,
@@ -79,7 +79,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     };
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
@@ -149,7 +149,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                     )}
                 </div>
             </div>
-        </IonItem>
+        </AppItem>
     );
 };
 

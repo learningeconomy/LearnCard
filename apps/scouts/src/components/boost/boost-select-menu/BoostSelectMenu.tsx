@@ -12,20 +12,8 @@ import {
 } from 'learn-card-base';
 import useBoostModal from '../hooks/useBoostModal';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonHeader,
-    IonPage,
-    IonItem,
-    IonList,
-    IonSelect,
-    IonSelectOption,
-} from '@ionic/react';
-
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
+import { AppSelect } from 'learn-card-base/ui/controls/AppSelect';
 import BoostManagedCard from '../../boost/boost-managed-card/BoostManagedCard';
 import BoostManagedIDCard from '../boost-managed-card/BoostManagedIDCard';
 
@@ -39,6 +27,9 @@ import { UnsignedVC, VC } from '@learncard/types';
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import * as m from '../../../paraglide/messages.js';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import { AppContent, AppHeader, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 const PATH_TO_CATEGORY = {
     learninghistory: BoostCategoryOptionsEnum.learningHistory,
@@ -130,6 +121,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
 
         if (isID || isMembership) {
             return (
+                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                 <div className="mt-6">
                     <BoostManagedIDCard
                         key={boost?.boost?.uri || index}
@@ -164,23 +156,23 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
 
     if (allBoostUrisLoading) {
         return (
-            <IonPage className="bg-white">
-                <IonContent className="w-full h-full  bg-white">
+            <AppPage className="bg-white">
+                <AppContent className="w-full h-full  bg-white">
                     <div className="flex flex-col w-full h-full items-center justify-center  bg-white">
                         <div className="max-w-[150px]">
                             <LoadingSpinner />
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-center mt-8">
+        <AppPage>
+            <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-center mt-8">
                         <button
                             onClick={handleNewBoostModal}
                             className="mx-[20px] flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
@@ -188,40 +180,40 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                             {m['boost.newBoost']()}
                         </button>
-                    </IonCol>
-                </IonRow>
-            </IonHeader>
+                    </AppCol>
+                </AppRow>
+            </AppHeader>
 
-            <IonContent>
-                <IonGrid className="ion-padding">
+            <AppContent>
+                <AppGrid className="ion-padding">
                     <div className="flex w-full items-center justify-between px-4">
                         <p className="font-bold">{m['boost.existingBoosts']()}</p>
-                        <IonList className="rounded-full ion-no-padding p-0 shadow-3xl">
-                            <IonItem lines="none">
+                        <AppList className="rounded-full ion-no-padding p-0 shadow-3xl">
+                            <AppItem lines="none">
                                 <IconComponent
                                     className={`text-${color} m-0 p-0 min-h-[30px] min-w-[30px] h-[30px] w-[30px]`}
                                 />
-                                <IonSelect
-                                    interface="popover"
-                                    onIonChange={e => handleCategoryTypeChange(e.detail.value)}
+                                <AppSelect
+                                    onValueChange={value =>
+                                        handleCategoryTypeChange(value as BoostCategoryOptionsEnum)
+                                    }
                                     value={selectedVCType}
                                     className="text-black"
                                     selectedText=" "
-                                >
-                                    {boostDropdownCategoryOptions.map(({ type, title, id }) => {
-                                        return (
-                                            <IonSelectOption key={id} value={type}>
-                                                {title}
-                                            </IonSelectOption>
-                                        );
-                                    })}
-                                </IonSelect>
-                            </IonItem>
-                        </IonList>
+                                    aria-label={m['boost.existingBoosts']()}
+                                    options={boostDropdownCategoryOptions.map(
+                                        ({ type, title }) => ({
+                                            value: type,
+                                            label: title,
+                                        })
+                                    )}
+                                />
+                            </AppItem>
+                        </AppList>
                     </div>
 
-                    <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
-                        <IonGrid className="max-w-[400px]">
+                    <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                        <AppGrid className="max-w-[400px]">
                             {!boostsLoading && boosts && boosts?.length == 0 && (
                                 <div className="flex flex-col w-full h-full items-center justify-center">
                                     <div className="max-w-[160px] m-auto flex justify-center">
@@ -236,7 +228,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                                 </div>
                             )}
                             {!boostsLoading && boosts && boosts?.length > 0 && (
-                                <IonRow> {renderBoostsList}</IonRow>
+                                <AppRow> {renderBoostsList}</AppRow>
                             )}
                             {boostsLoading && (
                                 <div className="flex flex-col w-full h-full items-center justify-center">
@@ -245,8 +237,8 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                                     </div>
                                 </div>
                             )}
-                        </IonGrid>
-                    </IonCol>
+                        </AppGrid>
+                    </AppCol>
 
                     <div className="w-full flex items-center justify-center mt-8">
                         <button
@@ -256,9 +248,9 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             {m['common.cancel']()}
                         </button>
                     </div>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

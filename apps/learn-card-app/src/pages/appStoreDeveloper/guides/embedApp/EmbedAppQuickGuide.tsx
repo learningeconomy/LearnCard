@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowForwardOutline,
     checkmarkCircle,
@@ -11,7 +11,7 @@ import {
     openOutline,
     rocketOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
 import { DEVELOPER_DOCS_URL } from '../../apps/NewAppSheet';
@@ -69,7 +69,7 @@ const CopyBlock: React.FC<{ text: string; label: string; mono?: boolean }> = ({
                     onClick={copy}
                     className="flex items-center gap-1.5 text-xs font-medium text-white/80 hover:text-white transition-colors"
                 >
-                    <IonIcon icon={copied ? checkmarkOutline : copyOutline} />
+                    <AppIcon icon={copied ? checkmarkOutline : copyOutline} />
                     {copied ? 'Copied' : 'Copy'}
                 </button>
             </div>
@@ -103,7 +103,7 @@ const Stepper: React.FC<{ current: number; onSelect: (step: number) => void }> =
                     }`}
                 >
                     {index < current ? (
-                        <IonIcon icon={checkmarkOutline} />
+                        <AppIcon icon={checkmarkOutline} />
                     ) : (
                         <span>{index + 1}</span>
                     )}
@@ -169,7 +169,7 @@ const MakeStep: React.FC<{
                                         : 'border-grayscale-200 hover:border-grayscale-300'
                                 }`}
                             >
-                                <IonIcon
+                                <AppIcon
                                     icon={on ? checkmarkCircle : ellipseOutline}
                                     className={`text-xl shrink-0 mt-0.5 ${
                                         on ? 'text-emerald-500' : 'text-grayscale-300'
@@ -207,7 +207,7 @@ const MakeStep: React.FC<{
                                     : 'text-grayscale-700 hover:bg-grayscale-200'
                             }`}
                         >
-                            <IonIcon icon={icon} />
+                            <AppIcon icon={icon} />
                             {label}
                         </button>
                     ))}
@@ -241,7 +241,7 @@ const MakeStep: React.FC<{
                 className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors inline-flex items-center gap-1"
             >
                 Prefer to set things up by hand? See the docs
-                <IonIcon icon={openOutline} />
+                <AppIcon icon={openOutline} />
             </button>
         </div>
     );
@@ -265,7 +265,7 @@ const TryStep: React.FC = () => (
         <ul className="space-y-v3-3">
             {TRY_POINTS.map(point => (
                 <li key={point} className="flex items-start gap-3">
-                    <IonIcon
+                    <AppIcon
                         icon={checkmarkCircle}
                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                     />
@@ -310,7 +310,7 @@ const PublishStep: React.FC<{ onDone: () => void }> = ({ onDone }) => (
             needs, like credential designs and permissions, is set up for you.
         </p>
         <button type="button" onClick={onDone} className={PRIMARY}>
-            <IonIcon icon={rocketOutline} />
+            <AppIcon icon={rocketOutline} />
             Go to Your Apps
         </button>
     </div>
@@ -371,7 +371,7 @@ const EmbedAppQuickGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
                     )}
                     <button type="button" onClick={next} className={PRIMARY}>
                         {current === 0 ? "I've Started My App" : "It's Working"}
-                        <IonIcon icon={arrowForwardOutline} />
+                        <AppIcon icon={arrowForwardOutline} />
                     </button>
                 </div>
             )}

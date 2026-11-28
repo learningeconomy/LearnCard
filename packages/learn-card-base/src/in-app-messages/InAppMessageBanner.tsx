@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { closeOutline, checkmarkCircleOutline, alertCircleOutline } from 'ionicons/icons';
+import {
+    closeOutline,
+    checkmarkCircleOutline,
+    alertCircleOutline,
+} from 'learn-card-base/icons/ionicons';
 import { InAppMessageAction } from '@learncard/types';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { useCapgoUpdate } from './useCapgoUpdate';
 import type { MessagePresentationProps } from './presentationTypes';
 import { useT } from '../i18n';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export type InAppMessageBannerProps = MessagePresentationProps;
 
@@ -64,7 +68,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
             return (
                 <div className="mt-3 space-y-v3-2">
                     <div className="p-2.5 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-xl flex items-start gap-2">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-base mt-0.5 shrink-0"
                         />
@@ -86,7 +90,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
             return (
                 <div className="mt-3 space-y-v3-2">
                     <div className="p-2.5 bg-emerald-50/80 backdrop-blur-sm border border-emerald-100 rounded-xl flex items-start gap-2">
-                        <IonIcon
+                        <AppIcon
                             icon={checkmarkCircleOutline}
                             className="text-emerald-500 text-base mt-0.5 shrink-0"
                         />
@@ -215,7 +219,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
                         className="absolute top-3 right-3 p-1.5 bg-white/60 backdrop-blur-sm border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 shrink-0 z-10"
                         aria-label={t('common.close')}
                     >
-                        <IonIcon icon={closeOutline} className="text-lg block" />
+                        <AppIcon icon={closeOutline} className="text-lg block" />
                     </button>
                 )}
             </motion.div>

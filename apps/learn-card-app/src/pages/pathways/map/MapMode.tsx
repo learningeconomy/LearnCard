@@ -1292,7 +1292,7 @@ const MapModeInner: React.FC = () => {
             `MainHeader` and `PathwaysHeader` are `shrink-0` siblings
             and the mode body is `flex-1 min-h-0`, so `h-full` here
             resolves to "exactly the space between the headers and
-            the bottom of `IonContent` (which Ionic itself sizes to
+            the bottom of `AppContent` (which the page itself sizes to
             page-minus-tab-bar-minus-safe-areas)".
 
             This replaces the previous `calc(100dvh - 220px)` magic
@@ -1300,7 +1300,7 @@ const MapModeInner: React.FC = () => {
             iOS chrome (dynamic island, home indicator, IonTabBar +
             its safe-area-bottom) and dragged the sticky
             `PathwaysHeader` out of view when its overshoot pushed
-            `IonContent` into a page-level scroll.
+            `AppContent` into a page-level scroll.
 
             `min-h-[420px]` stays so hyper-short desktop windows
             (landscape iPad split-view, tiny browser chrome) still

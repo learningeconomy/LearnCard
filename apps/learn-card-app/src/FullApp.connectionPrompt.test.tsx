@@ -24,12 +24,8 @@ vi.mock('@tanstack/query-async-storage-persister', () => ({
     createAsyncStoragePersister: vi.fn(() => ({})),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonApp: ({ children }: { children: React.ReactNode }) => children,
-}));
-
-vi.mock('@ionic/react-router', () => ({
-    IonReactRouter: ({ children }: { children: React.ReactNode }) => children,
+vi.mock('learn-card-base/ui/app-shell/AppShellRouter', () => ({
+    AppShellRouter: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('learn-card-base/components/modals/ModalAccessibilityManager', () => ({
     default: () => <div data-testid="modal-accessibility-manager" />,

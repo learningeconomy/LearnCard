@@ -1,7 +1,6 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Boost, VC, VerificationItem } from '@learncard/types';
-import { IonCol } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import { formatLocaleDate } from '../../../i18n/formatters';
 import {
@@ -44,6 +43,7 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -87,7 +87,7 @@ export const BoostEarnedCardSkeleton: React.FC<BoostEarnedCardSkeletonProps> = (
 
     return (
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
-            <IonCol
+            <AppCol
                 size={isCardView ? '6' : '12'}
                 size-sm={isCardView ? '4' : undefined}
                 size-md={isCardView ? '4' : undefined}
@@ -131,7 +131,7 @@ export const BoostEarnedCardSkeleton: React.FC<BoostEarnedCardSkeletonProps> = (
                     branding={branding}
                     loading
                 />
-            </IonCol>
+            </AppCol>
         </ErrorBoundary>
     );
 };
@@ -370,7 +370,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     if (verifierState) {
         return (
             <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
-                <IonCol
+                <AppCol
                     size={isCardView ? '6' : '12'}
                     size-sm={isCardView ? '4' : undefined}
                     size-md={isCardView ? '4' : undefined}
@@ -419,7 +419,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         branding={branding}
                         unknownVerifierTitle={unknownVerifierTitle}
                     />
-                </IonCol>
+                </AppCol>
             </ErrorBoundary>
         );
     }
@@ -460,7 +460,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     return (
         <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
-            <IonCol
+            <AppCol
                 size={isCardView ? '6' : '12'}
                 size-sm={isCardView ? '4' : undefined}
                 size-md={isCardView ? '4' : undefined}
@@ -550,7 +550,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     loading={showSkeleton}
                     unknownVerifierTitle={unknownVerifierTitle}
                 />
-            </IonCol>
+            </AppCol>
         </ErrorBoundary>
     );
 };

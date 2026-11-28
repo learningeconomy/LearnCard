@@ -11,7 +11,9 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
@@ -25,6 +27,8 @@ type ShareCredentialsProps = {
 };
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('share-boosts-bundle');
 
 const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
@@ -34,7 +38,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     readOnly,
 }) => {
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [isSharing, setIsSharing] = useState(false);
 
@@ -105,9 +109,9 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonContent>
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
+        <AppPage>
+            <AppContent>
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-medium leading-[21px]">
@@ -146,7 +150,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                     <div className="mt-[15px] text--[14px]">
                                         {credentialsLoading && (
                                             <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                                <IonSpinner />
+                                                <AppSpinner />
                                                 <p className="mt-[20px]">
                                                     Fetching your earned boosts...
                                                 </p>
@@ -183,8 +187,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             <span className="mr-[10px] text-[14px] font-semibold">
                                                 Share all {name}s
                                             </span>
-                                            <IonToggle
-                                                slot="end"
+                                            <AppToggle
                                                 checked={allSelected}
                                                 onClick={() => handleToggleSelectAll()}
                                             />
@@ -209,13 +212,12 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                                     {!readOnly && (
                                                         <span className="flex justify-center items-center font-medium">
                                                             All
-                                                            <IonToggle
+                                                            <AppToggle
                                                                 onClick={() =>
                                                                     handleToggleSelectAllType(
                                                                         vcType
                                                                     )
                                                                 }
-                                                                slot="end"
                                                                 className="ml-[5px]"
                                                                 checked={getAllSelected(vcType)}
                                                                 aria-label={`${vcType} toggle`}
@@ -266,7 +268,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
 
                         {/* <section className="bottom-spacer-offset h-[150px] w-full"></section> */}
                     </section>
-                </IonGrid>
+                </AppGrid>
                 {!credentialsLoading && !readOnly && (
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button
@@ -281,8 +283,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                         </button>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

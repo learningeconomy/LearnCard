@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     checkmark,
     documentTextOutline,
@@ -7,7 +7,7 @@ import {
     notificationsOutline,
     paperPlaneOutline,
     ribbonOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useRequestTranscript, useTranscriptStatus, getLogger } from 'learn-card-base';
 import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
 
@@ -80,7 +80,7 @@ const Hero: React.FC<{
                     motion === 'arrived' ? 'motion-safe:animate-pop-in' : ''
                 }`}
             >
-                <IonIcon icon={icon} className="text-4xl" aria-hidden="true" />
+                <AppIcon icon={icon} className="text-4xl" aria-hidden="true" />
             </div>
         </div>
     );
@@ -116,7 +116,7 @@ const ProgressStep: React.FC<{ label: string; state: StepState; last?: boolean }
                       : 'bg-grayscale-100 ring-2 ring-grayscale-200'
             }`}
         >
-            {state === 'done' && <IonIcon icon={checkmark} className="text-sm" />}
+            {state === 'done' && <AppIcon icon={checkmark} className="text-sm" />}
             {state === 'active' && (
                 <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse-dot" />
             )}
@@ -281,7 +281,7 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
                 <div className="rounded-[20px] border border-grayscale-200 bg-white p-4 mb-6 text-left shadow-sm motion-safe:animate-reveal-card">
                     <div className="flex items-center gap-3 mb-4">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                            <IonIcon icon={documentTextOutline} className="text-xl" />
+                            <AppIcon icon={documentTextOutline} className="text-xl" />
                         </span>
                         <p className="text-sm font-semibold text-grayscale-900 leading-snug">
                             {model.header.issuerName?.value ||
@@ -368,7 +368,7 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
                 </p>
                 <div className="flex items-center gap-3 rounded-[20px] border border-grayscale-200 bg-white/90 backdrop-blur-md p-4 mb-8 text-left shadow-sm motion-safe:animate-reveal-card">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                        <IonIcon
+                        <AppIcon
                             icon={notificationsOutline}
                             className="text-xl"
                             aria-hidden="true"

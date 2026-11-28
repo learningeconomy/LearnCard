@@ -263,8 +263,8 @@ test.describe('campaign composer @mocked', () => {
             const selectionIcon = page
                 .getByRole('checkbox', { name, exact: true })
                 .locator('..')
-                .locator('ion-icon');
-            const contentIcon = heading.locator('ion-icon');
+                .locator('.app-icon');
+            const contentIcon = heading.locator('.app-icon');
             await expect(contentIcon).toHaveAttribute('aria-hidden', 'true');
             if (name === 'In-app message') {
                 const headingBounds = await heading.boundingBox();

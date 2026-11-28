@@ -1,6 +1,6 @@
 import React, { useId, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { chevronDownOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { chevronDownOutline } from 'learn-card-base/icons/ionicons';
 import { useLocale } from '../../../i18n';
 import type { VerifierReceipt } from '../../../helpers/verifier-history/history';
 import * as m from '../../../paraglide/messages.js';
@@ -34,7 +34,7 @@ const VerifierHistoryEntry: React.FC<EntryProps> = ({ receipt, loading, onDelete
                     <span className="text-sm font-medium text-grayscale-900 wrap-break-word min-w-0">
                         {verifier}
                     </span>
-                    <IonIcon
+                    <AppIcon
                         icon={chevronDownOutline}
                         aria-hidden="true"
                         className={`shrink-0 text-grayscale-600 transition-transform ${expanded ? 'rotate-180' : ''}`}

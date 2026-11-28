@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import NewProfileButton from './NewProfileButton';
 import ParentSwitcherButton from './ParentSwitcherButton';
 import NewProfileTypeSelector from './NewProfileTypeSelector';
@@ -127,7 +127,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
     if (isLoading) {
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px] bg-white">
-                <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
+                <AppSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
                 <p className="font-poppins text-grayscale-900">
                     {m['arabicFixes.loadingAccounts']()}
                 </p>

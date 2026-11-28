@@ -5,7 +5,7 @@ import {
     linkOutline,
     serverOutline,
     shieldCheckmarkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { LaunchType } from '@learncard/types';
 
 export const LISTING_TYPES: Array<{

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { VC } from '@learncard/types';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('endorsement-draft-request-success');
 
@@ -284,7 +284,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
         <div className="w-full h-full flex flex-col items-center justify-center bg-white/10  px-4">
             <div className="w-full flex flex-col items-center justify-center  bg-white rounded-[20px] px-4 py-8 gap-2 max-w-[375px]">
                 {sendFailed ? (
-                    <IonIcon icon={alertCircleOutline} className="text-red-400 text-[50px]" />
+                    <AppIcon icon={alertCircleOutline} className="text-red-400 text-[50px]" />
                 ) : (
                     <EndorsmentThumbWithCircle
                         className="w-[50px] h-[50px] text-white"

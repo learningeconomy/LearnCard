@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ChevronLeft, Activity } from 'lucide-react';
 import { useXApiStatementsForContract } from 'learn-card-base/hooks/useXApiStatementsForContract';
 import * as m from '../../paraglide/messages.js';
@@ -100,7 +100,7 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
             <div className="flex-1 overflow-y-auto p-4">
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-12">
-                        <IonSpinner name="crescent" className="w-8 h-8 mb-4" />
+                        <AppSpinner name="crescent" className="w-8 h-8 mb-4" />
                         <p className="text-grayscale-600">
                             {m['dataSharing.loadingActivityData']()}
                         </p>
@@ -129,7 +129,7 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
 
                         {isFetching && (
                             <div className="flex justify-center py-4">
-                                <IonSpinner name="crescent" className="w-6 h-6" />
+                                <AppSpinner name="crescent" className="w-6 h-6" />
                             </div>
                         )}
 

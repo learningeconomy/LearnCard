@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     appsOutline,
     arrowForwardOutline,
@@ -12,7 +12,7 @@ import {
     rocketOutline,
     shieldCheckmarkOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { mDynamic } from '../../../i18n/mDynamic';
 import { AppStoreHeader } from '../components/AppStoreHeader';
@@ -22,6 +22,8 @@ import { USE_CASES } from '../guides/types';
 import type { UseCaseId } from '../guides/types';
 import { FEATURED_GUIDE, GUIDE_ORDER, summarizeProjects } from './buildHome';
 import type { ProjectState, ProjectSummary } from './buildHome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const GUIDE_ICONS: Record<string, string> = {
     'award': ribbonOutline,
@@ -63,14 +65,14 @@ const GuideCard: React.FC<{ id: UseCaseId; onOpen: () => void }> = ({ id, onOpen
         >
             <div className="flex items-start justify-between">
                 <span className="w-11 h-11 rounded-2xl bg-grayscale-100 flex items-center justify-center">
-                    <IonIcon icon={icon} className="text-xl text-grayscale-700" />
+                    <AppIcon icon={icon} className="text-xl text-grayscale-700" />
                 </span>
                 {comingSoon ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-grayscale-100 text-grayscale-500 text-xs font-medium">
                         Coming soon
                     </span>
                 ) : (
-                    <IonIcon
+                    <AppIcon
                         icon={chevronForwardOutline}
                         className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors"
                     />
@@ -121,7 +123,7 @@ const ProjectRow: React.FC<{ project: ProjectSummary; onOpen: () => void }> = ({
             >
                 {STATE_LABEL[project.state]}
             </span>
-            <IonIcon
+            <AppIcon
                 icon={chevronForwardOutline}
                 className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors shrink-0"
             />
@@ -141,9 +143,9 @@ const BuildHomePage: React.FC = () => {
     const appCount = apps?.length ?? 0;
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Build" />
-            <IonContent>
+            <AppContent>
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 font-poppins animate-fade-in-up">
                     <h1 className="text-2xl font-semibold text-grayscale-900">
                         What do you want to build?
@@ -158,19 +160,17 @@ const BuildHomePage: React.FC = () => {
                         className="group mt-8 w-full text-left rounded-[20px] bg-grayscale-900 p-6 sm:p-8 hover:opacity-95 transition-opacity"
                     >
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white text-xs font-medium">
-                            <IonIcon icon={sparklesOutline} />
+                            <AppIcon icon={sparklesOutline} />
                             Most popular
                         </span>
-                        <h2 className="mt-4 text-xl font-semibold text-white">
-                            Build an app
-                        </h2>
+                        <h2 className="mt-4 text-xl font-semibold text-white">Build an app</h2>
                         <p className="mt-1 text-sm text-white/70 max-w-lg leading-relaxed">
                             Make it in Lovable, Bolt, v0, or your own code. It runs inside LearnCard
                             and can sign people in, give out credentials, and more.
                         </p>
                         <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-white">
                             Start building
-                            <IonIcon
+                            <AppIcon
                                 icon={arrowForwardOutline}
                                 className="transition-transform group-hover:translate-x-0.5"
                             />
@@ -193,7 +193,7 @@ const BuildHomePage: React.FC = () => {
                         </h2>
                         {isLoadingIntegrations || isLoadingApps ? (
                             <div className="flex justify-center py-10">
-                                <IonSpinner name="crescent" />
+                                <AppSpinner name="crescent" />
                             </div>
                         ) : projects.length === 0 ? (
                             <p className="mt-2 text-sm text-grayscale-500">
@@ -219,13 +219,13 @@ const BuildHomePage: React.FC = () => {
                                 {appCount === 1
                                     ? 'Your app is in the Apps tab'
                                     : `Your ${appCount} apps are in the Apps tab`}
-                                <IonIcon icon={arrowForwardOutline} />
+                                <AppIcon icon={arrowForwardOutline} />
                             </button>
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

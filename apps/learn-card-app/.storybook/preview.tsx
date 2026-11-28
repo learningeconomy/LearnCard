@@ -2,7 +2,9 @@ import React from 'react';
 import type { Preview } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { IonApp, setupIonicReact } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
 import {
     Modals,
     ModalsProvider,
@@ -25,10 +27,11 @@ import { Buffer } from 'buffer';
     nextTick: (cb: () => void) => setTimeout(cb, 0),
 };
 
-import '@ionic/react/css/core.css';
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
+import 'learn-card-base/ui/global/core.css';
+import 'learn-card-base/ui/global/normalize.css';
+import 'learn-card-base/ui/global/structure.css';
+import 'learn-card-base/ui/global/typography.css';
+import '../src/theme/variables.css';
 
 // Keep the renderer and host stylesheet order aligned with App.tsx.
 import '@learncard/react/main.css';
@@ -36,7 +39,7 @@ import '../src/tailwind.css';
 import '../src/index.scss';
 import './preview.css';
 
-setupIonicReact({ swipeBackEnabled: false });
+initAppPlatform();
 
 /**
  * `Modals` portals into `#modal-mid-root` by looking it up with
@@ -75,7 +78,7 @@ const preview: Preview = {
 
     decorators: [
         Story => (
-            <IonApp>
+            <AppRoot>
                 <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
                     <LocaleProvider>
                         <QueryClientProvider client={queryClient}>
@@ -86,13 +89,14 @@ const preview: Preview = {
                                             <Story />
                                         </div>
                                         <Modals />
+                                        <AppOverlayManager />
                                     </ModalsProvider>
                                 </MemoryRouter>
                             </AnalyticsContextProvider>
                         </QueryClientProvider>
                     </LocaleProvider>
                 </TenantConfigProvider>
-            </IonApp>
+            </AppRoot>
         ),
     ],
 

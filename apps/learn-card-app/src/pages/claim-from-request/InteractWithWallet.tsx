@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { IonList } from '@ionic/react';
+import { AppList } from 'learn-card-base/ui/list';
 import { QRCodeSVG } from 'qrcode.react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -222,7 +222,7 @@ const InteractSelectorOptions: React.FC<{
     return (
         <div className="p-6 font-poppins">
             <h1 className="text-lg font-semibold text-grayscale-900 mb-4">Select an app</h1>
-            <IonList className="w-full h-full bg-transparent" role="presentation">
+            <AppList className="w-full h-full bg-transparent" role="presentation">
                 <ul className="m-0 p-0 list-none">
                     {wallets.map((wallet, idx) => {
                         const isSelected = idx === selectedIndex;
@@ -255,7 +255,7 @@ const InteractSelectorOptions: React.FC<{
                         );
                     })}
                 </ul>
-            </IonList>
+            </AppList>
         </div>
     );
 };

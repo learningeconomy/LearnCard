@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 import EmptyImage from '../../../assets/images/wallpaper-empty-state.png';
@@ -71,7 +71,7 @@ export const FamilyCMSWallpaperSelect: React.FC<{
                     )}
                     {imageUploadLoading && (
                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                         </div>
                     )}
                 </div>

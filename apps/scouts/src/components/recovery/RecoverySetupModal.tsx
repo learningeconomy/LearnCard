@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
 import {
     fingerPrint,
     documentTextOutline,
@@ -9,7 +8,7 @@ import {
     copyOutline,
     checkmarkOutline,
     mailOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
@@ -18,6 +17,7 @@ import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
+import { AppIcon } from 'learn-card-base/ui/icon';
 const log = getLogger('recovery-setup-modal');
 
 /** Map raw confirmation errors to friendly, localized copy. Never surface Error.message directly. */
@@ -593,7 +593,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const updateWarning = (text: string) => (
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
-            <IonIcon
+            <AppIcon
                 icon={alertCircleOutline}
                 className="text-amber-500 text-base mt-0.5 shrink-0"
             />
@@ -643,7 +643,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const configuredRow = (statusText: string, onChangeClick: () => void) => (
         <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-grayscale-100/60">
             <div className="flex items-center gap-2.5">
-                <IonIcon
+                <AppIcon
                     icon={checkmarkCircleOutline}
                     className="text-emerald-500 text-base shrink-0"
                 />
@@ -742,7 +742,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
                         }`}
                     >
-                        <IonIcon icon={tab.icon} className={tab.iconClass} />
+                        <AppIcon icon={tab.icon} className={tab.iconClass} />
                         {tab.label}
 
                         {unfinished === tab.id ? (
@@ -755,7 +755,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </>
                         ) : (
                             isConfigured(tab.id) && (
-                                <IonIcon
+                                <AppIcon
                                     icon={checkmarkCircleOutline}
                                     className="text-emerald-400 text-sm"
                                 />
@@ -768,7 +768,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Error */}
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
@@ -780,7 +780,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Success */}
             {success && (
                 <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={checkmarkCircleOutline}
                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                     />
@@ -819,7 +819,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="space-y-v3-2.5 text-sm text-emerald-800">
                                     <div className="flex items-start gap-2.5">
-                                        <IonIcon
+                                        <AppIcon
                                             icon={fingerPrint}
                                             className="text-emerald-600 text-lg mt-0.5 shrink-0"
                                         />
@@ -827,7 +827,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     </div>
 
                                     <div className="flex items-start gap-2.5">
-                                        <IonIcon
+                                        <AppIcon
                                             icon={checkmarkCircleOutline}
                                             className="text-emerald-600 text-lg mt-0.5 shrink-0"
                                         />
@@ -1077,7 +1077,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 onClick={handleCopyPhrase}
                                 className="w-full py-2.5 px-4 bg-grayscale-100 hover:bg-grayscale-200 rounded-[20px] flex items-center justify-center gap-2 text-sm text-grayscale-700 font-medium transition-colors"
                             >
-                                <IonIcon
+                                <AppIcon
                                     icon={phraseCopied ? checkmarkOutline : copyOutline}
                                     className="text-base"
                                 />
@@ -1164,7 +1164,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             />
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="flex items-start gap-2.5">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={checkmarkCircleOutline}
                                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                                     />
@@ -1185,7 +1185,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 onClick={handleDownloadBackup}
                                 className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                             >
-                                <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                                <AppIcon icon={cloudDownloadOutline} className="text-base" />
                                 {backupDownloaded
                                     ? m['recovery.setup.backup.downloadAgain']()
                                     : m['recovery.setup.backup.downloadBtn']()}
@@ -1358,7 +1358,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 label2={m['recovery.step.check']()}
                             />
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={checkmarkCircleOutline}
                                     className="text-emerald-500 text-lg mt-0.5 shrink-0"
                                 />

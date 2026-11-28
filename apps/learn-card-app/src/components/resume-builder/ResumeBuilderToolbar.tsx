@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonHeader, IonSpinner, IonToolbar } from '@ionic/react';
 import DocumentIcon from '../svgs/Document';
 import ShareIcon from 'learn-card-base/svgs/Share';
 import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
@@ -7,6 +6,8 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import Checkmark from '../svgs/Checkmark';
 import type { ResumeBuilderHeaderAction } from './ResumeBuilderHeader';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export interface ResumeBuilderToolbarProps {
     loadingAction: ResumeBuilderHeaderAction;
@@ -43,8 +44,8 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
         'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[20px] p-2 text-sm font-medium text-grayscale-700 hover:bg-grayscale-100 disabled:cursor-not-allowed disabled:opacity-40 transition-colors';
 
     return (
-        <IonHeader className="resume-builder-toolbar ion-no-border shrink-0 font-poppins">
-            <IonToolbar className="[--background:white] [--border-width:0px] [--padding-start:0px] [--padding-end:0px]">
+        <AppHeader className="resume-builder-toolbar ion-no-border shrink-0 font-poppins">
+            <AppToolbar className="[--background:white] [--border-width:0px] [--padding-start:0px] [--padding-end:0px]">
                 <div
                     className={`border-b border-grayscale-200 ${isMobile ? 'space-y-2 px-3 py-2' : `flex items-center gap-4 pl-5 py-3 ${isDesktopPanelClosed ? 'pr-[72px]' : 'pr-5'}`}`}
                 >
@@ -72,7 +73,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                                 className={secondaryClass}
                             >
                                 {loadingAction === 'download' ? (
-                                    <IonSpinner name="crescent" className="h-5 w-5" />
+                                    <AppSpinner name="crescent" className="h-5 w-5" />
                                 ) : (
                                     <DownloadIcon className="h-5 w-5" />
                                 )}
@@ -110,7 +111,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                             className="flex min-h-11 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 bg-white px-4 py-2 text-sm font-medium text-grayscale-900 hover:bg-grayscale-100 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                         >
                             {loadingAction === 'preview' ? (
-                                <IonSpinner name="crescent" className="h-4 w-4" />
+                                <AppSpinner name="crescent" className="h-4 w-4" />
                             ) : (
                                 <DocumentIcon className="h-5 w-5 shrink-0" />
                             )}
@@ -126,7 +127,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                             className="flex min-h-11 items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
                         >
                             {loadingAction === 'publish' ? (
-                                <IonSpinner name="crescent" className="h-4 w-4" />
+                                <AppSpinner name="crescent" className="h-4 w-4" />
                             ) : (
                                 <Checkmark className="h-5 w-5 shrink-0" />
                             )}
@@ -140,7 +141,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                         </button>
                     </div>
                 </div>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };

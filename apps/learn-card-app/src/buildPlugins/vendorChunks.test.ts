@@ -20,16 +20,16 @@ const metaFrom = (graph: Record<string, Partial<ChunkModuleInfo>>): ChunkMeta =>
 describe('packageOf', () => {
     it('reads plain and scoped package names from the innermost node_modules', () => {
         expect(packageOf(nm('swiper/shared/utils.mjs'))).toBe('swiper');
-        expect(packageOf(nm('@ionic/react/dist/index.js'))).toBe('@ionic/react');
-        expect(packageOf(nm('@ionic/react/node_modules/@ionic/core/components/index.js'))).toBe(
-            '@ionic/core'
+        expect(packageOf(nm('@sentry/react/build/esm/index.js'))).toBe('@sentry/react');
+        expect(packageOf(nm('@sentry/react/node_modules/@sentry/core/build/esm/index.js'))).toBe(
+            '@sentry/core'
         );
         expect(packageOf(app('index.tsx'))).toBeUndefined();
     });
 
     it('normalizes Windows separators in scoped names', () => {
-        expect(packageOf('C:\\repo\\node_modules\\@ionic\\react\\dist\\index.js')).toBe(
-            '@ionic/react'
+        expect(packageOf('C:\\repo\\node_modules\\@sentry\\react\\build\\esm\\index.js')).toBe(
+            '@sentry/react'
         );
     });
 });
@@ -48,7 +48,7 @@ describe('vendorChunkOf', () => {
 
     it('leaves stylesheets and app code to the default chunking', () => {
         expect(vendorChunkOf(nm('swiper/modules/pagination.css'))).toBeUndefined();
-        expect(vendorChunkOf(nm('@ionic/react/css/core.css?inline'))).toBeUndefined();
+        expect(vendorChunkOf(nm('@firebase/auth/dist/auth.css?inline'))).toBeUndefined();
         expect(vendorChunkOf(app('pages/login/LoginPage.tsx'))).toBeUndefined();
     });
 });
@@ -67,10 +67,10 @@ describe('createManualChunks', () => {
     });
 
     it('keeps modules a vendor only loads through import() out of its group', () => {
-        const core = nm('@ionic/core/components/index.js');
-        const shims = nm('@ionic/core/components/input-shims.js');
-        const shimHelper = nm('@ionic/core/components/index7.js');
-        const shared = nm('@ionic/core/components/helpers.js');
+        const core = nm('@firebase/auth/dist/esm/index.js');
+        const shims = nm('@firebase/auth/dist/esm/input-shims.js');
+        const shimHelper = nm('@firebase/auth/dist/esm/index7.js');
+        const shared = nm('@firebase/auth/dist/esm/helpers.js');
         const meta = metaFrom({
             [core]: { importers: [app('App.tsx')] },
             [shims]: { dynamicImporters: [core] },
@@ -78,10 +78,10 @@ describe('createManualChunks', () => {
             [shared]: { importers: [shims, core] },
         });
         const chunk = manualChunks();
-        expect(chunk(core, meta)).toBe('vendor-ionic');
+        expect(chunk(core, meta)).toBe('vendor-firebase');
         expect(chunk(shims, meta)).toBeUndefined();
         expect(chunk(shimHelper, meta)).toBeUndefined();
-        expect(chunk(shared, meta)).toBe('vendor-ionic');
+        expect(chunk(shared, meta)).toBe('vendor-firebase');
     });
 
     it('keeps a vendor module in its group when app code imports it lazily', () => {
@@ -91,14 +91,14 @@ describe('createManualChunks', () => {
     });
 
     it('survives import cycles inside a vendor', () => {
-        const a = nm('@ionic/core/components/a.js');
-        const b = nm('@ionic/core/components/b.js');
+        const a = nm('@firebase/auth/dist/esm/a.js');
+        const b = nm('@firebase/auth/dist/esm/b.js');
         const meta = metaFrom({
-            [a]: { importers: [b], dynamicImporters: [nm('@ionic/core/components/index.js')] },
+            [a]: { importers: [b], dynamicImporters: [nm('@firebase/auth/dist/esm/index.js')] },
             [b]: { importers: [a] },
         });
         const chunk = manualChunks();
-        expect(chunk(a, meta)).toBe('vendor-ionic');
-        expect(chunk(b, meta)).toBe('vendor-ionic');
+        expect(chunk(a, meta)).toBe('vendor-firebase');
+        expect(chunk(b, meta)).toBe('vendor-firebase');
     });
 });

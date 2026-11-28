@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
 import X from '../../svgs/X';
-import { IonFooter } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { useModal } from 'learn-card-base';
 import { useRef } from 'react';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiAssessmentFooter: React.FC = () => {
     const { closeModal } = useModal();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
 
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
     const [showFooter, setShowFooter] = useState(true);
@@ -42,11 +42,11 @@ export const AiAssessmentFooter: React.FC = () => {
     if (!showFooter) return <></>;
 
     return (
-        <IonFooter ref={bottomBarRef} className={getFooterClasses()}>
+        <AppFooter ref={bottomBarRef} className={getFooterClasses()}>
             <button onClick={closeModal} className="rounded-full bg-white shadow-3xl p-4">
                 <X className="text-grayscale-800 w-[20px] h-auto" strokeWidth="5" />
             </button>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

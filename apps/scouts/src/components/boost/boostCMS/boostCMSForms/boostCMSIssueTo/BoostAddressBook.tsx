@@ -10,21 +10,6 @@ import useNetworkMembers from '../../../../../hooks/useNetworkMembers';
 import boostSearchStore from '../../../../../stores/boostSearchStore';
 
 import {
-    IonInput,
-    IonRow,
-    IonCol,
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonGrid,
-    IonContent,
-    IonSpinner,
-    IonFooter,
-    IonList,
-    IonItem,
-} from '@ionic/react';
-
-import {
     useWallet,
     useResolveBoost,
     useGetBoostParents,
@@ -42,6 +27,7 @@ import BoostAddressBookContactList from './BoostAddressBookContactList';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
 
 import Lottie from 'react-lottie-player';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import PurpGhost from '../../../../../assets/lotties/purpghost.json';
@@ -52,6 +38,11 @@ import { ScoutsRoleEnum } from '../../../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 const log = getLogger('boost-address-book');
 
 export enum BoostAddressBookEditMode {
@@ -125,6 +116,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         _issueTo ?? ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) ?? []
     );
     const [modalSearch, setModalSearch] = useState(searchProp ?? '');
@@ -147,6 +139,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const { data: resolvedCredential } = useResolveBoost(parentBoostUri);
 
     const { scoutRecipients: rawScouts, isLoading: scoutsLoading } = useTroopMembers(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         contextCredential as any,
         MemberTabsEnum.Scouts,
         searchBoostUri ?? parentBoostUri
@@ -172,6 +165,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     useEffect(() => {
         if (viewMode !== BoostAddressBookViewMode.list) return;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         const stateIssueTo = (state as any)?.[collectionPropName] as BoostCMSIssueTo[] | undefined;
 
         if (stateIssueTo) setLocalIssueTo(stateIssueTo);
@@ -190,7 +184,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const openContactOptions = (isSheet: boolean) => {
         newContactOptionsModal(
             <BoostAddressBookContactOptions
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={state as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setState={setState as any}
                 setIssueMode={setIssueMode}
                 handleCloseModal={() => closeContactOptionsModal()}
@@ -212,7 +208,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const openAddressBook = () => {
         newAddressBookModal(
             <BoostAddressBook
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={state as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setState={setState as any}
                 viewMode={BoostAddressBookViewMode.full}
                 mode={BoostAddressBookEditMode.edit}
@@ -223,8 +221,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     }
                 }}
                 _issueTo={localIssueTo || []}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 _setIssueTo={setLocalIssueTo as any}
                 search={search || ''}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setSearch={setSearch as any}
                 searchResults={searchResults || []}
                 isLoading={!!isLoading}
@@ -352,18 +352,19 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             connectionsToShow = networkMembers;
         }
         return (
-            <IonPage className="bg-white w-full">
-                <IonHeader className="learn-card-header ion-no-border bg-white w-full">
-                    <IonToolbar className="ion-no-border" color="white">
-                        <IonGrid>
-                            <IonRow className="w-full flex items-center justify-center">
-                                <IonRow className="flex flex-col w-full max-w-[600px]">
-                                    <IonCol className="flex flex-1 justify-start items-center">
+            <AppPage className="bg-white w-full">
+                <AppHeader className="learn-card-header ion-no-border bg-white w-full">
+                    <AppToolbar className="ion-no-border" color="white">
+                        <AppGrid>
+                            <AppRow className="w-full flex items-center justify-center">
+                                <AppRow className="flex flex-col w-full max-w-[600px]">
+                                    <AppCol className="flex flex-1 justify-start items-center">
                                         <button
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => {
                                                 handleCloseModal?.(false);
                                                 _setIssueTo?.([
+                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                                     ...((state as any)?.[collectionPropName] || []),
                                                 ]);
                                                 setSearch?.('');
@@ -374,27 +375,27 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         <h3 className="text-grayscale-900 flex items-center justify-start text-2xl">
                                             {headerText}
                                         </h3>
-                                    </IonCol>
+                                    </AppCol>
 
                                     <div className="flex items-center justify-start w-full">
-                                        <IonInput
+                                        <AppInput
                                             autocapitalize="on"
                                             placeholder={searchPlaceholder}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                            onIonInput={e => handleSearch(e?.detail?.value || '')}
+                                            onValueInput={value => handleSearch(value || '')}
                                             debounce={100}
                                             type="text"
                                         />
                                     </div>
-                                </IonRow>
-                            </IonRow>
-                        </IonGrid>
-                    </IonToolbar>
-                </IonHeader>
-                <IonContent fullscreen>
+                                </AppRow>
+                            </AppRow>
+                        </AppGrid>
+                    </AppToolbar>
+                </AppHeader>
+                <AppContent fullscreen>
                     {showLoadingSpinner && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -428,6 +429,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         <BoostAddressBookContactList
                             state={state}
                             setState={setState}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             contacts={(searchResults || []) as any}
                             mode={mode}
                             _issueTo={localIssueTo}
@@ -441,12 +443,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             <strong>{m['boostCMS.noSearchResults']()}</strong>
                         </section>
                     )}
-                </IonContent>
-                <IonFooter className="bg-white">
-                    <IonToolbar color="white" className="ion-no-border pt-5 bg-white">
-                        <IonRow className="w-full flex items-center justify-center">
+                </AppContent>
+                <AppFooter className="bg-white">
+                    <AppToolbar color="white" className="ion-no-border pt-5 bg-white">
+                        <AppRow className="w-full flex items-center justify-center">
                             <div className="w-full max-w-[600px] flex items-center justify-center">
-                                <IonCol
+                                <AppCol
                                     size="12"
                                     className="w-full flex items-center justify-between"
                                 >
@@ -456,20 +458,20 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     >
                                         {m['common.save']()}
                                     </button>
-                                </IonCol>
+                                </AppCol>
                             </div>
-                        </IonRow>
-                    </IonToolbar>
-                </IonFooter>
-            </IonPage>
+                        </AppRow>
+                    </AppToolbar>
+                </AppFooter>
+            </AppPage>
         );
     }
 
     return (
         <>
-            <IonGrid className="w-full flex items-center justify-center flex-col">
-                <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                    <IonCol size="12" className="w-full bg-white rounded-[20px]">
+            <AppGrid className="w-full flex items-center justify-center flex-col">
+                <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                    <AppCol size="12" className="w-full bg-white rounded-[20px]">
                         <div className="flex items-center justify-between w-full ion-padding">
                             <h1 className="text-black text-xl p-0 m-0 font-notoSans">{title}</h1>
                             <button
@@ -516,38 +518,40 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             state={state}
                             setIssueMode={setIssueMode}
                             setState={setState}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             contacts={(state as any)?.[collectionPropName] || []}
                             mode={mode}
                             _issueTo={_issueTo || []}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             _setIssueTo={_setIssueTo as any}
                             collectionPropName={collectionPropName}
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 {recipientsLoading && recipients?.length === 0 && (
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
                         <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                         </section>
-                    </IonRow>
+                    </AppRow>
                 )}
                 {!recipientsLoading && recipients?.length > 0 && (
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <div className="flex items-center justify-between w-full ion-padding">
                                 <h1 className="text-black text-2xl p-0 m-0 font-medium">
                                     {m['boostCMS.issueLog']()}
                                 </h1>
                             </div>
 
-                            <IonList
+                            <AppList
                                 lines="none"
                                 className="flex flex-col items-center justify-center w-full"
                             >
                                 {recipients?.map((recipient, index) => {
                                     return (
-                                        <IonItem
+                                        <AppItem
                                             key={index}
                                             lines="none"
                                             className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px]`}
@@ -580,14 +584,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                     </p>
                                                 </div>
                                             </div>
-                                        </IonItem>
+                                        </AppItem>
                                     );
                                 })}
-                            </IonList>
-                        </IonCol>
-                    </IonRow>
+                            </AppList>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonGrid>
+            </AppGrid>
 
             {!hideBoostShareableCode && <BoostShareableCode state={state} boostUri={boostUri} />}
         </>

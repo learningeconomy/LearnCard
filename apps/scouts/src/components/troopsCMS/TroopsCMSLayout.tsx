@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { IonContent } from '@ionic/react';
 import { TroopsCMSState, TroopsCMSViewModeEnum } from './troopCMSState';
 import { getWallpaperBackgroundStyles } from '../../helpers/troop.helpers';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 type AllowedWallpaperStylesType = {
     backgroundSize?: string;

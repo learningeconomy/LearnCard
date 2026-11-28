@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 
 import { useLoadingLine } from '../../stores/loadingStore';
@@ -28,6 +27,7 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 
 import useTheme from '../../theme/hooks/useTheme';
 import passportPageStore from '../../stores/passportPageStore';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface CategoryConfig {
     boostCategory: CredentialCategoryEnum;
@@ -224,7 +224,7 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     };
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`} onClick={handlePageClick}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`} onClick={handlePageClick}>
             <GenericErrorBoundary category={config.boostCategory}>
                 <MainHeader
                     showBackButton
@@ -234,7 +234,7 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
                     countLoading={countLoading}
                     category={config.boostCategory}
                 />
-                <IonContent
+                <AppContent
                     fullscreen
                     className={`relative bg-${backgroundSecondaryColor}`}
                     color={backgroundSecondaryColor}
@@ -277,9 +277,9 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
                             />
                         )}
                     </GenericErrorBoundary>
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

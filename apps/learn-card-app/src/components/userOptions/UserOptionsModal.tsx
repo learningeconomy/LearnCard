@@ -1,20 +1,12 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonList,
-    IonToolbar,
-    IonFooter,
-    IonItem,
-    IonHeader,
-    IonPage,
-    useIonModal,
-} from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;
@@ -31,19 +23,25 @@ const UserOptions: React.FC<{
     showFixedFooter = false,
     footer,
 }) => {
-    const [presentCenterModal, dismissCenterModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        showFixedFooter: false,
-        handleLogout: () => onLogout(),
-    });
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(
+        DeleteUserConfirmationPrompt,
+        {
+            handleCloseModal: () => dismissCenterModal(),
+            showCloseButton: true,
+            showFixedFooter: false,
+            handleLogout: () => onLogout(),
+        }
+    );
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        showFixedFooter: true,
-        handleLogout: () => onLogout(),
-    });
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(
+        DeleteUserConfirmationPrompt,
+        {
+            handleCloseModal: () => dismissSheetModal(),
+            showCloseButton: false,
+            showFixedFooter: true,
+            handleLogout: () => onLogout(),
+        }
+    );
 
     const userOptions = [
         {
@@ -61,23 +59,23 @@ const UserOptions: React.FC<{
     const fixedFooterStyles = showFixedFooter ? 'absolute bottom-[25%] left-0 w-full' : '';
 
     return (
-        <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+        <AppPage id="user-options-modal">
+            <AppHeader className="ion-no-border">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar>{title}</IonToolbar>}
-            </IonHeader>
-            <IonContent>
-                <IonList lines="none">
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar>{title}</AppToolbar>}
+            </AppHeader>
+            <AppContent>
+                <AppList lines="none">
                     {userOptions.map(link => (
-                        <IonItem className="w-full" key={link.id}>
+                        <AppItem className="w-full" key={link.id}>
                             {/* desktop */}
                             <button
                                 onClick={() =>
@@ -106,16 +104,16 @@ const UserOptions: React.FC<{
                             >
                                 {link.title}
                             </button>
-                        </IonItem>
+                        </AppItem>
                     ))}
-                </IonList>
-            </IonContent>
+                </AppList>
+            </AppContent>
             {footer && (
-                <IonFooter className={fixedFooterStyles}>
-                    <IonToolbar>{footer}</IonToolbar>
-                </IonFooter>
+                <AppFooter className={fixedFooterStyles}>
+                    <AppToolbar>{footer}</AppToolbar>
+                </AppFooter>
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 

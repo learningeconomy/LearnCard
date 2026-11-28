@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => ({
     logWarn: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({
         error: mocks.logError,

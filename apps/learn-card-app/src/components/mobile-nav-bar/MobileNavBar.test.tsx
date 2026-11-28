@@ -12,22 +12,27 @@ vi.mock('react-router-dom', () => ({
     useLocation: () => ({ pathname: '/dashboard' }),
 }));
 
-vi.mock('@ionic/react', () => {
+vi.mock('learn-card-base/ui/app-shell/AppTabs', () => {
     const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
 
     return {
-        IonLabel: Container,
-        IonMenuToggle: Container,
-        IonRouterOutlet: Container,
-        IonTabButton: Container,
-        IonTabs: Container,
-        IonTabBar: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+        AppTabs: Container,
+        AppTabButton: Container,
+        AppTabBar: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
             mocks.renderTabBar(props);
 
             return <nav>{children}</nav>;
         },
     };
 });
+
+vi.mock('learn-card-base/ui/app-shell/AppOutlet', () => ({
+    AppOutlet: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+}));
+
+vi.mock('learn-card-base/ui/app-shell/AppMenuToggle', () => ({
+    AppMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+}));
 
 vi.mock('learn-card-base', () => ({
     getNavBarColor: () => '',
@@ -66,6 +71,7 @@ vi.mock('../../theme/colors', () => ({
 
 vi.mock('../../paraglide/messages.js', () => ({
     'sidemenu.links.passport': () => 'Passport',
+    'sidemenu.openMenu': () => 'Open menu',
 }));
 
 vi.mock('./mobileNavBarI18n', () => ({
@@ -91,7 +97,7 @@ describe('MobileNavBar safe-area layout', () => {
         mocks.renderTabBar.mockClear();
     });
 
-    it('combines the design padding with Ionic’s live bottom inset', () => {
+    it('combines the design padding with the live bottom inset', () => {
         render(<MobileNavBar />);
 
         expect(mocks.renderTabBar).toHaveBeenCalledOnce();

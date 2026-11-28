@@ -5,12 +5,13 @@ import CredentialIssuerPopover, {
     useCredentialIssuerPopover,
 } from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
 import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
-import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
+import { AppContent, AppFooter, AppPage } from 'learn-card-base/ui/chrome';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 type IssueHistory = {
     id?: string | number;
@@ -146,12 +147,12 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     let handleShare, handleDotMenu;
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
             >
-                <IonRow
+                <AppRow
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
@@ -194,13 +195,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             onVerifierClick={openCredentialIssuerPopover}
                         />
                     </section>
-                </IonRow>
-            </IonContent>
-            <IonFooter
+                </AppRow>
+            </AppContent>
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center p-[0px] m-[0px] ion-no-border absolute bottom-0"
             >
-                <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
+                <AppRow className="relative z-10 w-full flex justify-center items-center gap-8">
                     <BoostFooter
                         handleX={handleCloseModal}
                         handleDetails={isFront ? () => setIsFront(!isFront) : undefined}
@@ -208,10 +209,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         handleShare={handleShareBoost}
                         handleDotMenu={onDotsClick}
                     />
-                </IonRow>
-            </IonFooter>
+                </AppRow>
+            </AppFooter>
             <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
-        </IonPage>
+        </AppPage>
     );
 };
 

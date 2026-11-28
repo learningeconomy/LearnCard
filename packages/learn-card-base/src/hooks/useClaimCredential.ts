@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import useWallet from './useWallet';
-import { useIonAlert } from '@ionic/react';
 import { useAcceptCredentialMutation } from 'learn-card-base/react-query/mutations/mutations';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 import { getLogger } from '../logging/logger';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('use-claim-credential');
 
 export const useClaimCredential = (
@@ -22,7 +22,7 @@ export const useClaimCredential = (
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
 
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const { presentToast } = useToast();
 
     const handleClaimCredential = async () => {

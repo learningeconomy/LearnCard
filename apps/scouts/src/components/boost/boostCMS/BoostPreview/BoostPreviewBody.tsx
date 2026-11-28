@@ -1,12 +1,12 @@
 import React from 'react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
-import { IonGrid, IonRow } from '@ionic/react';
 import * as m from '../../../../paraglide/messages.js';
 import { TransP } from '../../../../i18n/TransP';
 
-// import { IonSpinner } from '@ionic/react';
-
+//
 import { BoostRecipientInfo } from '@learncard/types';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 type BoostPreviewBodyProps = {
     recipients: BoostRecipientInfo[];
@@ -33,7 +33,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
 }) => {
     const currentUser = useCurrentUser();
 
-    let _recipients = [];
+    const _recipients = [];
 
     if (recipients?.length > 0) {
         recipients?.forEach(recipient => {
@@ -50,7 +50,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
         });
     }
 
-    let count =
+    const count =
         typeof recipientCountOverride === 'number'
             ? recipientCountOverride
             : (_recipients?.length ?? 0);
@@ -85,10 +85,10 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
     );
 
     return (
-        <IonGrid
+        <AppGrid
             className={`flex gap-[5px] rounded-[20px] w-full ${customBoostPreviewContainerClass}`}
         >
-            <IonRow
+            <AppRow
                 className={`w-full flex justify-center flex-col ${customBoostPreviewContainerRowClass}`}
             >
                 {showRecipientText && (
@@ -144,8 +144,8 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                         Edit
                     </button>
                 )} */}
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

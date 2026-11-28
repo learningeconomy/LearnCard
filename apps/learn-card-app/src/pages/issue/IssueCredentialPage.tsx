@@ -5,7 +5,7 @@ import type { IssueImportResult } from './import/issueImport';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
 import { useHistory, useLocation } from 'react-router-dom';
-import { useIonAlert } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -149,7 +149,7 @@ const IssueCredentialPage: React.FC = () => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { track } = useAnalytics();
     const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
         useProfileSnapshotCapture();

@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
 import GroupedCredentialsBySkillsList from './GroupedCredentialsBySkillsList';
 import BoostGroupedBySkillsModalHeader from './BoostGroupedBySkillsModalHeader';
 import * as m from '../../../paraglide/messages.js';
@@ -15,6 +14,7 @@ import { groupCredentialsByCategorySkillsAndSubskills } from '../skills.helpers'
 import { GroupedSkillsDisplayType } from './GroupedCredentialsBySkillsList';
 
 import { useModal } from 'learn-card-base';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type BoostGroupedBySkillsModalProps = {
     credentials: VC[] | VC_WITH_URI[];
@@ -71,7 +71,7 @@ const BoostGroupedBySkillsModal: React.FC<BoostGroupedBySkillsModalProps> = ({
                     ))}
             </div>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
@@ -85,7 +85,7 @@ const BoostGroupedBySkillsModal: React.FC<BoostGroupedBySkillsModalProps> = ({
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </section>
     );
 };

@@ -4,8 +4,8 @@ import * as m from '../../paraglide/messages.js';
 import { useGetIDs } from 'learn-card-base';
 
 import AdminTroopRow from './AdminTroopRow';
-import { IonSpinner } from '@ionic/react';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AdminTroopsSection: React.FC = () => {
     const { data: troops, isLoading: troopsLoading } = useGetIDs();
@@ -21,7 +21,7 @@ const AdminTroopsSection: React.FC = () => {
                 {troops?.map(({ vc, uri }, index) => {
                     return <AdminTroopRow key={uri ?? `troop-${index}`} credential={vc} />;
                 })}
-                {troopsLoading && <IonSpinner color="dark" />}
+                {troopsLoading && <AppSpinner color="dark" />}
             </div>
         </div>
     );

@@ -1,6 +1,5 @@
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-sync-data-source');
-// import { useIonToast } from '@ionic/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     RegistryEntry,

@@ -19,14 +19,6 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: vi.fn() }) }));
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
-        <div {...props}>{children}</div>
-    ),
-    IonRow: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonGrid: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonSpinner: () => <div role="status" />,
-}));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => state.onScreen }));
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: {

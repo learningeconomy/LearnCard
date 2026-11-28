@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     briefcaseOutline,
     checkmarkCircleOutline,
     gitNetworkOutline,
     informationCircleOutline,
     thumbsDownOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 
 import type { LearnCardAssistantCard, LearnCardAssistantCardType } from './learnCardAssistant.api';
@@ -109,7 +109,7 @@ export const AssistantInboxCard: React.FC<{
                                 COLOR_BY_TYPE[card.type]
                             }`}
                         >
-                            <IonIcon icon={ICON_BY_TYPE[card.type]} className="text-4xl" />
+                            <AppIcon icon={ICON_BY_TYPE[card.type]} className="text-4xl" />
                         </div>
                     )}
                 </div>
@@ -159,7 +159,7 @@ export const AssistantInboxCard: React.FC<{
                             disabled={isMarkingRead}
                             className="inline-flex items-center justify-center gap-1.5 py-2.5 px-5 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <IonIcon icon={informationCircleOutline} className="text-base" />
+                            <AppIcon icon={informationCircleOutline} className="text-base" />
                             {isMarkingRead ? 'Loading...' : 'Details'}
                         </button>
 
@@ -181,7 +181,7 @@ export const AssistantInboxCard: React.FC<{
                             className="inline-flex items-center justify-center w-[52px] h-[42px] rounded-[20px] border border-grayscale-300 text-grayscale-600 hover:bg-grayscale-10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label={feedbackNoted ? 'Feedback noted' : 'Mark not useful'}
                         >
-                            <IonIcon icon={thumbsDownOutline} className="text-xl" />
+                            <AppIcon icon={thumbsDownOutline} className="text-xl" />
                         </button>
                     </div>
                 </div>

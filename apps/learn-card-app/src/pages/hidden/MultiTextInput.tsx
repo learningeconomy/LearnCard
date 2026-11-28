@@ -3,8 +3,9 @@ import { produce } from 'immer';
 
 import TrashBin from '../../components/svgs/TrashBin';
 import Plus from 'learn-card-base/svgs/Plus';
-import { IonInput, IonCheckbox } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import type { ConsentFlowContract } from '@learncard/types';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
 
 type MultiTextInputProps = {
     values: ConsentFlowContract['read']['personal'];
@@ -27,14 +28,14 @@ const MultiTextInput: React.FC<MultiTextInputProps> = ({
 
     const inputs = Object.entries(values).map(([category, value], index) => (
         <li className="flex gap-2 items-center w-full" key={index}>
-            <IonInput
+            <AppInput
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
                 type="text"
-                onIonInput={e =>
+                onValueInput={nextCategory =>
                     onChange(
                         produce(values, draft => {
                             delete draft[category];
-                            draft[e.detail.value] = value;
+                            draft[nextCategory] = value;
                         })
                     )
                 }
@@ -44,12 +45,12 @@ const MultiTextInput: React.FC<MultiTextInputProps> = ({
 
             <label className="flex items-center gap-2 justify-end rounded-full text-xs text-grayscale-800">
                 Required
-                <IonCheckbox
+                <AppCheckbox
                     checked={value.required}
-                    onIonChange={e =>
+                    onCheckedChange={checked =>
                         onChange(
                             produce(values, draft => {
-                                draft[category] = { required: e.detail.checked };
+                                draft[category] = { required: checked };
                             })
                         )
                     }

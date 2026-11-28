@@ -11,8 +11,8 @@
 
 import React, { useEffect, useMemo } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 
@@ -309,7 +309,7 @@ const TodayMode: React.FC = () => {
                             className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100
                                         mx-auto mb-4 flex items-center justify-center"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={checkmarkCircleOutline}
                                 className="text-2xl text-emerald-600"
                                 aria-hidden

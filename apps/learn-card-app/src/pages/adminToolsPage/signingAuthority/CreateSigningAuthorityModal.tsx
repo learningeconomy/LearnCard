@@ -4,7 +4,7 @@ import z from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-signing-authority-modal');
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import { useModal, useWallet } from 'learn-card-base';
 
@@ -93,13 +93,13 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
                 </div>
             )}
             <div className="flex flex-col w-full">
-                <IonInput
+                <AppInput
                     className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ${
                         errors.name ? 'border-red-500 border border-solid' : 'mb-[10px]'
                     }`}
                     type="text"
-                    onIonInput={e => {
-                        setName(e.detail.value);
+                    onValueInput={value => {
+                        setName(value);
                         setErrors({ name: undefined });
                         setErrorMessage('');
                     }}

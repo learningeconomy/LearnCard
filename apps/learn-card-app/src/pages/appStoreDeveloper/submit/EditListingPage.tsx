@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
-import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import { useQuery } from '@tanstack/react-query';
 
 import { getLogger, useDeviceTypeByWidth, useWallet } from 'learn-card-base';
@@ -24,6 +24,8 @@ import type { LaunchSettings } from './LaunchSettingsSection';
 import { getLaunchSettingsError, parseLaunchConfig } from './launchSettings';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const log = getLogger('edit-listing');
 
@@ -262,22 +264,22 @@ export const EditListingPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Edit listing" />
-                <IonContent>
+                <AppContent>
                     <div className="flex items-center justify-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!listing) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Edit listing" />
-                <IonContent>
+                <AppContent>
                     <div className="max-w-md mx-auto mt-16 p-6 text-center font-poppins">
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
                             We couldn't find this listing
@@ -290,8 +292,8 @@ export const EditListingPage: React.FC = () => {
                             Back to Your Apps
                         </button>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -310,9 +312,9 @@ export const EditListingPage: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Edit listing" />
-            <IonContent>
+            <AppContent>
                 <div className="flex min-h-full font-poppins">
                     <div className={`flex-1 ${isDesktop ? 'p-6' : 'ion-padding'}`}>
                         <div className="max-w-xl mx-auto w-full">
@@ -323,13 +325,13 @@ export const EditListingPage: React.FC = () => {
                                 }
                                 className="mt-2 mb-6 flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
-                                <IonIcon icon={arrowBackOutline} />
+                                <AppIcon icon={arrowBackOutline} />
                                 {isDraft ? 'Your apps' : "Back to your app's status"}
                             </button>
 
                             {formError && (
                                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={alertCircleOutline}
                                         className="text-red-400 text-lg mt-0.5 shrink-0"
                                     />
@@ -495,8 +497,8 @@ export const EditListingPage: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

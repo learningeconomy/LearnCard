@@ -1,7 +1,9 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import type { EmojiClickData } from 'emoji-picker-react';
 
-import { IonInput, IonTextarea, IonToggle, useIonModal } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 const FamilyEmojiPicker = React.lazy(() => import('../FamilyCMSEmojiPicker/FamilyEmojiPicker'));
 import EmojiRenderer from '../FamilyCMSEmojiPicker/FamilyCMSEmojiRenderer';
 import X from '../../svgs/X';
@@ -99,10 +101,10 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                 </h3>
 
                 <div className="relative">
-                    <IonInput
+                    <AppInput
                         value={familyName}
-                        onIonInput={e => {
-                            const _familyName = e?.detail?.value;
+                        onValueInput={value => {
+                            const _familyName = value;
                             setFamilyName(_familyName);
 
                             handleSetState('basicInfo', 'name', _familyName);
@@ -138,10 +140,10 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                 <div className="text-grayscale-900 text-lg flex items-center justify-start w-[80%]">
                     {m['family.editor.addEmoji']()}
                 </div>
-                <IonToggle
+                <AppToggle
                     mode="ios"
                     className="family-cms-toggle"
-                    onIonChange={e => {
+                    onCheckedChange={() => {
                         setToggleFamilyEmoji(!toggleFamilyEmoji);
                         handleSetState('appearance', 'toggleFamilyEmoji', !toggleFamilyEmoji);
                     }}
@@ -165,13 +167,13 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                 </h3>
 
                 <div className="relative">
-                    <IonTextarea
+                    <AppTextarea
                         aria-label="motto"
                         autoGrow
                         autocapitalize="on"
                         value={description}
-                        onIonInput={e => {
-                            const _familyMotto = e.detail.value;
+                        onValueInput={value => {
+                            const _familyMotto = value;
                             setDescription(_familyMotto);
                             handleSetState('basicInfo', 'description', _familyMotto);
 

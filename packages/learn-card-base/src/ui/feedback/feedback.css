@@ -1,0 +1,192 @@
+/*
+ * Styles for the app-owned feedback components (AppSpinner). Ported from @ionic/core 8.7.2 ion-spinner.
+ *
+ * Cascade, as in app-shell.css and controls.css:
+ * - Ionic's `:host` rules lost to every light-DOM author rule (Tailwind's unlayered preflight and
+ *   utilities, call-site classes). They live in the `app-feedback-host` layer here so that stays
+ *   true: `w-4 h-4`, `text-*`, `scale-*`, `mr-1`, inline sizes and colors still override the 28px,
+ *   inline-block, currentColor defaults.
+ * - Rules for the SVGs that were inside Ionic's shadow root were unreachable by app CSS. They stay
+ *   unlayered, with `.app-spinner > svg.app-spinner-svg` selectors that outrank the global element
+ *   resets (preflight's `svg { display: block }`) and ancestor `… svg` rules.
+ * - Colors keep Ionic's mechanism: the `ion-color-<name>` classes (Ionic core.css and
+ *   src/theme/variables.css) set `--ion-color-base`, and `.ion-color` reads it.
+ * - Keyframes are prefixed with `app-` because Ionic's own names stayed inside its shadow roots.
+ *   The RTL `transform-origin: calc(100% - center)` rules are omitted: browsers drop them as
+ *   invalid, so Ionic's RTL spinners used `center` anyway.
+ */
+
+@layer app-feedback-host {
+    /* ion-spinner :host */
+    .app-spinner {
+        display: inline-block;
+        position: relative;
+        width: 28px;
+        height: 28px;
+        color: var(--color);
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* :host(.ion-color) */
+    .app-spinner.ion-color {
+        color: var(--ion-color-base);
+    }
+}
+
+.app-spinner > svg.app-spinner-svg {
+    transform-origin: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: translateZ(0);
+}
+
+.app-spinner.spinner-lines > svg.app-spinner-svg > line,
+.app-spinner.spinner-lines-small > svg.app-spinner-svg > line {
+    stroke-width: 7px;
+}
+
+.app-spinner.spinner-lines-sharp > svg.app-spinner-svg > line,
+.app-spinner.spinner-lines-sharp-small > svg.app-spinner-svg > line {
+    stroke-width: 4px;
+}
+
+.app-spinner.spinner-lines > svg.app-spinner-svg > line,
+.app-spinner.spinner-lines-small > svg.app-spinner-svg > line,
+.app-spinner.spinner-lines-sharp > svg.app-spinner-svg > line,
+.app-spinner.spinner-lines-sharp-small > svg.app-spinner-svg > line {
+    stroke-linecap: round;
+    stroke: currentColor;
+}
+
+.app-spinner.spinner-lines > svg.app-spinner-svg,
+.app-spinner.spinner-lines-small > svg.app-spinner-svg,
+.app-spinner.spinner-lines-sharp > svg.app-spinner-svg,
+.app-spinner.spinner-lines-sharp-small > svg.app-spinner-svg {
+    animation: app-spinner-fade-out 1s linear infinite;
+}
+
+.app-spinner.spinner-bubbles > svg.app-spinner-svg {
+    animation: app-spinner-scale-out 1s linear infinite;
+    fill: currentColor;
+}
+
+.app-spinner.spinner-circles > svg.app-spinner-svg {
+    animation: app-spinner-fade-out 1s linear infinite;
+    fill: currentColor;
+}
+
+.app-spinner.spinner-crescent > svg.app-spinner-svg > circle {
+    fill: transparent;
+    stroke-width: 4px;
+    stroke-dasharray: 128px;
+    stroke-dashoffset: 82px;
+    stroke: currentColor;
+}
+
+.app-spinner.spinner-crescent > svg.app-spinner-svg {
+    animation: app-spinner-rotate 1s linear infinite;
+}
+
+.app-spinner.spinner-dots > svg.app-spinner-svg > circle {
+    stroke-width: 0;
+    fill: currentColor;
+}
+
+.app-spinner.spinner-dots > svg.app-spinner-svg {
+    animation: app-spinner-dots 1s linear infinite;
+}
+
+.app-spinner.spinner-circular > svg.app-spinner-svg {
+    animation: app-spinner-circular linear infinite;
+}
+
+.app-spinner.spinner-circular > svg.app-spinner-svg > circle {
+    animation: app-spinner-circular-inner ease-in-out infinite;
+    stroke: currentColor;
+    stroke-dasharray: 80px, 200px;
+    stroke-dashoffset: 0px;
+    stroke-width: 5.6;
+    fill: none;
+}
+
+/* :host(.spinner-paused), :host(.spinner-paused) svg, :host(.spinner-paused) circle */
+.app-spinner.spinner-paused,
+.app-spinner.spinner-paused > svg.app-spinner-svg,
+.app-spinner.spinner-paused > svg.app-spinner-svg > circle {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-spinner,
+    .app-spinner > svg.app-spinner-svg,
+    .app-spinner > svg.app-spinner-svg > circle {
+        animation-play-state: paused;
+    }
+}
+
+@keyframes app-spinner-fade-out {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes app-spinner-scale-out {
+    0% {
+        transform: scale(1, 1);
+    }
+    100% {
+        transform: scale(0, 0);
+    }
+}
+
+@keyframes app-spinner-rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes app-spinner-dots {
+    0% {
+        transform: scale(1, 1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(0.4, 0.4);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1, 1);
+        opacity: 0.9;
+    }
+}
+
+@keyframes app-spinner-circular {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes app-spinner-circular-inner {
+    0% {
+        stroke-dasharray: 1px, 200px;
+        stroke-dashoffset: 0px;
+    }
+    50% {
+        stroke-dasharray: 100px, 200px;
+        stroke-dashoffset: -15px;
+    }
+    100% {
+        stroke-dasharray: 100px, 200px;
+        stroke-dashoffset: -125px;
+    }
+}

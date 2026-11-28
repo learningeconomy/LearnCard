@@ -1,12 +1,12 @@
 import React, { useId, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     archiveOutline,
     arrowUndoOutline,
     checkmarkOutline,
     megaphoneOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import {
     ToastTypeEnum,
     useToast,
@@ -86,7 +86,7 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
             data-testid="notification-announcement"
         >
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <IonIcon icon={megaphoneOutline} aria-hidden="true" className="h-6 w-6" />
+                <AppIcon icon={megaphoneOutline} aria-hidden="true" className="h-6 w-6" />
             </div>
             <div className="min-w-0 flex-1 text-start">
                 <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -147,7 +147,7 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
                                 {action === 'read' ? (
                                     spinner
                                 ) : (
-                                    <IonIcon
+                                    <AppIcon
                                         icon={checkmarkOutline}
                                         aria-hidden="true"
                                         className="h-4 w-4"
@@ -159,7 +159,7 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
                             </button>
                         ) : (
                             <span className="inline-flex items-center gap-1.5 py-2 pe-2 text-xs text-grayscale-500">
-                                <IonIcon
+                                <AppIcon
                                     icon={checkmarkOutline}
                                     aria-hidden="true"
                                     className="h-4 w-4"
@@ -177,7 +177,7 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
                             {action === archiveAction ? (
                                 spinner
                             ) : (
-                                <IonIcon
+                                <AppIcon
                                     icon={notification.archived ? arrowUndoOutline : archiveOutline}
                                     aria-hidden="true"
                                     className="h-4 w-4"

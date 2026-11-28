@@ -2,15 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 import * as m from '../../paraglide/messages.js';
-import { IonRow } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 import AppIcon from '../../assets/images/app-icon.png';
 import { getLogger } from 'learn-card-base';
+import { AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('cap-go-update-modal');
 
 export const CapGoUpdateModal: React.FC<{
     closeModal: () => void;
     updateVersion: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     bundle: any;
 }> = ({ closeModal, updateVersion, bundle }) => {
     const [currentVersion, setCurrentVersion] = useState<string>('');
@@ -37,7 +38,7 @@ export const CapGoUpdateModal: React.FC<{
     };
 
     return (
-        <IonRow className="flex flex-col pb-4 w-full bg-white">
+        <AppRow className="flex flex-col pb-4 w-full bg-white">
             <div className="w-full flex flex-col items-center justify-center pt-2">
                 <img
                     src={AppIcon}
@@ -59,7 +60,7 @@ export const CapGoUpdateModal: React.FC<{
                     {m['auth.updateVer']({ version: updateVersion })}
                 </button>
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

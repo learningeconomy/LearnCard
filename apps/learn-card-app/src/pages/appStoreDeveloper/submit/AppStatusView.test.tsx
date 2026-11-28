@@ -5,7 +5,6 @@ import type { AppStoreListing } from '@learncard/types';
 
 import { AppStatusView } from './AppStatusView';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('../../issue/components/Confetti', () => ({
     Confetti: () => <div data-testid="confetti" />,
 }));

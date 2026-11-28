@@ -17,7 +17,7 @@ import {
     ModalTypes,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import AiPassportPersonalizationContainer from '../../ai-passport/AiPassportPersonalizationContainer';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import {
@@ -77,7 +77,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
             <div className="w-full flex items-center justify-between">
                 <h2 className="text-grayscale-500 font-semibold text-[25px] flex items-center">
                     {isLoading ? (
-                        <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                        <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                     ) : (
                         topicsCount
                     )}

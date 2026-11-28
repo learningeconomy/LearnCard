@@ -10,8 +10,8 @@ import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
-import { IonSpinner } from '@ionic/react';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SelectFrameworkToManageModalProps = {
     onFrameworkSelectOverride?: (framework: ApiFrameworkInfo) => void;
@@ -52,7 +52,7 @@ const SelectFrameworkToManageModalContent: React.FC<SelectFrameworkToManageModal
 
                 {isLoadingFrameworks && (
                     <div className="flex items-center justify-center py-[111px] text-grayscale-900">
-                        <IonSpinner />
+                        <AppSpinner />
                     </div>
                 )}
 

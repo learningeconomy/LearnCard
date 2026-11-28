@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonItem } from '@ionic/react';
+import { AppItem } from 'learn-card-base/ui/list';
 
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -186,7 +186,7 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
     }
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item ${viewModeStyles} ${customListItemStyles}`}
         >
@@ -236,7 +236,7 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
                     {actionButton}
                 </div>
             </div>
-        </IonItem>
+        </AppItem>
     );
 };
 

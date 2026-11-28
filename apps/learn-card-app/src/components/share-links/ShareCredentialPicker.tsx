@@ -1,6 +1,6 @@
 import React, { useId } from 'react';
-import { IonIcon } from '@ionic/react';
-import { searchOutline, closeOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { searchOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
@@ -70,7 +70,7 @@ export const ShareCredentialPicker = ({
                     </label>
                     <div className="relative flex items-stretch gap-2">
                         <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
-                            <IonIcon
+                            <AppIcon
                                 aria-hidden="true"
                                 icon={searchOutline}
                                 className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
@@ -94,7 +94,7 @@ export const ShareCredentialPicker = ({
                                     }}
                                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
-                                    <IonIcon
+                                    <AppIcon
                                         aria-hidden="true"
                                         icon={closeOutline}
                                         className="h-4 w-4"

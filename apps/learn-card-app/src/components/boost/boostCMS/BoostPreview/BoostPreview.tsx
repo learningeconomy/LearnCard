@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import isEqual from 'lodash-es/isEqual';
 
-import { IonPage } from '@ionic/react';
 import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import * as m from '../../../../paraglide/messages.js';
@@ -45,6 +44,7 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export type IssueHistory = {
     id?: string | number;
@@ -433,7 +433,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     );
 
     return (
-        <IonPage
+        <AppPage
             className={sharedOriginal ? 'sentry-block ph-no-capture' : undefined}
             data-html2canvas-ignore={sharedOriginal || undefined}
         >
@@ -498,7 +498,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     <ReactCredentialIssuerPopover {...credentialIssuerPopoverProps} />
                 </div>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

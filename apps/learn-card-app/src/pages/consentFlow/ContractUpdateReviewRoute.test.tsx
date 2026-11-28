@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type * as ContractHelpers from '@learncard/helpers';
@@ -196,7 +196,7 @@ describe('ContractUpdateReviewRoute', () => {
         state.profileLoading = false;
         state.records = [];
         showRoute();
-        expect(screen.getByRole('main').querySelector('ion-spinner')).not.toBeNull();
+        expect(within(screen.getByRole('main')).getByRole('progressbar')).toBeTruthy();
         expect(screen.queryByText('This update is no longer available.')).toBeNull();
     });
 });

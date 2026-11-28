@@ -6,7 +6,8 @@ import {
     type SupportedLanguage,
 } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
-import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
 import type { VC } from '@learncard/types';
 
 import { CLR_TRANSCRIPT_DEMO_FIXTURES as FIXTURES } from './clrTranscriptDemo.fixtures';
@@ -77,7 +78,7 @@ const ClrTranscriptRendererDemo = () => {
                         </span>
                     </button>
 
-                    <IonPopover
+                    <AppPopover
                         isOpen={fixturePopoverOpen}
                         event={fixturePopoverEvent}
                         reference="event"
@@ -89,9 +90,9 @@ const ClrTranscriptRendererDemo = () => {
                         }}
                     >
                         <div className="bg-white rounded-[16px] p-1.5">
-                            <IonList lines="none" className="bg-transparent">
+                            <AppList lines="none" className="bg-transparent">
                                 {(Object.keys(FIXTURES) as FixtureKey[]).map(key => (
-                                    <IonItem
+                                    <AppItem
                                         key={key}
                                         button
                                         detail={false}
@@ -103,14 +104,14 @@ const ClrTranscriptRendererDemo = () => {
                                             setFixturePopoverOpen(false);
                                         }}
                                     >
-                                        <IonLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
+                                        <AppLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
                                             {FIXTURES[key].label}
-                                        </IonLabel>
-                                    </IonItem>
+                                        </AppLabel>
+                                    </AppItem>
                                 ))}
-                            </IonList>
+                            </AppList>
                         </div>
-                    </IonPopover>
+                    </AppPopover>
 
                     {/* Viewer picker */}
                     <button
@@ -125,7 +126,7 @@ const ClrTranscriptRendererDemo = () => {
                         <span className="text-grayscale-400 text-xs">▾</span>
                     </button>
 
-                    <IonPopover
+                    <AppPopover
                         isOpen={viewerPopoverOpen}
                         event={viewerPopoverEvent}
                         reference="event"
@@ -137,9 +138,9 @@ const ClrTranscriptRendererDemo = () => {
                         }}
                     >
                         <div className="bg-white rounded-[16px] p-1.5">
-                            <IonList lines="none" className="bg-transparent">
+                            <AppList lines="none" className="bg-transparent">
                                 {(Object.keys(VIEWER_LABELS) as ClrTranscriptViewer[]).map(key => (
-                                    <IonItem
+                                    <AppItem
                                         key={key}
                                         button
                                         detail={false}
@@ -151,14 +152,14 @@ const ClrTranscriptRendererDemo = () => {
                                             setViewerPopoverOpen(false);
                                         }}
                                     >
-                                        <IonLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
+                                        <AppLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
                                             {VIEWER_LABELS[key]}
-                                        </IonLabel>
-                                    </IonItem>
+                                        </AppLabel>
+                                    </AppItem>
                                 ))}
-                            </IonList>
+                            </AppList>
                         </div>
-                    </IonPopover>
+                    </AppPopover>
                 </div>
 
                 <label className="flex items-center gap-2 text-xs font-medium text-grayscale-700">

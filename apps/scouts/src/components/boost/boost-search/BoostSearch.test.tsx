@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import BoostSearch from './BoostSearch';
@@ -12,25 +12,6 @@ const { roleState, searchProfiles, emptyScoutRecipients, emptyNetworkPages } = v
     emptyScoutRecipients: [] as never[],
     emptyNetworkPages: [] as never[],
 }));
-
-vi.mock('@ionic/react', () => {
-    const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
-
-    return {
-        IonCol: Container,
-        IonContent: Container,
-        IonGrid: Container,
-        IonHeader: Container,
-        IonInput: ({ placeholder, onIonInput }: any) => (
-            <input
-                aria-label={placeholder}
-                onChange={event => onIonInput?.({ detail: { value: event.currentTarget.value } })}
-            />
-        ),
-        IonRow: Container,
-        IonToolbar: Container,
-    };
-});
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ debug: vi.fn() }),
@@ -113,21 +94,25 @@ describe('BoostSearch global profile query scope', () => {
         roleState.current = undefined;
     });
 
-    it('does not enable global search for a scoped troop leader', () => {
+    it('does not enable global search for a scoped troop leader', async () => {
         roleState.current = 'leader';
         renderSearch();
 
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'scout' } });
 
-        expect(searchProfiles).toHaveBeenLastCalledWith('scout', { enabled: false });
+        await waitFor(() =>
+            expect(searchProfiles).toHaveBeenLastCalledWith('scout', { enabled: false })
+        );
     });
 
-    it('allows global search when restrictions are explicitly ignored', () => {
+    it('allows global search when restrictions are explicitly ignored', async () => {
         roleState.current = 'leader';
         renderSearch(true);
 
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'scout' } });
 
-        expect(searchProfiles).toHaveBeenLastCalledWith('scout', { enabled: true });
+        await waitFor(() =>
+            expect(searchProfiles).toHaveBeenLastCalledWith('scout', { enabled: true })
+        );
     });
 });

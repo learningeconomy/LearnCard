@@ -3,7 +3,6 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonPage, IonContent } from '@ionic/react';
 import AiInsightsTopSkills from '../AiInsightsTopSkills';
 import AiInsightsLearningSnapshots from '../AiInsightsLearningSnapshots';
 import LearnerInsightsPreviewHeader from './LearnerInsightsPreviewHeader';
@@ -25,6 +24,7 @@ import {
 
 import { LCNProfile } from '@learncard/types';
 import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const LearnerInsightsPreview: React.FC<{
     profile: LCNProfile;
@@ -64,13 +64,13 @@ export const LearnerInsightsPreview: React.FC<{
     const isLoading = isLoadingResolved || isLoadingByCategory;
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <LearnerInsightsPreviewHeader
                 profile={profile}
                 readStatus={readStatus}
                 status={status}
             />
-            <IonContent fullscreen color={backgroundSecondaryColor}>
+            <AppContent fullscreen color={backgroundSecondaryColor}>
                 <div className="flex relative justify-center items-center w-full">
                     <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding pb-[100px] gap-4">
                         {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
@@ -81,7 +81,7 @@ export const LearnerInsightsPreview: React.FC<{
                         />
                     </div>
                 </div>
-            </IonContent>
+            </AppContent>
             <footer className="absolute bottom-0 left-0 w-full bg-white/70  border-t border-solid border-white p-[20px] backdrop-blur-[10px] z-50">
                 <div className="max-w-[600px] flex gap-[10px] items-center mx-auto">
                     <button
@@ -93,7 +93,7 @@ export const LearnerInsightsPreview: React.FC<{
                     </button>
                 </div>
             </footer>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,10 +1,10 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonInput } from '@ionic/react';
-
 import Search from 'learn-card-base/svgs/Search';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import * as m from '../../../paraglide/messages.js';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const AddressBookTabs: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -13,7 +13,7 @@ const AddressBookTabs: React.FC<{
     search: string;
     clearSearch: () => void;
     handleSearch?: (value: string) => void;
-    searchInputRef: React.MutableRefObject<HTMLIonInputElement | null>;
+    searchInputRef: React.MutableRefObject<AppInputHandle | null>;
     blockedCount: number;
     requestCount: number;
 }> = ({
@@ -30,8 +30,8 @@ const AddressBookTabs: React.FC<{
     return (
         <>
             {search?.length === 0 && (
-                <IonRow class="w-full max-w-[600px] px-3 pt-[10px]">
-                    <IonCol className="flex w-full items-center justify-start">
+                <AppRow className="w-full max-w-[600px] px-3 pt-[10px]">
+                    <AppCol className="flex w-full items-center justify-start">
                         <button
                             onClick={() => {
                                 setActiveTab(AddressBookTabsEnum.Connections);
@@ -70,27 +70,27 @@ const AddressBookTabs: React.FC<{
                         >
                             {m['addressBook.blockedCount']({ count: blockedCount ?? 0 })}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             )}
-            <IonRow className="w-full max-w-[600px] p-2">
-                <IonCol className="flex w-full items-center justify-start">
+            <AppRow className="w-full max-w-[600px] p-2">
+                <AppCol className="flex w-full items-center justify-start">
                     <div className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10">
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                     </div>
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         placeholder={m['common.search']()}
                         value={search}
                         className="bg-grayscale-100 text-grayscale-800 ion-padding rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased pl-[40px]!"
-                        onIonInput={e => handleSearch(e.detail.value as string)}
+                        onValueInput={value => handleSearch(value)}
                         debounce={500}
                         type="text"
                         clearInput
                         ref={searchInputRef}
                     />
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </>
     );
 };

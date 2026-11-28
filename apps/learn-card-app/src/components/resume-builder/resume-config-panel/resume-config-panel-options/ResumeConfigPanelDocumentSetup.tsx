@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { chevronDownOutline, chevronUpOutline } from 'learn-card-base/icons/ionicons';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 import { getOnOffLabel } from '../../resumeBuilderI18n';
@@ -25,7 +25,7 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                 <span className="text-[19px] font-500 text-grayscale-900">
                     {m['passport.resumeBuilder.documentSetup.title']()}
                 </span>
-                <IonIcon
+                <AppIcon
                     color="grayscale-800"
                     icon={open ? chevronDownOutline : chevronUpOutline}
                 />

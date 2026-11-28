@@ -53,7 +53,7 @@ After `bun scripts/prepare-native-config.ts <tenant> [--stage <stage>]` and `bun
    then scan another code.
 5. Build and launch Android, repeat the sign-in callback/deep-link checks, and scan a QR code.
 
-(android)
+(android, with `bun run start` serving on port 3000 in another terminal)
 `bun run start-android`
 
 ## Testing

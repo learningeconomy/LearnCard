@@ -1,6 +1,6 @@
 import React, { createContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { setupIonicReact } from '@ionic/react';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { VC } from '@learncard/types';
@@ -29,7 +29,7 @@ import type { AppAuthContextValue } from '../../src/providers/AuthCoordinatorPro
  * - `variant`: onboarding | modal
  * - `expect`: the school's delivery estimate in seconds (e.g. 120, or 86400 for a day)
  */
-setupIonicReact();
+initAppPlatform();
 
 const params = new URLSearchParams(window.location.search);
 const outcome = params.get('outcome') ?? 'requested';

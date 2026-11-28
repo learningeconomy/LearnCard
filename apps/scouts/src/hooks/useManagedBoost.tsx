@@ -23,7 +23,6 @@ import {
     resetIonicModalBackground,
 } from 'learn-card-base';
 
-import { IonItem, IonList } from '@ionic/react';
 import BoostPreview from '../components/boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../components/boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -37,6 +36,7 @@ import {
 
 import { Boost, VC } from '@learncard/types';
 import { formatLocaleDate, formatLocaleTime } from '../i18n/formatters';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 export const useManagedBoost = (
     boost: Boost,
@@ -98,7 +98,7 @@ export const useManagedBoost = (
     const { data: recipientCount } = useCountBoostRecipients(boost?.uri);
     const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(boost?.uri);
 
-    let issueHistory: {
+    const issueHistory: {
         id: number;
         name: string;
         thumb: string;
@@ -127,8 +127,10 @@ export const useManagedBoost = (
     const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
 
     const { handlePresentBoostMenuModal } = useBoostMenu(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boostVC as any,
         boost.uri,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boost as any,
         categoryType,
         BoostMenuType.managed,
@@ -141,9 +143,11 @@ export const useManagedBoost = (
 
     const { handlePresentShortBoostModal } = useShortBoost(
         history,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boostVC as any,
         boost?.uri,
         myProfile?.profileId as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boost as any
     );
 
@@ -186,7 +190,9 @@ export const useManagedBoost = (
     const presentManagedBoostPreview = () => {
         newModal(
             <BoostPreview
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 credential={boostVC as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 categoryType={categoryType as any}
                 showVerifications={false}
                 onDotsClick={isDraft && !showSkeleton ? handleOptionsMenu : undefined}
@@ -207,10 +213,12 @@ export const useManagedBoost = (
                 customThumbComponent={
                     <CredentialBadge
                         achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         boostType={categoryType as any}
                         badgeThumbnail={badgeThumbnail}
                         badgeCircleCustomClass="w-[170px] h-[170px]"
                         displayType={cred?.display?.displayType}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         credential={boostVC as any}
                         branding={branding}
                         showBackgroundImage={false}
@@ -222,17 +230,18 @@ export const useManagedBoost = (
                     <BoostPreviewFooter
                         showSaveAndQuitButton={false}
                         handleSubmit={handleIssueOnClick}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         selectedVCType={categoryType as any}
                     />
                 }
                 customIssueHistoryComponent={
-                    <IonList
+                    <AppList
                         lines="none"
                         className="flex flex-col items-center justify-center w-full"
                     >
                         {recipients?.map((recipient, index) => {
                             return (
-                                <IonItem
+                                <AppItem
                                     key={index}
                                     lines="none"
                                     className="w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2 last:border-b-0"
@@ -270,10 +279,10 @@ export const useManagedBoost = (
                                             </p>
                                         </div>
                                     </div>
-                                </IonItem>
+                                </AppItem>
                             );
                         })}
-                    </IonList>
+                    </AppList>
                 }
                 verificationItems={[]}
             />,

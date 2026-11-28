@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner, IonRow, IonGrid } from '@ionic/react';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
 
@@ -32,6 +32,8 @@ import useTheme from '../../theme/hooks/useTheme';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import useDebounce from '../../hooks/useDebounce';
 import { IconSetEnum } from '../../theme/icons';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
     switch (url) {
@@ -174,14 +176,14 @@ const AddressBook: React.FC = () => {
     const onHeaderScroll = useHeaderScrollSync();
 
     return (
-        <IonPage className="bg-grayscale-100">
+        <AppPage className="bg-grayscale-100">
             <MainHeader
                 customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-grayscale-100 md:border-none md:bg-none md:backdrop-blur-none"
                 branding={BrandingEnum.learncard}
                 customHeaderClass="px-0"
             />
 
-            <IonContent
+            <AppContent
                 fullscreen
                 style={{ '--background': '#EFF0F5' }}
                 scrollEvents
@@ -201,7 +203,7 @@ const AddressBook: React.FC = () => {
                     <AddressBookContactCard />
 
                     <div className="w-full max-w-[400px] sm:max-w-[600px] mx-auto my-4 rounded-2xl bg-white shadow-lg">
-                        <IonGrid className="flex flex-col items-center justify-center w-full">
+                        <AppGrid className="flex flex-col items-center justify-center w-full">
                             <AddressBookTabs
                                 activeTab={activeTab}
                                 setActiveTab={setActiveTab}
@@ -213,11 +215,11 @@ const AddressBook: React.FC = () => {
                                 blockedCount={blockedCount}
                                 requestCount={requestCount}
                             />
-                            <IonRow className="flex items-center justify-center w-full max-w-[650px]">
+                            <AppRow className="flex items-center justify-center w-full max-w-[650px]">
                                 <GenericErrorBoundary>
                                     {showLoadingSpinner && (
                                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
-                                            <IonSpinner color="black" />
+                                            <AppSpinner color="black" />
                                             <p className="mt-2 font-bold text-lg">
                                                 {m['common.loading']()}
                                             </p>
@@ -276,12 +278,12 @@ const AddressBook: React.FC = () => {
                                         />
                                     )}
                                 </GenericErrorBoundary>
-                            </IonRow>
-                        </IonGrid>
+                            </AppRow>
+                        </AppGrid>
                     </div>
                 </GenericErrorBoundary>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

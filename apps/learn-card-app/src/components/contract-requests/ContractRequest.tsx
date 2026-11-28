@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     closeOutline,
     alertCircleOutline,
     peopleOutline,
     shieldCheckmarkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     useWallet,
@@ -260,7 +260,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                     {contract?.image ? (
                         <img src={contract.image} alt="" className="h-full w-full object-cover" />
                     ) : (
-                        <IonIcon icon={peopleOutline} aria-hidden="true" className="text-xl" />
+                        <AppIcon icon={peopleOutline} aria-hidden="true" className="text-xl" />
                     )}
                 </div>
                 <p className="flex-1 text-xs font-medium text-grayscale-700">
@@ -281,7 +281,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                 className="block w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
                             />
                         ) : (
-                            <IonIcon icon={closeOutline} aria-hidden="true" className="text-xl" />
+                            <AppIcon icon={closeOutline} aria-hidden="true" className="text-xl" />
                         )}
                     </button>
                 )}
@@ -385,7 +385,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                         role="alert"
                         className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             aria-hidden="true"
                             className="text-red-400 text-lg mt-0.5 shrink-0"
@@ -423,7 +423,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                 >
                     {details && pending && (
                         <p className="flex items-start gap-2 text-xs text-grayscale-600 leading-relaxed">
-                            <IonIcon
+                            <AppIcon
                                 icon={shieldCheckmarkOutline}
                                 aria-hidden="true"
                                 className="text-emerald-700 text-base shrink-0"

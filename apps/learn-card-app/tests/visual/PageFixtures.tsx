@@ -18,6 +18,20 @@ import MyAppsLanding from '../../src/pages/myApps/MyAppsLanding';
 import AppStoreDetailModal from '../../src/pages/launchPad/AppStoreDetailModal';
 import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas';
 import { IssueVisualFixture } from './IssueVisualFixture';
+import { ControlsVisualFixture } from './ControlsVisualFixture';
+import { TogglesVisualFixture } from './TogglesVisualFixture';
+import { TextareasVisualFixture } from './TextareasVisualFixture';
+import { InputsVisualFixture } from './InputsVisualFixture';
+import { ListVisualFixture } from './ListVisualFixture';
+import { IconsVisualFixture } from './IconsVisualFixture';
+import { GridVisualFixture } from './GridVisualFixture';
+import { WidgetsVisualFixture } from './WidgetsVisualFixture';
+import { OverlaysVisualFixture } from './OverlaysVisualFixture';
+import { ModalsVisualFixture } from './ModalsVisualFixture';
+import { DatetimeVisualFixture } from './DatetimeVisualFixture';
+import { ReorderVisualFixture } from './ReorderVisualFixture';
+import { ChromeVisualFixture } from './ChromeVisualFixture';
+import { PageShellVisualFixture } from './PageShellVisualFixture';
 
 export const additionalStates = [
     'credential',
@@ -28,6 +42,24 @@ export const additionalStates = [
     'my-apps',
     'my-apps-signed-in',
     'app-details',
+    // Ionic replacement phase 4 batch 1a (buttons, checkboxes, radios). Not in tailwind.spec.ts.
+    'controls-1a',
+    // Ionic replacement phase 4 batch 1b (IonToggle call sites). Not in tailwind.spec.ts.
+    'toggles-1b',
+    // Ionic replacement phase 4 batch 1b (IonTextarea call sites). Not in tailwind.spec.ts.
+    'textareas-1b',
+    // Ionic replacement phase 4 (IonInput call sites). Not in tailwind.spec.ts.
+    'inputs-1b',
+    'list-1',
+    'icons-1',
+    'grid-1',
+    'widgets-1',
+    'overlays-1',
+    'modals-1',
+    'datetime-1',
+    'reorder-1',
+    'chrome-1',
+    'page-1',
 ] as const;
 
 const listings: AppStoreListing[] = [
@@ -140,6 +172,20 @@ export const seedPageQueries = (client: QueryClient, state?: string): void => {
 
 export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state.startsWith('issue')) return <IssueVisualFixture />;
+    if (state === 'controls-1a') return <ControlsVisualFixture />;
+    if (state === 'toggles-1b') return <TogglesVisualFixture />;
+    if (state === 'textareas-1b') return <TextareasVisualFixture />;
+    if (state === 'inputs-1b') return <InputsVisualFixture />;
+    if (state === 'list-1') return <ListVisualFixture />;
+    if (state === 'icons-1') return <IconsVisualFixture />;
+    if (state === 'grid-1') return <GridVisualFixture />;
+    if (state === 'widgets-1') return <WidgetsVisualFixture />;
+    if (state === 'overlays-1') return <OverlaysVisualFixture />;
+    if (state === 'modals-1') return <ModalsVisualFixture />;
+    if (state === 'datetime-1') return <DatetimeVisualFixture />;
+    if (state === 'reorder-1') return <ReorderVisualFixture />;
+    if (state === 'chrome-1') return <ChromeVisualFixture />;
+    if (state === 'page-1') return <PageShellVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
     if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;

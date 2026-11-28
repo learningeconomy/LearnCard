@@ -1,7 +1,7 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 
-import { IonToggle } from '@ionic/react';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { boostVCTypeOptions } from '../../components/boost/boost-options/boostOptions';
 import BrokenLink from '../../components/svgs/BrokenLink';
@@ -66,7 +66,7 @@ const ConsentFlowCredentialAccessToggles = ({
                             </h3>
                         </div>
 
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
                             onClick={() => {

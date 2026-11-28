@@ -2,7 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
-import { IonReactRouter } from '@ionic/react-router';
+import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
@@ -11,7 +11,8 @@ import {
     observeConnectionQuality,
     CONNECTIVITY_PROBE_PATH,
 } from 'learn-card-base';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
@@ -212,7 +213,7 @@ const FullApp: React.FC = () => {
             <AnalyticsContextProvider>
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
                 {/* <ReactQueryDevtools /> */}
-                <IonReactRouter history={history}>
+                <AppShellRouter history={history}>
                     <Suspense
                         fallback={
                             <FallbackMarker boundary="root">
@@ -224,7 +225,7 @@ const FullApp: React.FC = () => {
                             <ThemeInitializer />
                             <ExternalAuthServiceProvider>
                                 <ModalsProvider>
-                                    <IonApp>
+                                    <AppRoot>
                                         <div id="modal-mid-root"></div>
                                         <ModalAccessibilityManager />
                                         <KeyboardFocusManager />
@@ -286,12 +287,16 @@ const FullApp: React.FC = () => {
                                                 <DevDebugPanel />
                                             </Suspense>
                                         )}
-                                    </IonApp>
+                                        {/* Renders useAppOverlayModal content (IonApp's
+                                            overlay manager rendered useIonModal content
+                                            here, outside the routes' contexts). */}
+                                        <AppOverlayManager />
+                                    </AppRoot>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>
                         </AuthCoordinatorProvider>
                     </Suspense>
-                </IonReactRouter>
+                </AppShellRouter>
             </AnalyticsContextProvider>
         </BatchedPersistQueryClientProvider>
     );

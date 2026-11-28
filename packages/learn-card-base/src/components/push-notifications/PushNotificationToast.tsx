@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { notificationsOutline } from 'ionicons/icons';
+import { notificationsOutline } from 'learn-card-base/icons/ionicons';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export type PushNotificationToastProps = {
     title: string;
@@ -11,7 +11,7 @@ export type PushNotificationToastProps = {
 
 const FallbackIcon: React.FC = () => (
     <span className="flex items-center justify-center h-9 w-9 rounded-full bg-emerald-50">
-        <IonIcon icon={notificationsOutline} className="text-emerald-600 text-lg" />
+        <AppIcon icon={notificationsOutline} className="text-emerald-600 text-lg" />
     </span>
 );
 

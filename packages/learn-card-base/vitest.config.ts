@@ -15,5 +15,7 @@ export default createVitestConfig(nodePreset, {
     },
     test: {
         include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+        // src/ui's DOM tests need jsdom and the app's test setup; learn-card-app's vitest runs them.
+        exclude: ['src/ui/**', '**/node_modules/**'],
     },
 });

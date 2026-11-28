@@ -1,0 +1,266 @@
+/*
+ * AppOverlayModal: port of @ionic/core 8.7.2 ion-modal (the version @ionic/react resolves) (modal.ios.css / modal.md.css) and the
+ * core.css rules for content inside ion-modal, for default and sheet modals.
+ *
+ * Cascade, matching ion-modal's shadow DOM:
+ * - `:host` rules lost to every light-DOM author rule (the app's `.show-modal`, `.center-modal`,
+ *   ... set `--height`, `--max-width`, `background`): they live in `@layer app-overlays-host`.
+ * - Shadow parts (wrapper, shadow, handle) were out of the app CSS's reach except through
+ *   `::part(content)`, which always won. They are unlayered with `:where()` so the app's
+ *   `.app-modal.<class> > .app-modal-wrapper` rules (the former `::part(content)` rules) still win,
+ *   and they reset Tailwind's preflight (`box-sizing`, `border`, button padding) to the UA
+ *   defaults they had in the shadow root.
+ * - core.css's `ion-modal …` rules keep their specificity (`div:where(.app-modal)` = one element).
+ * - Safe-area insets are the surface-layer `--app-safe-area-*` tokens. The centered-dialog
+ *   inset reset (zero insets at 768x600 and up, formerly Ionic's host token) is in theme/variables.css.
+ */
+
+@layer app-overlays-host {
+    .app-modal {
+        --width: 100%;
+        --min-width: auto;
+        --max-width: auto;
+        --height: 100%;
+        --min-height: auto;
+        --max-height: auto;
+        --overflow: hidden;
+        --border-radius: 0;
+        --border-width: 0;
+        --border-style: none;
+        --border-color: transparent;
+        --background: var(--app-overlay-background);
+        --box-shadow: none;
+        --backdrop-opacity: 0;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        position: absolute;
+        align-items: center;
+        justify-content: center;
+        outline: none;
+        color: var(--app-overlay-text-color);
+        contain: strict;
+    }
+
+    .app-modal.app-overlay-hidden {
+        display: none;
+    }
+
+    @media only screen and (min-width: 768px) and (min-height: 600px) {
+        .app-modal {
+            --width: 600px;
+            --height: 500px;
+        }
+    }
+
+    @media only screen and (min-width: 768px) and (min-height: 768px) {
+        .app-modal {
+            --width: 600px;
+            --height: 600px;
+        }
+    }
+
+    .app-modal.modal-sheet {
+        --height: calc(100% - (var(--app-safe-area-top, 0px) + 10px));
+    }
+
+    /* md */
+    .app-modal.md {
+        --backdrop-opacity: 0.32;
+    }
+
+    @media only screen and (min-width: 768px) and (min-height: 600px) {
+        .app-modal.md {
+            --border-radius: 2px;
+            --box-shadow: 0 28px 48px rgba(0, 0, 0, 0.4);
+        }
+    }
+
+    /* ios */
+    .app-modal.ios {
+        --backdrop-opacity: 0.4;
+    }
+
+    .app-modal.ios.modal-sheet {
+        --border-radius: 10px;
+    }
+
+    @media only screen and (min-width: 768px) and (min-height: 600px) {
+        .app-modal.ios {
+            --border-radius: 10px;
+        }
+    }
+}
+
+/* ------------------------------------------------------------ ion-modal shadow parts */
+:where(.app-modal) > .app-backdrop {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: block;
+    position: absolute;
+    transform: translateZ(0);
+    contain: strict;
+    cursor: pointer;
+    opacity: 0.01;
+    touch-action: none;
+    z-index: 2;
+    box-sizing: content-box;
+    border: none;
+    background-color: var(--app-backdrop-color);
+    pointer-events: auto;
+}
+
+:where(.app-modal) > .app-backdrop.app-backdrop-hide {
+    background: transparent;
+}
+
+:where(.app-modal) > .app-backdrop.app-backdrop-no-tappable {
+    cursor: auto;
+}
+
+:where(.app-modal) > .app-modal-wrapper,
+:where(.app-modal) > .app-modal-shadow {
+    box-sizing: content-box;
+    border-radius: var(--border-radius);
+    width: var(--width);
+    min-width: var(--min-width);
+    max-width: var(--max-width);
+    height: var(--height);
+    min-height: var(--min-height);
+    max-height: var(--max-height);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    background: var(--background);
+    box-shadow: var(--box-shadow);
+    overflow: var(--overflow);
+    z-index: 10;
+}
+
+:where(.app-modal) > .app-modal-wrapper {
+    pointer-events: auto;
+}
+
+:where(.app-modal) > .app-modal-shadow {
+    position: absolute;
+    background: transparent;
+}
+
+:where(.app-modal.md) > .app-modal-wrapper {
+    transform: translate3d(0, 40px, 0);
+    opacity: 0.01;
+}
+
+:where(.app-modal.ios) > .app-modal-wrapper {
+    transform: translate3d(0, 100%, 0);
+}
+
+:where(.app-modal.modal-sheet) > .app-modal-wrapper,
+:where(.app-modal.modal-sheet) > .app-modal-shadow {
+    position: absolute;
+    bottom: 0;
+}
+
+:where(.app-modal.ios.modal-sheet) > .app-modal-wrapper {
+    border-start-start-radius: var(--border-radius);
+    border-start-end-radius: var(--border-radius);
+    border-end-end-radius: 0;
+    border-end-start-radius: 0;
+}
+
+/* The handle was a shadow-root <button>: UA padding and font, not preflight's reset. */
+:where(.app-modal) .app-modal-handle {
+    left: 0px;
+    right: 0px;
+    top: 5px;
+    border-radius: 8px;
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 1px 6px;
+    /* A <button> in ion-modal's shadow root: the UA's border-box, font and touch-action. */
+    box-sizing: border-box;
+    font: revert;
+    touch-action: revert;
+    position: absolute;
+    width: 36px;
+    height: 5px;
+    /* Keeps the handle above user content in WebKit. */
+    transform: translateZ(0);
+    border: 0;
+    background: #c0c0be;
+    cursor: pointer;
+    z-index: 11;
+}
+
+:where(.app-modal) .app-modal-handle::before {
+    padding-inline-start: 4px;
+    padding-inline-end: 4px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    box-sizing: content-box;
+    position: absolute;
+    width: 36px;
+    height: 5px;
+    transform: translate(-50%, -50%);
+    content: '';
+}
+
+/* ------------------------------------------------ core.css rules for ion-modal content */
+/* `ion-modal > .ion-page`: the presented content (useAppOverlayModal's container). */
+div:where(.app-modal-wrapper) > .ion-page {
+    position: relative;
+    contain: layout style;
+    height: 100%;
+}
+
+html.ios div:where(.app-modal) ion-toolbar {
+    padding-right: calc(var(--app-safe-area-right, 0px) + 8px);
+    padding-left: calc(var(--app-safe-area-left, 0px) + 8px);
+}
+
+html.ios div:where(.app-modal).modal-sheet ion-header ion-toolbar:first-of-type,
+html.ios div:where(.app-modal) ion-footer ion-toolbar:first-of-type {
+    padding-top: 6px;
+}
+
+html.ios div:where(.app-modal).modal-sheet ion-header ion-toolbar:last-of-type {
+    padding-bottom: 6px;
+}
+
+/* The same rules for the app-owned chrome (components/chrome), at the same specificity. */
+html.ios div:where(.app-modal) div:where(.app-toolbar) {
+    padding-right: calc(var(--app-safe-area-right, 0px) + 8px);
+    padding-left: calc(var(--app-safe-area-left, 0px) + 8px);
+}
+
+html.ios
+    div:where(.app-modal).modal-sheet
+    div:where(.app-header)
+    div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)),
+html.ios
+    div:where(.app-modal)
+    div:where([data-app-footer])
+    div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
+    padding-top: 6px;
+}
+
+html.ios
+    div:where(.app-modal).modal-sheet
+    div:where(.app-header)
+    div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
+    padding-bottom: 6px;
+}
+
+/* A default modal over another (either kind) drops its own backdrop and shadow. */
+div:where(.app-modal).modal-default.show-modal ~ div:where(.app-modal).modal-default,
+ion-modal.modal-default.show-modal ~ div:where(.app-modal).modal-default,
+div:where(.app-modal).modal-default.show-modal ~ ion-modal.modal-default {
+    --backdrop-opacity: 0;
+    --box-shadow: none;
+}

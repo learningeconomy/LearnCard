@@ -4,7 +4,6 @@ import * as m from '../../paraglide/messages.js';
 import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
-import { IonSpinner } from '@ionic/react';
 import { ThreeDotVertical } from '@learncard/react';
 import { SkillFrameworkType } from '@learncard/types';
 import Plus from 'apps/scouts/src/components/svgs/Plus';
@@ -12,6 +11,7 @@ import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import ManageSkills from './ManageSkills';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillFrameworkActionMenu from './SkillFrameworkActionMenu';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const SkillFrameworks: React.FC = () => {
     const { newModal } = useModal();
@@ -92,7 +92,7 @@ const SkillFrameworks: React.FC = () => {
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-[40px]">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 ) : isError ? (
                     <div className="text-center py-[40px]">

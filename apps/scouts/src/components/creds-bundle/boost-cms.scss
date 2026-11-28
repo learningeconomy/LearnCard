@@ -51,14 +51,14 @@
 
 // boost earned / managed tabs
 
-.fix-ripple ion-segment-button {
+.fix-ripple div:where(.app-segment-button) {
     --border-radius: 100px;
     --indicator-transition: none;
 
     overflow: hidden;
 }
 
-ShareBoostsBundleModal{
+ShareBoostsBundleModal {
     background-color: white;
     width: 100%;
 
@@ -76,8 +76,7 @@ ShareBoostsBundleModal{
 }
 
 .small-boost-title {
-        height: 40px !important;
-    
+    height: 40px !important;
 }
 
 .boost-managed-card-btn {

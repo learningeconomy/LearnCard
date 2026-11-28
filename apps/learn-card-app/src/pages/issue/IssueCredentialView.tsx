@@ -1,6 +1,5 @@
 import type { IssueImportResult } from './import/issueImport';
 import React from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import { ArrowLeft, Code, Database, RotateCcw, X, AlertCircle } from 'lucide-react';
 
 import * as m from '../../paraglide/messages.js';
@@ -23,6 +22,7 @@ import type { ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import type { OBv3CredentialTemplate } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export interface IssueCredentialViewProps {
     spreadsheet?: SpreadsheetView;
@@ -129,9 +129,9 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
     const credentialType = selectedType?.baseSimpleType ?? null;
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader showBackButton customClassName="bg-white" />
-            <IonContent>
+            <AppContent>
                 {issuedUri ? (
                     <IssueSuccess
                         credential={previewCredential}
@@ -387,7 +387,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                         </div>
                     </div>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };

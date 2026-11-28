@@ -1,30 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
-import {
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonContent,
-    IonSpinner,
-    IonButton,
-    IonCard,
-    IonCardContent,
-    IonIcon,
-    IonText,
-    IonGrid,
-    IonRow,
-    IonCol,
-} from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppCard, AppCardContent, AppText } from 'learn-card-base/ui/widgets';
 import {
     refreshOutline,
     homeOutline,
     alertCircleOutline,
     informationCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('interactions-page');
 
 /**
@@ -144,129 +134,129 @@ const InteractionsPage: React.FC = () => {
 
     if (loading) {
         return (
-            <IonPage>
-                <IonHeader>
-                    <IonToolbar>
-                        <IonTitle>Interaction</IonTitle>
-                    </IonToolbar>
-                </IonHeader>
-                <IonContent fullscreen className="ion-padding">
-                    <IonGrid style={{ height: '100%' }}>
-                        <IonRow
+            <AppPage>
+                <AppHeader>
+                    <AppToolbar>
+                        <AppTitle>Interaction</AppTitle>
+                    </AppToolbar>
+                </AppHeader>
+                <AppContent fullscreen className="ion-padding">
+                    <AppGrid style={{ height: '100%' }}>
+                        <AppRow
                             className="ion-justify-content-center ion-align-items-center"
                             style={{ height: '100%' }}
                         >
-                            <IonCol size="auto" className="ion-text-center">
-                                <IonSpinner
+                            <AppCol size="auto" className="ion-text-center">
+                                <AppSpinner
                                     name="crescent"
                                     style={{ width: '50px', height: '50px' }}
                                 />
-                                <IonText color="medium">
+                                <AppText color="medium">
                                     <p className="ion-text-center ion-margin-top">
                                         Processing interaction...
                                     </p>
-                                </IonText>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                </IonContent>
-            </IonPage>
+                                </AppText>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (error) {
         return (
-            <IonPage>
-                <IonHeader>
-                    <IonToolbar>
-                        <IonTitle>Interaction Error</IonTitle>
-                    </IonToolbar>
-                </IonHeader>
-                <IonContent fullscreen className="ion-padding">
-                    <IonGrid style={{ height: '100%' }}>
-                        <IonRow
+            <AppPage>
+                <AppHeader>
+                    <AppToolbar>
+                        <AppTitle>Interaction Error</AppTitle>
+                    </AppToolbar>
+                </AppHeader>
+                <AppContent fullscreen className="ion-padding">
+                    <AppGrid style={{ height: '100%' }}>
+                        <AppRow
                             className="ion-justify-content-center ion-align-items-center"
                             style={{ height: '100%' }}
                         >
-                            <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
-                                <IonCard color="light" className="ion-padding">
-                                    <IonCardContent className="ion-text-center">
-                                        <IonIcon
+                            <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
+                                <AppCard color="light" className="ion-padding">
+                                    <AppCardContent className="ion-text-center">
+                                        <AppIcon
                                             icon={alertCircleOutline}
                                             color="danger"
                                             style={{ fontSize: '48px', marginBottom: '16px' }}
                                         />
-                                        <IonTitle
+                                        <AppTitle
                                             color="danger"
                                             style={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                                         >
                                             Interaction Error
-                                        </IonTitle>
-                                        <IonText
+                                        </AppTitle>
+                                        <AppText
                                             color="medium"
                                             className="ion-margin-top ion-margin-bottom"
                                         >
                                             <p>{error}</p>
-                                        </IonText>
-                                        <IonButton
+                                        </AppText>
+                                        <AppButton
                                             expand="block"
                                             onClick={handleTryAgain}
                                             className="ion-margin-top"
                                         >
-                                            <IonIcon slot="start" icon={refreshOutline} />
+                                            <AppIcon slot="start" icon={refreshOutline} />
                                             Try Again
-                                        </IonButton>
-                                        <IonButton
+                                        </AppButton>
+                                        <AppButton
                                             expand="block"
                                             color="medium"
                                             fill="outline"
                                             onClick={handleGoHome}
                                             className="ion-margin-top"
                                         >
-                                            <IonIcon slot="start" icon={homeOutline} />
+                                            <AppIcon slot="start" icon={homeOutline} />
                                             Go to Home
-                                        </IonButton>
-                                    </IonCardContent>
-                                </IonCard>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                </IonContent>
-            </IonPage>
+                                        </AppButton>
+                                    </AppCardContent>
+                                </AppCard>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
+                </AppContent>
+            </AppPage>
         );
     }
 
     // This state should ideally not be reached if redirection is working,
     // but as a fallback or if redirection is slightly delayed:
     return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonTitle>Interaction</IonTitle>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent fullscreen className="ion-padding">
-                <IonGrid style={{ height: '100%' }}>
-                    <IonRow
+        <AppPage>
+            <AppHeader>
+                <AppToolbar>
+                    <AppTitle>Interaction</AppTitle>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent fullscreen className="ion-padding">
+                <AppGrid style={{ height: '100%' }}>
+                    <AppRow
                         className="ion-justify-content-center ion-align-items-center"
                         style={{ height: '100%' }}
                     >
-                        <IonCol size="auto">
-                            <IonIcon
+                        <AppCol size="auto">
+                            <AppIcon
                                 icon={informationCircleOutline}
                                 color="primary"
                                 style={{ fontSize: '48px' }}
                             />
-                            <IonText color="medium">
+                            <AppText color="medium">
                                 <p className="ion-text-center ion-margin-top">
                                     Finalizing interaction...
                                 </p>
-                            </IonText>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                            </AppText>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

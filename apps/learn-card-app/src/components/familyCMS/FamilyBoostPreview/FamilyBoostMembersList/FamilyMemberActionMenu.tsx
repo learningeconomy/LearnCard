@@ -1,7 +1,7 @@
 import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useEffect } from 'react';
 
-import { IonSkeletonText, useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import PeaceSign from '../../../svgs/PeaceSign';
 import QrCodeIcon from '../../../svgs/QrCodeIcon';
@@ -61,7 +61,7 @@ export const FamilyMemberActionMenu: React.FC<{
 
     const parent = currentUserStore?.get?.parentUser();
 
-    const [presentInviteChild, dismissChildInvite] = useIonModal(ChildInviteModal, {
+    const [presentInviteChild, dismissChildInvite] = useAppOverlayModal(ChildInviteModal, {
         handleCloseModal: () => dismissChildInvite(),
         familyName: credential?.name,
         handleSaveChildAccount: () => {},

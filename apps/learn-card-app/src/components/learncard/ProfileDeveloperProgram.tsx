@@ -1,6 +1,6 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { codeSlashOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { codeSlashOutline } from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 import { ModalTypes, switchedProfileStore, useGetProfile, useModal } from 'learn-card-base';
 
@@ -61,7 +61,7 @@ const ProfileDeveloperProgram: React.FC = () => {
                 onClick={isDeveloper ? handleOpenProgram : handleBecomeDeveloper}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
-                <IonIcon icon={codeSlashOutline} aria-hidden="true" className="shrink-0 text-lg" />
+                <AppIcon icon={codeSlashOutline} aria-hidden="true" className="shrink-0 text-lg" />
                 {isDeveloper
                     ? m['launchpad.becomeAnApp.developerProgram']()
                     : m['profile.developerProgram.chooseRole']()}

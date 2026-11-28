@@ -26,7 +26,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import Pencil from '../svgs/Pencil';
 import TrashBin from '../svgs/TrashBin';
 import InfoIcon from '../svgs/InfoIcon';
@@ -518,7 +518,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     role="status"
                                     aria-label={m['common.loading']()}
                                 >
-                                    <IonSpinner name="crescent" color="light" aria-hidden="true" />
+                                    <AppSpinner name="crescent" color="light" aria-hidden="true" />
                                 </div>
                             )}
                         </ProfilePicture>
@@ -952,7 +952,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                 className="flex items-center justify-center text-grayscale-700 bg-grayscale-100 hover:bg-grayscale-200 rounded-full px-4 py-2 text-sm font-medium transition-colors"
                                             >
                                                 {isConnectingChapi ? (
-                                                    <IonSpinner
+                                                    <AppSpinner
                                                         name="crescent"
                                                         color="dark"
                                                         className="mr-2 h-4 w-4"

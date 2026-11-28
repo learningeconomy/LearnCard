@@ -24,8 +24,8 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, warningOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { alertCircleOutline, warningOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Issue, IssueSection } from '../validate/validatePathway';
 
@@ -95,7 +95,7 @@ const IssueRow: React.FC<{ issue: Issue }> = ({ issue }) => {
                 }
             `}
         >
-            <IonIcon
+            <AppIcon
                 icon={isError ? alertCircleOutline : warningOutline}
                 aria-hidden
                 className={`

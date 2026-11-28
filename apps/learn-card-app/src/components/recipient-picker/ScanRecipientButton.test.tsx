@@ -55,10 +55,7 @@ vi.mock('@capacitor/haptics', () => ({
     Haptics: { impact: mocks.impact },
     ImpactStyle: { Light: 'LIGHT' },
 }));
-vi.mock('@ionic/react', () => ({
-    IonIcon: () => <span data-testid="scan-icon" />,
-}));
-vi.mock('ionicons/icons', () => ({ qrCodeOutline: 'qr-code' }));
+vi.mock('learn-card-base/icons/ionicons', () => ({ qrCodeOutline: 'qr-code' }));
 vi.mock('learn-card-base', () => ({
     QRCodeScannerStore: { set: { openScanner: mocks.openScanner } },
     ToastTypeEnum: { Error: 'error' },

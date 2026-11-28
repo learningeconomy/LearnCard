@@ -2,8 +2,6 @@ import React from 'react';
 
 import { BoostCategoryOptionsEnum, isCustomBoostType } from 'learn-card-base';
 
-import { IonRow, IonCol, IonHeader, IonToolbar } from '@ionic/react';
-
 import * as m from '../../../../../paraglide/messages.js';
 import X from 'learn-card-base/svgs/X';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -23,6 +21,8 @@ import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 import { BoostCMSState } from '../../../boost';
 
 import 'swiper/css/navigation';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -72,6 +72,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
 
     handleSaveAppearance = () => {},
 }) => {
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formTitle: string = '';
 
     const isCategoryAndTypeSaveDisabled = (
@@ -129,6 +130,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     };
 
     const saveDisabled = isCategoryAndTypeSaveDisabled(activeCategoryType, activeType);
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let headerContainerStyles = '';
     let headerBackButtonStyles = '';
     let titleStyles = 'flex-1';
@@ -153,17 +155,17 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     };
 
     return (
-        <IonHeader className="ion-no-border bg-white w-full">
-            <IonRow className="w-full bg-white">
-                <IonCol className="w-full flex items-center justify-end">
+        <AppHeader className="ion-no-border bg-white w-full">
+            <AppRow className="w-full bg-white">
+                <AppCol className="w-full flex items-center justify-end">
                     {showCloseButton && (
                         <button onClick={handleCloseModal}>
                             <X className="text-grayscale-600 h-8 w-8" />
                         </button>
                     )}
-                </IonCol>
-            </IonRow>
-            <IonToolbar className="bg-white">
+                </AppCol>
+            </AppRow>
+            <AppToolbar className="bg-white">
                 <div className="flex flex-col items-center justify-center w-full">
                     <div className={`w-full flex px-2 ${headerContainerStyles}`}>
                         {(activeForm === BoostCMSActiveAppearanceForm.badgeForm ||
@@ -215,8 +217,8 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                         />
                     )}
                 </div>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

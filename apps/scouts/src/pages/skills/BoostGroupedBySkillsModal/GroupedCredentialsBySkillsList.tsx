@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 
-import { IonGrid, IonCol } from '@ionic/react';
 import { SkillsChipItem } from '../SkillsChipList';
 import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
@@ -22,6 +21,7 @@ import {
     SKILLS,
     SUBSKILLS,
 } from '../../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
+import { AppCol, AppGrid } from 'learn-card-base/ui/layout';
 
 type BoostGroupedBySkillsModalProps = {
     groupedCredentials?: CredentialsGroupedByCategory;
@@ -48,6 +48,7 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
         groupedCredentialsBySubskill?.credentials ??
         [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
     const [atEnd, setAtEnd] = useState(false);
@@ -86,14 +87,15 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
 
     const showNavigation = sortedCredentials.length > 1;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
     };
 
     return (
-        <IonCol className="my-4">
-            <IonGrid className="w-full rounded-[16px] bg-white shadow-soft-bottom py-4 relative">
+        <AppCol className="my-4">
+            <AppGrid className="w-full rounded-[16px] bg-white shadow-soft-bottom py-4 relative">
                 <div className="w-full px-2 mb-4">
                     <SkillsChipItem
                         title={skillLabel}
@@ -182,8 +184,8 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
                         )}
                     </div>
                 )}
-            </IonGrid>
-        </IonCol>
+            </AppGrid>
+        </AppCol>
     );
 };
 

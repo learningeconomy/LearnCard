@@ -1,11 +1,12 @@
 import React from 'react';
 
-import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonPage } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 import { BoostCMSState } from '../../../boost';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const BoostCMSAppearanceBadgeSelector: React.FC<{
     state: BoostCMSState;
@@ -15,27 +16,27 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
     title?: string | React.ReactNode;
 }> = ({ state, setState, handleCloseModal, showCloseButton = true, title }) => {
     return (
-        <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+        <AppPage id="user-options-modal">
+            <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
-            <IonContent color="grayscale-100">
-                <IonGrid className="ion-padding">
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
+            <AppContent color="grayscale-100">
+                <AppGrid className="ion-padding">
                     <BoostCMSAppearanceBadgeList
                         state={state}
                         setState={setState}
                         handleCloseModal={handleCloseModal}
                     />
-                </IonGrid>
+                </AppGrid>
                 <div className="w-full flex items-center justify-center pb-8">
                     <button
                         onClick={() => handleCloseModal()}
@@ -44,8 +45,8 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

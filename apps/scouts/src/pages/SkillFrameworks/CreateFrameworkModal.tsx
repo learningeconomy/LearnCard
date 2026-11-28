@@ -26,12 +26,15 @@ import SimpleAttachedNetworkDisplay from './SimpleAttachedNetworkDisplay';
 import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
 import SkillsFrameworkAdminSelector from './SkillsFrameworkAdminSelector';
 import SkillsFrameworkNetworkSelector from './SkillsFrameworkNetworkSelector';
-import { IonFooter, IonInput, IonSpinner, IonTextarea } from '@ionic/react';
 
 import { SkillFramework } from '../../components/boost/boost';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { getLogger } from 'learn-card-base';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('create-framework-modal');
 
 type CreateFrameworkModalProps = {
@@ -343,7 +346,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         <div className="relative">
                             {isUploadingImage && (
                                 <div className="absolute top-0 left-0 z-10 bg-white/60  h-full w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1.75]"
@@ -369,15 +372,15 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         </button>
                     </div>
 
-                    <IonInput
-                        onIonInput={e => setName(e.detail.value ?? '')}
+                    <AppInput
+                        onValueInput={value => setName(value ?? '')}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]! text-[17px] font-poppins"
                         placeholder={m['skillFrameworks.fwNameLabel']()}
                         value={name}
                     />
 
-                    <IonTextarea
-                        onIonInput={e => setDescription(e.detail.value ?? '')}
+                    <AppTextarea
+                        onValueInput={value => setDescription(value ?? '')}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]!"
                         placeholder={m['skillFrameworks.descLabel']()}
                         value={description}
@@ -435,7 +438,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 </div>
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -472,7 +475,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         )}
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

@@ -15,10 +15,11 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 import * as m from '../../../paraglide/messages.js';
 import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -219,16 +220,16 @@ const IssueManagedBoostSelector: React.FC = () => {
                     <div className="relative w-full">
                         <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
                             {isSearching ? (
-                                <IonSpinner name="crescent" className="w-[20px] h-[20px]" />
+                                <AppSpinner name="crescent" className="w-[20px] h-[20px]" />
                             ) : (
                                 <Search className="text-grayscale-500 w-[20px] h-[20px]" />
                             )}
                         </div>
-                        <IonInput
+                        <AppInput
                             type="text"
                             value={searchInput}
                             placeholder={m['boost.searchBoosts']()}
-                            onIonInput={e => setSearchInput(e.detail.value || '')}
+                            onValueInput={value => setSearchInput(value || '')}
                             className="bg-grayscale-50 text-grayscale-900 rounded-[15px] p-[5px]! !font-notoSans text-[16px] pl-[44px]! --padding-start=44px border border-grayscale-200"
                         />
                     </div>
@@ -243,7 +244,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                 >
                     {boostsLoading && !displayBoosts.length && (
                         <div className="flex justify-center p-4">
-                            <IonSpinner color="dark" />
+                            <AppSpinner color="dark" />
                         </div>
                     )}
 
@@ -259,7 +260,7 @@ const IssueManagedBoostSelector: React.FC = () => {
 
                     {(boostsIsFetchingNextPage || (boostsLoading && displayBoosts.length > 0)) && (
                         <div className="flex justify-center p-4">
-                            <IonSpinner color="dark" />
+                            <AppSpinner color="dark" />
                         </div>
                     )}
                     <div ref={boostInfiniteScrollRef} />

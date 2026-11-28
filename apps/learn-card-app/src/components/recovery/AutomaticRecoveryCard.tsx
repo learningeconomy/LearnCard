@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, shieldCheckmarkOutline, keypadOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import {
+    alertCircleOutline,
+    shieldCheckmarkOutline,
+    keypadOutline,
+} from 'learn-card-base/icons/ionicons';
 import { Toggle, isSameEscrowPinError } from 'learn-card-base';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
@@ -161,7 +165,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                             : 'bg-grayscale-100 text-grayscale-500'
                     }`}
                 >
-                    <IonIcon icon={shieldCheckmarkOutline} className="text-lg" />
+                    <AppIcon icon={shieldCheckmarkOutline} className="text-lg" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-grayscale-900">
@@ -231,7 +235,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
 
             {error && (
                 <div role="alert" className="py-3 px-4 bg-red-50 flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
@@ -250,7 +254,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                 <>
                     <div className="py-3 px-4 flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-grayscale-100 text-grayscale-500">
-                            <IonIcon icon={keypadOutline} className="text-lg" />
+                            <AppIcon icon={keypadOutline} className="text-lg" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-grayscale-900">

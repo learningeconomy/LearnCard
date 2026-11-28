@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
-import { IonRow, IonGrid, IonInput } from '@ionic/react';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
@@ -132,18 +133,18 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
     };
 
     return (
-        <IonGrid
+        <AppGrid
             className={`w-full h-full ion-no-padding bg-${color} flex justify-center items-start overflow-y-auto`}
         >
-            <IonRow
+            <AppRow
                 className={`w-full flex flex-col items-center justify-center max-w-[600px] ion-padding bg-${color}`}
             >
                 <div className="w-full ion-padding bg-white rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         value={search}
-                        onIonInput={e => {
-                            setSearch(e.detail.value!);
+                        onValueInput={value => {
+                            setSearch(value);
                             setErrors({});
                         }}
                         placeholder={m['boost.cms.appearance.search']()}
@@ -291,8 +292,8 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                                 );
                             })}
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

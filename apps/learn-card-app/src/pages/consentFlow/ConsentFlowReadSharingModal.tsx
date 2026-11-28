@@ -3,18 +3,9 @@ import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
-import {
-    IonCheckbox,
-    IonCol,
-    IonContent,
-    IonDatetime,
-    IonGrid,
-    IonHeader,
-    IonPage,
-    IonRow,
-    IonToggle,
-    IonToolbar,
-} from '@ionic/react';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import {
     useGetCredentialList,
@@ -25,6 +16,7 @@ import {
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -34,6 +26,7 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;
@@ -65,7 +58,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     const presentDatePicker = () => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
-                <IonDatetime
+                <AppDatetime
                     onIonChange={e => {
                         setTerm({ ...term, shareUntil: moment(e.detail.value).toISOString() });
                         closeModal();
@@ -202,13 +195,18 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     };
 
     return (
-        <IonPage className="bg-grayscale-100 text-grayscale-900 pt-5">
-            <IonHeader className="ion-no-border flex items-center px-5 gap-3">
-                <IonToolbar className="ion-no-border flex items-center gap-3" color="grayscale-100">
-                    <IonGrid>
-                        <IonRow className="w-full flex items-center gap-3 max-w-[760px] mx-auto">
-                            <IonCol size="12" className="flex items-center gap-3">
-                                <button type="button" onClick={saveAndClose} className="shrink-0">
+        <AppPage className="bg-grayscale-100 text-grayscale-900 pt-5">
+            <AppHeader className="ion-no-border flex items-center px-5 gap-3">
+                <AppToolbar className="ion-no-border flex items-center gap-3" color="grayscale-100">
+                    <AppGrid>
+                        <AppRow className="w-full flex items-center gap-3 max-w-[760px] mx-auto">
+                            <AppCol size="12" className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={saveAndClose}
+                                    className="shrink-0"
+                                    aria-label="Back button"
+                                >
                                     <CaretLeft />
                                 </button>
 
@@ -217,16 +215,16 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                 <h3 className="font-poppins text-xl flex-1">
                                     {capitalizeFirstLetter(title)}
                                 </h3>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
 
-            <IonContent className="transparent-modal-backdrop" color="transparent">
-                <IonGrid className="p-0 h-full w-full flex flex-col items-center gap-3">
-                    <IonRow className="px-5 pb-5 w-full max-w-[800px]">
-                        <IonCol
+            <AppContent className="transparent-modal-backdrop" color="transparent">
+                <AppGrid className="p-0 h-full w-full flex flex-col items-center gap-3">
+                    <AppRow className="px-5 pb-5 w-full max-w-[800px]">
+                        <AppCol
                             size="12"
                             className="w-full bg-white rounded-[15px] shadow-box-bottom py-2 px-5"
                         >
@@ -245,7 +243,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         </span>
                                     </label>
 
-                                    <IonCheckbox
+                                    <AppCheckbox
                                         id={`${category}-share-all`}
                                         color="emerald-700"
                                         className="shrink-0 h-8 w-8"
@@ -271,7 +269,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         >
                                             {m['arabicFixes.setExpirationDate']()}
                                         </label>
-                                        <IonToggle
+                                        <AppToggle
                                             color="emerald-700"
                                             className="shrink-0"
                                             mode="ios"
@@ -323,7 +321,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         </span>
                                     </label>
 
-                                    <IonCheckbox
+                                    <AppCheckbox
                                         color="emerald-700"
                                         className="shrink-0 h-8 w-8"
                                         mode="ios"
@@ -348,7 +346,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             </span>
                                         </label>
 
-                                        <IonCheckbox
+                                        <AppCheckbox
                                             color="emerald-700"
                                             className="shrink-0 h-8 w-8"
                                             mode="ios"
@@ -358,12 +356,12 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                     </section>
                                 </fieldset>
                             )}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
 
                     {term.sharing && (
-                        <IonRow className="flex-1 w-full">
-                            <IonCol size="12" className="w-full flex flex-col px-0">
+                        <AppRow className="flex-1 w-full">
+                            <AppCol size="12" className="w-full flex flex-col px-0">
                                 <header className="w-full flex justify-center sticky -top-1 z-10 p-5 border-t border-solid border-grayscale-300 bg-grayscale-100">
                                     <section className="flex justify-between w-full max-w-[800px]">
                                         <output className="text-lg font-semibold font-poppins">
@@ -387,7 +385,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                 </header>
 
                                 {hasCredentials && (
-                                    <IonRow className="px-5 pb-5 flex justify-center items-start bg-grayscale-300 relative z-0 h-full">
+                                    <AppRow className="px-5 pb-5 flex justify-center items-start bg-grayscale-300 relative z-0 h-full">
                                         <section className="w-full max-w-[800px] flex flex-wrap gap-4 justify-center py-[30px]">
                                             {allCreds?.map((record, index) => {
                                                 const isSelected = getIsSelected(record);
@@ -427,14 +425,14 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                                 );
                                             })}
                                         </section>
-                                    </IonRow>
+                                    </AppRow>
                                 )}
-                            </IonCol>
-                        </IonRow>
+                            </AppCol>
+                        </AppRow>
                     )}
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

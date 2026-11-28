@@ -1,24 +1,27 @@
 import React, { Suspense, useState } from 'react';
 
-import { IonIcon, IonPage, IonContent, IonPopover, IonSpinner } from '@ionic/react';
-import { chevronDownOutline, eyeOutline, shareOutline } from 'ionicons/icons';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { chevronDownOutline, eyeOutline, shareOutline } from 'learn-card-base/icons/ionicons';
 import { lazyWithRetry, ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
 import { ShareCredentialsIllustration } from '../../components/share-links/ShareCredentialsIllustration';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ShareBoostsBundleModal = lazyWithRetry(
     () => import('../../components/creds-bundle/ShareBoostsBundleModal')
 );
 
 const SharedBundleModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
+    <AppPage>
+        <AppContent>
             <div className="font-poppins flex min-h-[360px] items-center justify-center p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
-        </IonContent>
-    </IonPage>
+        </AppContent>
+    </AppPage>
 );
 
 type SharingActionsProps = {
@@ -52,7 +55,7 @@ const SharingActions: React.FC<SharingActionsProps> = ({
                 className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-emerald-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors group-hover:bg-emerald-200">
-                    <IonIcon icon={shareOutline} className="text-xl" aria-hidden="true" />
+                    <AppIcon icon={shareOutline} className="text-xl" aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
                     <span className="block text-sm font-semibold text-grayscale-900">
@@ -71,7 +74,7 @@ const SharingActions: React.FC<SharingActionsProps> = ({
                 className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-700 transition-colors group-hover:bg-grayscale-200">
-                    <IonIcon icon={eyeOutline} className="text-xl" aria-hidden="true" />
+                    <AppIcon icon={eyeOutline} className="text-xl" aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
                     <span className="block text-sm font-semibold text-grayscale-900">
@@ -162,7 +165,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
             >
                 <ShareCredentialsIllustration className="h-8 w-8" />
                 <span className="hidden sm:inline">{m['common.share']()}</span>
-                <IonIcon
+                <AppIcon
                     icon={chevronDownOutline}
                     className="hidden text-sm text-grayscale-600 sm:block"
                     aria-hidden="true"
@@ -170,7 +173,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
             </button>
 
             {!isMobile && (
-                <IonPopover
+                <AppPopover
                     isOpen={popoverOpen}
                     event={popoverEvent}
                     reference="event"
@@ -184,7 +187,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
                         onShare={() => openShareModal()}
                         onViewShared={() => viewShared()}
                     />
-                </IonPopover>
+                </AppPopover>
             )}
         </>
     );

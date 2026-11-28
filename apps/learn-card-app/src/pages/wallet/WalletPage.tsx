@@ -25,7 +25,7 @@ import {
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
@@ -47,6 +47,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const WalletPage: React.FC = () => {
     const flags = useFlags();
@@ -158,7 +159,7 @@ const WalletPage: React.FC = () => {
     const isList = viewMode === PassportPageViewMode.list;
 
     return (
-        <IonPage
+        <AppPage
             className="bg-grayscale-100"
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
@@ -188,7 +189,7 @@ const WalletPage: React.FC = () => {
                 </div>
             )}
             <GenericErrorBoundary>
-                <IonContent
+                <AppContent
                     fullscreen
                     color="grayscale-100"
                     scrollEvents
@@ -205,7 +206,7 @@ const WalletPage: React.FC = () => {
                             {showTranscriptOptIn && (
                                 <TranscriptOptInCard source="wallet" variant="banner" />
                             )}
-                            <IonRow>
+                            <AppRow>
                                 <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">
                                     <div className="flex items-center gap-[8px] min-w-0">
                                         <h1
@@ -264,22 +265,22 @@ const WalletPage: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                            </IonRow>
-                            <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
-                                <IonCol
+                            </AppRow>
+                            <AppRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
+                                <AppCol
                                     className={`wallet-squares-container ${
                                         isList ? 'list' : 'grid'
                                     }`}
                                 >
                                     {renderWalletList}
-                                </IonCol>
-                            </IonRow>
+                                </AppCol>
+                            </AppRow>
                             <PassportActivityFeed />
                         </div>
                     </div>
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

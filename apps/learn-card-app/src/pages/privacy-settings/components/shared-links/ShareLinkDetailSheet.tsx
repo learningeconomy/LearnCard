@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     chevronForward,
@@ -10,7 +10,7 @@ import {
     qrCodeOutline,
     refreshOutline,
     stopCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { ShareLink } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -212,7 +212,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 onClick={onClose}
                 className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-600 hover:bg-grayscale-100"
             >
-                <IonIcon icon={closeOutline} aria-hidden="true" />
+                <AppIcon icon={closeOutline} aria-hidden="true" />
             </button>
 
             <header className="pe-10">
@@ -255,7 +255,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         }}
                         className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
                     >
-                        <IonIcon icon={addOutline} aria-hidden="true" />
+                        <AppIcon icon={addOutline} aria-hidden="true" />
                         {m['dataShareCenter.shared.shareAgain']()}
                     </button>
                 </div>
@@ -288,7 +288,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                                     onClick={() => void toggleQr()}
                                     className={squareButton}
                                 >
-                                    <IonIcon icon={qrCodeOutline} aria-hidden="true" />
+                                    <AppIcon icon={qrCodeOutline} aria-hidden="true" />
                                 </button>
                             </>
                         )}
@@ -301,7 +301,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                             onClick={() => vm.onPreview(share)}
                             className={squareButton}
                         >
-                            <IonIcon icon={eyeOutline} aria-hidden="true" />
+                            <AppIcon icon={eyeOutline} aria-hidden="true" />
                         </button>
                     </div>
                     {panel === 'qr' && status === 'active' && (
@@ -346,7 +346,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         disabled={busy}
                         onClick={() => void vm.onCheckPending(share)}
                     >
-                        <IonIcon icon={refreshOutline} aria-hidden="true" />
+                        <AppIcon icon={refreshOutline} aria-hidden="true" />
                         {busy
                             ? m['dataShareCenter.shared.checking']()
                             : m['dataShareCenter.shared.checkAgain']()}
@@ -373,7 +373,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                                 className={`inline-flex items-center gap-1 ${expiringSoon ? 'text-amber-800' : ''}`}
                             >
                                 {expiringSoon && (
-                                    <IonIcon icon={hourglassOutline} aria-hidden="true" />
+                                    <AppIcon icon={hourglassOutline} aria-hidden="true" />
                                 )}
                                 {formatShortDate(share.expiresAt)}
                             </span>
@@ -458,10 +458,10 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         className="flex items-center justify-between rounded-xl px-1 py-3 text-sm font-medium text-grayscale-800 hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <span className="inline-flex items-center gap-2">
-                            <IonIcon icon={createOutline} aria-hidden="true" />
+                            <AppIcon icon={createOutline} aria-hidden="true" />
                             {m['dataShareCenter.shared.updateContents']()}
                         </span>
-                        <IonIcon
+                        <AppIcon
                             icon={chevronForward}
                             aria-hidden="true"
                             className="text-grayscale-400 rtl:-scale-x-100"
@@ -502,7 +502,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         onClick={() => togglePanel('stop')}
                         className="flex items-center gap-2 rounded-xl px-1 py-3 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        <IonIcon icon={stopCircleOutline} aria-hidden="true" />
+                        <AppIcon icon={stopCircleOutline} aria-hidden="true" />
                         {m['dataShareCenter.shared.stop']()}
                     </button>
                     {panel === 'stop' && (

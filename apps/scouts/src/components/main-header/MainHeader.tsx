@@ -1,15 +1,6 @@
 import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import {
-    IonCol,
-    IonGrid,
-    IonHeader,
-    IonMenuToggle,
-    IonProgressBar,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
@@ -24,6 +15,9 @@ import { getStatusBarColor } from 'learn-card-base/helpers/statusBarHelpers';
 import { useIsLoggedIn } from 'learn-card-base';
 import Burger from '../svgs/Burger';
 import loadingStore from '../../stores/loadingStore';
+import { AppHeader, AppMenuToggle, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 type MainHeaderProps = {
     branding?: BrandingEnum;
@@ -78,6 +72,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
 
     const statusBarColor = getStatusBarColor(location.pathname, branding);
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let mainHeaderBranding: React.ReactElement | null = null;
 
     mainHeaderBranding = (
@@ -88,17 +83,17 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     );
 
     return (
-        <IonHeader className="learn-card-header ion-no-border relative">
-            <IonProgressBar
+        <AppHeader className="learn-card-header ion-no-border relative">
+            <AppProgressBar
                 type="indeterminate"
                 className={`absolute top-0 z-[99999999] transition-opacity ${
                     isLoading ? 'opacity-100' : 'opacity-0'
                 }`}
             />
-            <IonToolbar className="ion-no-border" color={statusBarColor}>
-                <IonGrid className={`${customClassName} ${bgColor}`}>
-                    <IonRow className={showBackButton ? '' : 'px-[10px]'}>
-                        <IonCol size="6" className="flex justify-start items-center pl-0">
+            <AppToolbar className="ion-no-border" color={statusBarColor}>
+                <AppGrid className={`${customClassName} ${bgColor}`}>
+                    <AppRow className={showBackButton ? '' : 'px-[10px]'}>
+                        <AppCol size="6" className="flex justify-start items-center pl-0">
                             {showBackButton && (
                                 <button
                                     className="text-grayscale-50 p-0 main-header-back-button"
@@ -111,14 +106,14 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             )}
 
                             {showSideMenuButton && isLoggedIn && (
-                                <IonMenuToggle menu="appSideMenu">
+                                <AppMenuToggle menu="appSideMenu">
                                     <Burger className="text-grayscale-900 h-[35px] w-[35px] mr-2 ml-[-10px]" />
-                                </IonMenuToggle>
+                                </AppMenuToggle>
                             )}
                             {mainHeaderBranding}
-                        </IonCol>
+                        </AppCol>
 
-                        <IonCol size="6" className="flex justify-end items-center pr-0">
+                        <AppCol size="6" className="flex justify-end items-center pr-0">
                             {isLoggedIn ? (
                                 <>
                                     <NotificationButton />
@@ -127,12 +122,12 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
                             )}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                     {subheader}
                     {children}
-                </IonGrid>
-            </IonToolbar>
+                </AppGrid>
+            </AppToolbar>
             <div
                 role="presentation"
                 className={`${
@@ -143,7 +138,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                     <img src={bgImage} className="h-full w-full object-cover object-bottom" />
                 )} */}
             </div>
-        </IonHeader>
+        </AppHeader>
     );
 };
 

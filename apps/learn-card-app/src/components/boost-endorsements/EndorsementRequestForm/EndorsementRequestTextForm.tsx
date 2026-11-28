@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import * as m from '../../../paraglide/messages.js';
@@ -21,10 +21,10 @@ export const EndorsementRequestTextForm: React.FC<{
             <p className="text-[17px] text-grayscale-900 text-left mb-2">
                 {m['endorsement.request.options.whatToSay']()}
             </p>
-            <IonTextarea
+            <AppTextarea
                 autocapitalize="on"
                 value={endorsementRequest?.text}
-                onIonInput={e => handleStateChange('text', e.detail.value)}
+                onValueInput={value => handleStateChange('text', value)}
                 placeholder={m['endorsement.form.text.placeholder']()}
                 className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mb-1`}
             />

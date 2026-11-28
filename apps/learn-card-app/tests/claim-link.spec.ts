@@ -15,7 +15,7 @@ test.describe('Claimable Boost', () => {
         await page.locator('label div').nth(4).click();
         await page.getByRole('button', { name: 'Generate Link' }).click();
         await page
-            .locator('ion-col')
+            .locator('.app-col')
             .filter({ hasText: 'https://learncard.app/claim/' })
             .getByRole('img')
             .click();

@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonFooter, IonToolbar } from '@ionic/react';
 import X from '../../../svgs/X';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
@@ -9,6 +8,7 @@ import FamilyActionMenu from '../../FamilyActionMenu/FamilyActionMenu';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { m } from '../../../../paraglide/messages.js';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const FamilyBoostFooter: React.FC<{
     credential: VC;
@@ -21,11 +21,11 @@ export const FamilyBoostFooter: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
-            <IonToolbar color="transparent" mode="ios">
+            <AppToolbar color="transparent" mode="ios">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] pb-0 px-4 pt-2">
                         <button
@@ -72,8 +72,8 @@ export const FamilyBoostFooter: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

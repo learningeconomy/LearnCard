@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
-import { IonIcon } from '@ionic/react';
-import { arrowForwardOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { arrowForwardOutline } from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import { ModalTypes, useModal, type BoostCategoryOptionsEnum } from 'learn-card-base';
 import {
@@ -94,7 +94,7 @@ export const ShareCredentialVisual = ({
             }
         >
             <span>{m['alerts.viewCredential']()}</span>
-            <IonIcon
+            <AppIcon
                 icon={arrowForwardOutline}
                 aria-hidden="true"
                 className="block h-4 w-4 shrink-0"

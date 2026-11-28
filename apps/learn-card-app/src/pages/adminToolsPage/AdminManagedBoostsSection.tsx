@@ -8,7 +8,7 @@ import {
     useGetPaginatedManagedBoosts,
 } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
 import { Boost } from '@learncard/types';
 
@@ -96,7 +96,7 @@ const AdminManagedBoostsSection: React.FC<AdminManagedBoostsSectionProps> = ({
                             );
                         })
                 )}
-                {isLoading && <IonSpinner color="dark" />}
+                {isLoading && <AppSpinner color="dark" />}
                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
             </div>
         </div>

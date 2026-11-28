@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
 
-import { IonPage, IonLoading } from '@ionic/react';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -14,6 +14,7 @@ import { useRegistryEntryState } from '../../hooks/useRegistryEntryState';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export type NewDataSourceProps = {
     handleCloseModal: () => void;
@@ -45,8 +46,8 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <IonPage className="p-[30px] pb-[20px] flex flex-col items-center justify-center gap-[10px]">
-            <IonLoading isOpen={!newEntry} mode="ios" message="Fetching Data Source" />
+        <AppPage className="p-[30px] pb-[20px] flex flex-col items-center justify-center gap-[10px]">
+            <AppLoading isOpen={!newEntry} mode="ios" message="Fetching Data Source" />
             {Boolean(newEntry) && (
                 <>
                     <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
@@ -108,7 +109,7 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
                     </section>
                 </>
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 

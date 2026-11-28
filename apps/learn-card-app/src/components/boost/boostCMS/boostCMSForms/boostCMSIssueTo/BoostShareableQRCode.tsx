@@ -2,7 +2,7 @@ import React from 'react';
 import * as m from '../../../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { IonRow, IonSpinner } from '@ionic/react';
+import { AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearanceController';
 import BoostCMSIDAppearanceController from '../boostCMSAppearance/BoostCMSIDAppearanceController';
@@ -11,6 +11,7 @@ import FamilyCrest from 'apps/learn-card-app/src/components/familyCMS/FamilyCres
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostShareableQRCodeProps = {
     state: BoostCMSState;
@@ -37,7 +38,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
     const isFamily = state?.basicInfo?.type === BoostCategoryOptionsEnum.family;
 
     return (
-        <IonRow className="flex flex-col items-center justify-center vc-preview-modal-safe-area">
+        <AppRow className="flex flex-col items-center justify-center vc-preview-modal-safe-area">
             <div className="bg-white w-full max-w-[400px] min-w-[320px] rounded-[20px] shadow-3xl pt-3 mt-8 relative">
                 {showCloseButton && handleCloseModal && (
                     <button
@@ -106,7 +107,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center w-full px-10 py-8 gap-3">
-                        <IonSpinner name="crescent" color="dark" />
+                        <AppSpinner name="crescent" color="dark" />
 
                         <p className="font-poppins text-grayscale-500 text-sm text-center">
                             Generating claim link...
@@ -114,7 +115,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
                     </div>
                 )}
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

@@ -10,16 +10,11 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import {
-    IonRow,
-    IonCol,
-    useIonModal,
-    IonGrid,
-    IonSpinner,
-    IonToggle,
-    IonDatetime,
-    IonInput,
-} from '@ionic/react';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import {
     ModalTypes,
@@ -39,6 +34,7 @@ import BoostShareableQRCode from './BoostShareableQRCode';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostShareableCodeProps = {
     state: BoostCMSState;
@@ -102,9 +98,9 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const [presentDatePicker] = useIonModal(
+    const [presentDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     clearBoostLink();
                     setExpirationDate(moment(e.detail.value).toISOString());
@@ -395,7 +391,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
     return (
         <>
-            <IonGrid
+            <AppGrid
                 className={`flex flex-col gap-[20px] items-center justify-center bg-white w-full max-w-[600px] rounded-[20px] ion-padding  ${customClassName}`}
             >
                 <div className="flex items-center justify-between w-full">
@@ -420,10 +416,10 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         <p className="text-grayscale-900 font-medium w-10/12">
                             {m['boost.cms.issueTo.generateClaimLink']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 setToggle(!toggle);
                             }}
                             checked={toggle}
@@ -434,12 +430,12 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                 {toggle && (
                     <>
                         {isPermissionsLoading && (
-                            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
-                                <IonSpinner name="crescent" color="dark" className="mr-2" />
+                            <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
+                                <AppSpinner name="crescent" color="dark" className="mr-2" />
                                 <p className="text-grayscale-700 font-medium text-sm m-0">
                                     Checking template permissions...
                                 </p>
-                            </IonRow>
+                            </AppRow>
                         )}
 
                         {!isPermissionsLoading && !canViewEnabled && (
@@ -457,13 +453,13 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                     <p className="text-amber-900 font-medium w-10/12 m-0">
                                         {m['boost.cms.issueTo.anyoneCanView']()}
                                     </p>
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         color="emerald-700"
                                         checked={canViewEnabled}
                                         disabled={isUpdatingPermissions}
-                                        onIonChange={e =>
-                                            handleCanViewToggle(Boolean(e.detail.checked))
+                                        onCheckedChange={checked =>
+                                            handleCanViewToggle(Boolean(checked))
                                         }
                                     />
                                 </div>
@@ -478,13 +474,13 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                         <>
                                             {/* <div className="flex items-center justify-center w-full divider-with-text" /> */}
 
-                                            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px]">
-                                                <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
+                                            <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px]">
+                                                <AppCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                                                     <div className="w-[80%] flex justify-start items-center text-left">
                                                         {isLinkLoading ||
                                                         getCurrentClaimLink().length === 0 ? (
                                                             <>
-                                                                <IonSpinner
+                                                                <AppSpinner
                                                                     name="crescent"
                                                                     color="dark"
                                                                     className="scale-[1] mr-1"
@@ -517,8 +513,8 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                     >
                                                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                                                     </div>
-                                                </IonCol>
-                                            </IonRow>
+                                                </AppCol>
+                                            </AppRow>
                                             <div className="w-full flex items-center justify-center">
                                                 <button
                                                     onClick={() => {
@@ -564,7 +560,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                             } else {
                                                 newModal(
                                                     <div className="w-full h-full transparent flex items-center justify-center">
-                                                        <IonDatetime
+                                                        <AppDatetime
                                                             onIonChange={e => {
                                                                 clearBoostLink();
                                                                 setExpirationDate(
@@ -625,7 +621,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                         <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
                                             Unlimited Claims
                                         </p>
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             color="emerald-700"
                                             onClick={() => {
@@ -642,16 +638,16 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                             <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
                                                 Set Claim Limit
                                             </p>
-                                            <IonInput
+                                            <AppInput
                                                 autocapitalize="on"
                                                 className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[15px]! py-[6px]! font-notoSans text-[17px]`}
                                                 placeholder={m['boost.cms.issueTo.howManyClaims']()}
                                                 type="number"
                                                 min={0}
                                                 value={claimLimit}
-                                                onIonInput={e => {
+                                                onValueInput={value => {
                                                     clearBoostLink();
-                                                    setClaimLimit(e.detail.value);
+                                                    setClaimLimit(value);
                                                 }}
                                                 onKeyDown={e => {
                                                     // Allow only numbers
@@ -697,7 +693,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         )}
                     </>
                 )}
-            </IonGrid>
+            </AppGrid>
 
             {sectionPortal &&
                 createPortal(

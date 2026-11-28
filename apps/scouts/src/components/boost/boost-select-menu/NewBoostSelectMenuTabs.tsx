@@ -1,10 +1,11 @@
 import React from 'react';
 
-import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
-
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { boostCategoryOptions } from '../boost-options/boostOptions';
 import * as m from '../../../paraglide/messages.js';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppSegment, AppSegmentButton } from 'learn-card-base/ui/widgets';
 
 export enum BoostSelectMenuTabsEnum {
     new = 'new',
@@ -19,24 +20,20 @@ const NewBoostSelectMenuTabs: React.FC<{
     const { title, color } = boostCategoryOptions[category];
 
     return (
-        <IonRow className="flex w-full items-center justify-center">
-            <IonSegment
-                onIonChange={e => {
-                    setActiveTab(e.detail.value);
-                    e.stopPropagation();
-                }}
+        <AppRow className="flex w-full items-center justify-center">
+            <AppSegment
+                onValueChange={value => setActiveTab(value)}
                 value={activeTab}
                 className={`fix-ripple bg-grayscale-200 z-10 flex-1 overflow-hidden rounded-full py-[2px] px-[1px]`}
             >
-                <IonSegmentButton
-                    mode="ios"
+                <AppSegmentButton
                     value={BoostSelectMenuTabsEnum.new}
                     className="py-4"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel
+                    <AppLabel
                         className={`font-normal text-[17px] ${
                             activeTab === BoostSelectMenuTabsEnum.new
                                 ? `text-${color}`
@@ -44,17 +41,16 @@ const NewBoostSelectMenuTabs: React.FC<{
                         }`}
                     >
                         {m['boost.newTitle']({ title })}
-                    </IonLabel>
-                </IonSegmentButton>
-                <IonSegmentButton
-                    mode="ios"
+                    </AppLabel>
+                </AppSegmentButton>
+                <AppSegmentButton
                     value={BoostSelectMenuTabsEnum.existing}
                     className="py-4"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel
+                    <AppLabel
                         className={`font-normal text-[17px] ${
                             activeTab === BoostSelectMenuTabsEnum.existing
                                 ? `text-${color}`
@@ -62,10 +58,10 @@ const NewBoostSelectMenuTabs: React.FC<{
                         }`}
                     >
                         {m['boost.myTitles']({ title })}
-                    </IonLabel>
-                </IonSegmentButton>
-            </IonSegment>
-        </IonRow>
+                    </AppLabel>
+                </AppSegmentButton>
+            </AppSegment>
+        </AppRow>
     );
 };
 

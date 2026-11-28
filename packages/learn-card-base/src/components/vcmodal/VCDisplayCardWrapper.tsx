@@ -6,7 +6,6 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { CredentialCategory, getCategoryMetadata, useWallet } from 'learn-card-base';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import X from 'learn-card-base/svgs/X';
-import { IonContent, IonPage, IonRow } from '@ionic/react';
 import {
     getUrlFromImage,
     getImageUrlFromCredential,
@@ -23,6 +22,8 @@ import { getLogger } from '../../logging/logger';
 import CredentialIssuerPopover, {
     useCredentialIssuerPopover,
 } from '../CredentialBadge/CredentialIssuerPopover';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('vcdisplay-card-wrapper');
 
 const DetailsDisplay: React.FC<VC> = ({ credential }) => {
@@ -223,14 +224,14 @@ export const VCDisplayCardWrapper = ({
     const renderDetailsEl = <DetailsDisplay credential={credential} />;
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 className={`flex items-center justify-center ion-padding boost-cms-preview ${
                     shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
                 }`}
                 fullscreen
             >
-                <IonRow
+                <AppRow
                     className={`flex flex-col items-center justify-center ${
                         shouldUseHostCardPadding ? 'px-6' : ''
                     }`}
@@ -260,9 +261,9 @@ export const VCDisplayCardWrapper = ({
                         />
                         <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
                     </>
-                </IonRow>
-            </IonContent>
-        </IonPage>
+                </AppRow>
+            </AppContent>
+        </AppPage>
     );
 };
 

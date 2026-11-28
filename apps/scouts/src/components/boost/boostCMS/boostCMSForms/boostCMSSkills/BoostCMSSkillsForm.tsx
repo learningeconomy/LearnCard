@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonPage, IonHeader, IonContent, IonGrid, IonToolbar } from '@ionic/react';
-
 import Plus from 'learn-card-base/svgs/Plus';
 import X from 'learn-card-base/svgs/X';
 import ArrowFatRight from 'learn-card-base/svgs/ArrowFatRight';
@@ -16,6 +14,8 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('boost-cms-skills-form');
 
 const BoostCMSPrimarySkillButton: React.FC<{
@@ -101,7 +101,7 @@ const BoostCMSSubSkillButton: React.FC<{
 const BoostCMSSkillOptions: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     showCloseButton?: boolean;
     handleAddSkill: (skill: { skill: BoostCMSSkill | string; subskills: string[] }) => void;
     handleRemoveSkill: (skill: BoostCMSSkill | string) => void;
@@ -120,22 +120,22 @@ const BoostCMSSkillOptions: React.FC<{
     handleRemoveSubSkill,
 }) => {
     return (
-        <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+        <AppPage id="user-options-modal">
+            <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
-            <IonContent color="grayscale-100">
-                <IonGrid className="ion-padding">
-                    <IonRow>
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
+            <AppContent color="grayscale-100">
+                <AppGrid className="ion-padding">
+                    <AppRow>
                         {boostCMSSkills.map((skill, index) => {
                             const subSkills = SKILLS_TO_SUBSKILLS?.[skill];
 
@@ -179,8 +179,8 @@ const BoostCMSSkillOptions: React.FC<{
                                 </>
                             );
                         })}
-                    </IonRow>
-                </IonGrid>
+                    </AppRow>
+                </AppGrid>
                 <div className="w-full flex items-center justify-center pb-8">
                     <button
                         onClick={() => handleCloseModal()}
@@ -189,8 +189,8 @@ const BoostCMSSkillOptions: React.FC<{
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -202,6 +202,7 @@ export const BoostCMSSkillsForm: React.FC<{
         setState(prevState => {
             return {
                 ...prevState,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 skills: [...prevState.skills, { ...skill, category: '' } as any],
             };
         });
@@ -280,8 +281,8 @@ export const BoostCMSSkillsForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-            <IonCol
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+            <AppCol
                 size="12"
                 className="w-full flex-col items-center justify-center bg-white rounded-[20px]"
             >
@@ -366,8 +367,8 @@ export const BoostCMSSkillsForm: React.FC<{
                         );
                     })}
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

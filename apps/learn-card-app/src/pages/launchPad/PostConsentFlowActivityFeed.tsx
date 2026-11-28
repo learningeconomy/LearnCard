@@ -2,20 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { ConsentFlowTerms, ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import moment from 'moment';
 
-import {
-    IonCol,
-    IonDatetime,
-    IonGrid,
-    IonHeader,
-    IonRow,
-    IonSkeletonText,
-    IonSpinner,
-    IonToolbar,
-} from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { useModal, useTermsTransactions } from 'learn-card-base';
 import TransactionHistoryItem from '../consentFlow/TransactionHistoryItem';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 
@@ -109,10 +103,10 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
                       className="w-full py-4 not-last-of-type:border-b flex flex-col gap-2"
                   >
                       <header className="flex gap-1 text-sm font-poppins">
-                          <IonSkeletonText animated className="w-64" />
+                          <AppSkeletonText animated className="w-64" />
                       </header>
                       <section className="text-xs font-poppins text-grayscale-700">
-                          <IonSkeletonText animated />
+                          <AppSkeletonText animated />
                       </section>
                   </li>
               ))
@@ -129,12 +123,12 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
 
     return (
         <section className="bg-white min-h-full w-full pt-[15px]">
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="ion-no-border" color="white">
-                    <IonGrid>
-                        <IonRow className="w-full flex flex-col items-center justify-center">
-                            <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                <IonCol className="flex flex-1 justify-start items-center">
+            <AppHeader className="ion-no-border">
+                <AppToolbar className="ion-no-border" color="white">
+                    <AppGrid>
+                        <AppRow className="w-full flex flex-col items-center justify-center">
+                            <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-white p-0 mr-[10px]"
                                         aria-label="Back button"
@@ -145,21 +139,21 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
                                     <h3 className="text-grayscale-900 flex items-center justify-start font-poppins text-xl font-medium">
                                         Activity Feed
                                     </h3>
-                                </IonCol>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonGrid className="flex items-center justify-center flex-col w-full max-w-[600px] px-4 pb-14">
-                <IonRow className="w-full">
+                                </AppCol>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppGrid className="flex items-center justify-center flex-col w-full max-w-[600px] px-4 pb-14">
+                <AppRow className="w-full">
                     <ol className="px-1 pt-4 w-full flex flex-col items-center">
                         {transactions}
                         <div role="presentation" ref={infiniteScrollRef} />
-                        {isFetching && <IonSpinner className="mt-8" name="lines" />}
+                        {isFetching && <AppSpinner className="mt-8" name="lines" />}
                     </ol>
-                </IonRow>
-            </IonGrid>
+                </AppRow>
+            </AppGrid>
         </section>
     );
 };

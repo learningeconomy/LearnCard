@@ -5,7 +5,7 @@ import * as m from '../../../paraglide/messages.js';
 
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 
-import { IonMenuToggle } from '@ionic/react';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors';
@@ -33,7 +33,7 @@ const NewAiSessionSideMenuButton: React.FC<{ handleNewSession?: () => void }> = 
     };
 
     return (
-        <IonMenuToggle
+        <AppMenuToggle
             role="button"
             autoHide={false}
             className={`text-[17px] flex items-center justify-center text-center leading-tight font-semibold py-[8px] px-[12px] rounded-full w-full max-w-[90%] min-h-[45px] shadow-soft-bottom ${colors.primaryButtonColor}`}
@@ -43,7 +43,7 @@ const NewAiSessionSideMenuButton: React.FC<{ handleNewSession?: () => void }> = 
         >
             {m['sidemenu.newAiSession']()}
             <NewAiSessionIcon className="ml-1 shrink-0" />
-        </IonMenuToggle>
+        </AppMenuToggle>
     );
 };
 

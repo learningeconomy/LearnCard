@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IonContent, IonButton, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
 
@@ -10,7 +10,10 @@ import { SyncCredentialsVCs } from 'learn-card-base';
 
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 import ShareBoostsBundle from './ShareBoostsBundle';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const ViewCredsBundle: React.FC = () => {
     const { uri, seed } = useParams<{ uri: string; seed: string }>();
@@ -20,7 +23,7 @@ const ViewCredsBundle: React.FC = () => {
     const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [username, setUsername] = useState();
     const [loading, setLoading] = useState<boolean>(true);
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [credentials, setCredentials] = useState<VC[] | undefined>();
 
@@ -119,9 +122,9 @@ const ViewCredsBundle: React.FC = () => {
     };
 
     return (
-        <IonPage className="metaversity-primary-blue">
-            <IonHeader translucent={true}>
-                <IonToolbar className="flex">
+        <AppPage className="metaversity-primary-blue">
+            <AppHeader translucent={true}>
+                <AppToolbar className="flex">
                     <div className="flex justify-between items-center">
                         <div>
                             <a
@@ -140,20 +143,20 @@ const ViewCredsBundle: React.FC = () => {
                             </a>
                         </div>
 
-                        <IonButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
+                        <AppButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
                             Learn More
-                        </IonButton>
+                        </AppButton>
                     </div>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent
+                </AppToolbar>
+            </AppHeader>
+            <AppContent
                 fullscreen
                 color="metaversity-primary-blue"
                 className="metaversity-dark-blue"
             >
                 {credentials && <ShareBoostsBundle initialCredentials={credentials} readOnly />}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

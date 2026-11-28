@@ -158,10 +158,10 @@ for (const state of [
                     fixture.getByRole('button', { name: 'Theme:', exact: false })
                 ).toBeVisible();
             } else {
-                await expect(fixture.locator('ion-tab-bar').first()).toBeVisible();
+                await expect(fixture.locator('[data-app-tab-bar]').first()).toBeVisible();
                 const header = fixture.locator('.learn-card-header').first();
-                await expect(header.locator('ion-grid').first()).toHaveCSS('padding-top', '5px');
-                await expect(header.locator('ion-col').first()).toHaveCSS('padding-left', '5px');
+                await expect(header.locator('.app-grid').first()).toHaveCSS('padding-top', '5px');
+                await expect(header.locator('.app-col').first()).toHaveCSS('padding-left', '5px');
             }
         }
         if (state.startsWith('credential')) {
@@ -180,8 +180,8 @@ for (const state of [
             await page.addStyleTag({
                 content: `
                 [data-testid="fixture"] > .ion-page { position: relative; inset: auto; height: auto; min-height: 100vh; contain: none; overflow: visible; }
-                [data-testid="fixture"] ion-content { height: auto; min-height: calc(100vh - 64px); flex: none; contain: none; --overflow: visible; }
-                [data-testid="fixture"] ion-content::part(scroll) { position: relative; inset: auto; overflow: visible; }
+                [data-testid="fixture"] .app-content { height: auto; min-height: calc(100vh - 64px); flex: none; contain: none; --overflow: visible; }
+                [data-testid="fixture"] .app-content > .app-content-scroll { position: relative; inset: auto; overflow: visible; }
             `,
             });
         }

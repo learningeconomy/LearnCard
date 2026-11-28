@@ -2,15 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import {
-    IonContent,
-    IonFooter,
-    IonInput,
-    IonPage,
-    IonSpinner,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
@@ -37,6 +29,8 @@ import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { m } from '../../../../paraglide/messages.js';
+import { AppContent, AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum ChildInviteModalViewModeEnum {
     create = 'create',
@@ -77,7 +71,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const brandingConfig = useBrandingConfig();
     const isInEditMode = ChildInviteModalViewModeEnum.edit === viewMode;
 
@@ -220,8 +214,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen color="grayscale-200">
+        <AppPage>
+            <AppContent fullscreen color="grayscale-200">
                 <div className="w-full flex flex-col items-center justify-center ion-padding mt-[var(--ion-safe-area-top,0px)]">
                     <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-xs rounded-[15px] bg-white px-4 pt-6 pb-10">
                         <div>
@@ -242,7 +236,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                 >
                                     {imageUploadLoading && (
                                         <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                            <IonSpinner
+                                            <AppSpinner
                                                 name="crescent"
                                                 color="dark"
                                                 className="scale-[1.75]"
@@ -269,10 +263,10 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                         </div>
 
                         <div className="w-full mb-2 mt-4 relative">
-                            <IonInput
+                            <AppInput
                                 value={name}
-                                onIonInput={e => {
-                                    const _name = e?.detail?.value;
+                                onValueInput={value => {
+                                    const _name = value;
                                     setName(_name);
                                     setErrors?.({});
                                 }}
@@ -303,10 +297,10 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                         </div>
 
                         <div className="w-full mb-2 mt-2 relative">
-                            <IonInput
+                            <AppInput
                                 value={shortBio}
-                                onIonInput={e => {
-                                    const _shortBio = e?.detail?.value;
+                                onValueInput={value => {
+                                    const _shortBio = value;
                                     setShortBio(_shortBio);
                                     setErrors?.({});
                                 }}
@@ -393,13 +387,13 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                         </div>
                     )} */}
                 </div>
-            </IonContent>
-            <IonFooter
+            </AppContent>
+            <AppFooter
                 ref={bottomBarRef}
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-[15px] absolute bottom-0 bg-white/60 max-h-[85px]!"
             >
-                <IonToolbar mode="ios">
+                <AppToolbar mode="ios">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                             <button
@@ -435,9 +429,9 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                             )}
                         </div>
                     </div>
-                </IonToolbar>
-            </IonFooter>
-        </IonPage>
+                </AppToolbar>
+            </AppFooter>
+        </AppPage>
     );
 };
 

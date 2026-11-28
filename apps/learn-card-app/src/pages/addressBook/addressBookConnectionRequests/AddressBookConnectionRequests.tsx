@@ -5,7 +5,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connection-requests');
 
 import * as m from '../../../paraglide/messages.js';
-import { IonSpinner, useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 
@@ -22,6 +22,7 @@ import ConnectModal from '../../connectPage/ConnectModal';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AddressBookConnectionRequests: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -117,7 +118,7 @@ const AddressBookConnectionRequests: React.FC<{
         dismissModal?.();
     };
 
-    const [presentModal, dismissModal] = useIonModal(ConnectModal, {
+    const [presentModal, dismissModal] = useAppOverlayModal(ConnectModal, {
         profileId: _profileId,
         handleCancel: () => dismissModal(),
         updateCacheOnSuccessCallback: updateCacheOnSuccessCallback,
@@ -142,7 +143,7 @@ const AddressBookConnectionRequests: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             )}

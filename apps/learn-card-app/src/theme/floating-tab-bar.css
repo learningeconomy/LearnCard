@@ -3,7 +3,8 @@
     --ion-tab-bar-color-selected: #34eab9;
 }
 
-ion-tab-bar {
+/* The app-owned AppTabBar / AppTabButton (replaced ion-tab-bar / ion-tab-button). */
+.app-tab-bar {
     --background: transparent;
     border-radius: 0;
 
@@ -22,6 +23,6 @@ ion-tab-bar {
     border-radius: 16px !important;
 } */
 
-ion-tab-button ion-icon {
+.app-tab-button .app-icon {
     font-size: 1.75rem;
 }

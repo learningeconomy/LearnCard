@@ -17,8 +17,6 @@ vi.mock('learn-card-base', async () => {
     };
 });
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
-
 vi.mock('../../paraglide/messages.js', () => ({
     'common.close': () => 'Close',
     'connectivity.offlineTitle': () => "You're offline",

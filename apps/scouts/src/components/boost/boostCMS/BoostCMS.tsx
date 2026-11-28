@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -87,6 +86,8 @@ import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistr
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
 import { getLogger } from 'learn-card-base';
 import { useLocale } from '../../../i18n';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<{
@@ -209,6 +210,7 @@ const BoostCMS: React.FC<{
         ),
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
 
     const [currentStep, setCurrentStep] = useState<BoostCMSStepsEnum>(BoostCMSStepsEnum.create);
@@ -416,7 +418,9 @@ const BoostCMS: React.FC<{
             logAnalyticsEvent('boostCMS_publish', {
                 timestamp: Date.now(),
                 action: 'publish',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 boostType: state?.basicInfo?.achievementType as any,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 category: state?.basicInfo?.type as any,
             });
         } else if (currentStep === BoostCMSStepsEnum.publish) {
@@ -424,7 +428,9 @@ const BoostCMS: React.FC<{
             logAnalyticsEvent('boostCMS_issue_to', {
                 timestamp: Date.now(),
                 action: 'issue_to',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 boostType: state?.basicInfo?.achievementType as any,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 category: state?.basicInfo?.type as any,
             });
         }
@@ -611,10 +617,12 @@ const BoostCMS: React.FC<{
                             log.debug('boostUri', boostUri);
                             log.debug(
                                 'boost',
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                 await (wallet?.invoke as any)?.resolveFromLCN(boostUri)
                             );
                             // oxlint-disable-next-line no-unused-vars
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                 wallet as any,
                                 profile?.profileId as string,
                                 boostUri
@@ -627,9 +635,9 @@ const BoostCMS: React.FC<{
 
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
-                            const issuedVcUri = await (
-                                wallet?.store as any
-                            )?.LearnCloud?.uploadEncrypted?.(sentBoost);
+                            const issuedVcUri =
+                                await // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
+                                (wallet?.store as any)?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                             await addCredentialToWallet({ uri: issuedVcUri });
                             return issuedVcUri;
@@ -637,6 +645,7 @@ const BoostCMS: React.FC<{
 
                         // handle boosting someone else
                         const issuedVc = await addBoostSomeone(
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             wallet as any,
                             issuee?.profileId as string,
                             boostUri
@@ -707,8 +716,11 @@ const BoostCMS: React.FC<{
 
         newPreviewModal(
             <BoostPreview
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 credential={getBoostCredentialPreview(state) as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 categoryType={state?.basicInfo?.type as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 verificationItems={getBoostVerificationPreview(state) as any}
                 handleCloseModal={closePreviewModal}
                 customThumbComponent={
@@ -722,7 +734,9 @@ const BoostCMS: React.FC<{
                         />
                     ) : (
                         <CredentialBadge
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             achievementType={state?.basicInfo?.achievementType as any}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             boostType={state?.basicInfo?.type as any}
                             badgeThumbnail={state?.appearance?.badgeThumbnail as string}
                             badgeCircleCustomClass="w-[170px] h-[170px]"
@@ -730,6 +744,7 @@ const BoostCMS: React.FC<{
                             showBackgroundImage={false}
                             backgroundImage={state?.appearance?.backgroundImage ?? ''}
                             backgroundColor={state?.appearance?.backgroundColor ?? ''}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             credential={getBoostCredentialPreview(state) as any}
                         />
                     )
@@ -753,6 +768,7 @@ const BoostCMS: React.FC<{
                         isLoading={isLoading}
                         showIssueButton={currentStep === BoostCMSStepsEnum.publish}
                         showSaveAndQuitButton={currentStep !== BoostCMSStepsEnum.confirmation}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         selectedVCType={state?.basicInfo?.type as any}
                     />
                 }
@@ -760,6 +776,7 @@ const BoostCMS: React.FC<{
                 issueeOverride={isMeritBadge ? 'Scout' : undefined}
                 issuerOverride={isMeritBadge ? currentUser?.name : undefined}
                 issuerImageComponent={isMeritBadge ? <ProfilePicture /> : undefined}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 customIssueHistoryComponent={undefined as any}
             />,
             {
@@ -906,7 +923,7 @@ const BoostCMS: React.FC<{
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {(isLoading || isSaveLoading || isPublishLoading || stylePackLoading) && (
                 <BoostLoader text={loadingText} darkBackground />
             )}
@@ -929,21 +946,21 @@ const BoostCMS: React.FC<{
                 returnToParentAfterSave={returnToParentAfterSave}
             />
 
-            <IonContent fullscreen color="grayscale-800">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4">
+            <AppContent fullscreen color="grayscale-800">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
-                </IonGrid>
+                </AppGrid>
                 {currentStep !== BoostCMSStepsEnum.confirmation && (
-                    <IonRow className="w-full flex items-center justify-center pb-[200px]">
-                        <IonCol className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center pb-[200px]">
+                        <AppCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
                                 {m['boostCMS.quit']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

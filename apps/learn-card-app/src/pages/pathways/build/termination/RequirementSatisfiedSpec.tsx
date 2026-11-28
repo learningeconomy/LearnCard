@@ -32,7 +32,7 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 
-import { ribbonOutline } from 'ionicons/icons';
+import { ribbonOutline } from 'learn-card-base/icons/ionicons';
 
 import type { NodeRequirement, Termination } from '../../types';
 import type { OutcomeTrustTier } from '../../types/outcome';

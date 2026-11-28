@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { ellipsisHorizontal, trashOutline } from 'ionicons/icons';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { ellipsisHorizontal, trashOutline } from 'learn-card-base/icons/ionicons';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -82,7 +82,7 @@ export const DeleteAppMenu: React.FC<DeleteAppMenuProps> = ({
                 }}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-grayscale-500 hover:bg-grayscale-100 transition-colors"
             >
-                <IonIcon icon={ellipsisHorizontal} className="text-lg" />
+                <AppIcon icon={ellipsisHorizontal} className="text-lg" />
             </button>
 
             {open && (
@@ -99,7 +99,7 @@ export const DeleteAppMenu: React.FC<DeleteAppMenuProps> = ({
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
-                        <IonIcon icon={trashOutline} className="text-base" />
+                        <AppIcon icon={trashOutline} className="text-base" />
                         {mode === 'draft' ? 'Delete draft' : 'Delete app'}
                     </button>
                 </div>

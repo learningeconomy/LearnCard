@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import CaretDown from '../../svgs/CaretDown';
 import TroopsNetworkList from './TroopsNetworkList';
@@ -13,6 +12,7 @@ import {
 } from '../troopCMSState';
 import { CredentialCategoryEnum, useGetIDs, useModal, ModalTypes } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type TroopsNetworkToggleProps = {
     state: TroopsCMSState;
@@ -75,7 +75,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                     <div className="h-[40px] w-[40px] rounded-full bg-white mr-2 overflow-hidden">
                         {isParentBoostLoading ? (
                             <div className="w-full flex items-center justify-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="grayscale-900"
                                     className="scale-[1] mt-1"
@@ -127,7 +127,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                 <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">
                     {isParentBoostLoading ? (
                         <div className="w-full flex items-center justify-center">
-                            <IonSpinner
+                            <AppSpinner
                                 name="crescent"
                                 color="grayscale-900"
                                 className="scale-[1] mt-1"

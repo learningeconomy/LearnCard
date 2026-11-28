@@ -5,7 +5,7 @@ import { ContractAudience } from '../contract-requests/ContractAudience';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import {
     ChevronLeft,
     ChevronRight,
@@ -153,7 +153,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
         return (
             <div className="bg-white rounded-[20px] p-8 min-w-[350px] max-w-[450px]">
                 <div className="flex flex-col items-center justify-center min-h-[200px]">
-                    <IonSpinner name="crescent" className="w-8 h-8 mb-4" />
+                    <AppSpinner name="crescent" className="w-8 h-8 mb-4" />
                     <p className="text-grayscale-600">{m['dataSharing.loading']()}</p>
                 </div>
             </div>

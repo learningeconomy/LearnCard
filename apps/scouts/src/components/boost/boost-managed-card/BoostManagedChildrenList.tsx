@@ -6,7 +6,6 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { EmptyState } from '../boost-select-menu/NewBoostSelectMenu';
-import { IonRow, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard, { BoostManagedCardSkeleton } from './BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
@@ -27,6 +26,8 @@ import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 type BoostManagedListProps = {
     parentUri: string;
@@ -92,6 +93,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     const noSearchResults = searchResults?.length === 0;
     const searchResultsCount = searchResults?.length ?? 0;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-100px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
@@ -112,7 +114,6 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { handlePresentBoostModal } = useBoostModal(history, category);
 
     const credentialsBackgroundFetching = managedBoostsFetching && !managedBoostsLoading;
@@ -163,6 +164,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         try {
             await managedBoostsRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
@@ -205,9 +207,9 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         aria-label={m['common.searchResults.loadingManaged']()}
                     >
                         {isCardView ? (
-                            <IonGrid className="max-w-[600px]">
-                                <IonRow>{loadingManagedBoosts}</IonRow>
-                            </IonGrid>
+                            <AppGrid className="max-w-[600px]">
+                                <AppRow>{loadingManagedBoosts}</AppRow>
+                            </AppGrid>
                         ) : (
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
                                 {loadingManagedBoosts}
@@ -224,9 +226,9 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
             {!managedBoostsLoading && !boostError && managedBoostsList && (
                 <>
                     {isCardView && (
-                        <IonGrid className="max-w-[600px]">
+                        <AppGrid className="max-w-[600px]">
                             {searchActive && searchResultsElement}
-                            <IonRow>
+                            <AppRow>
                                 {enableCreateButton && (
                                     <NewBoostSelectMenuCustomTypeButton
                                         category={category}
@@ -237,13 +239,13 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                                     />
                                 )}
                                 {managedBoostsList}
-                            </IonRow>
+                            </AppRow>
                             <div
                                 aria-hidden="true"
                                 role="presentation"
                                 ref={managedBoostInfiniteScrollRef}
                             />
-                        </IonGrid>
+                        </AppGrid>
                     )}
                     {!isCardView && (
                         <>
@@ -263,7 +265,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                     )}
                     {managedBoostsFetching && (
                         <div className="w-full flex items-center justify-center">
-                            <IonSpinner
+                            <AppSpinner
                                 name="crescent"
                                 color="grayscale-900"
                                 className="scale-[2] mb-8 mt-6"

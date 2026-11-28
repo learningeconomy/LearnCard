@@ -53,7 +53,7 @@ export class GameFlowPage {
         if (!this.fromLaunchPad) {
             // no sidebar
             //   conditional because this will still be attached for LaunchPad flows
-            await expect(this.page.locator('ion-menu')).not.toBeAttached();
+            await expect(this.page.locator('[data-app-menu]')).not.toBeAttached();
         }
 
         // background
@@ -282,7 +282,7 @@ export class GameFlowPage {
 
     async demoEmailLogin() {
         await this.page
-            .locator('ion-input input[placeholder="Email address"]')
+            .locator('.app-input input[placeholder="Email address"]')
             .fill('demo@learningeconomy.io');
         await this.page.getByRole('button', { name: 'Continue' }).click();
     }

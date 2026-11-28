@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGetSkill, useModal } from 'learn-card-base';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from 'learn-card-base/ui/layout';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
@@ -136,7 +136,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
     const showSelfAssigned = isSelfAssigned || isSelected; // isSelected to account for active self-assigning skills state
 
     return (
-        <IonCol size="12" className="flex justify-center items-center relative">
+        <AppCol size="12" className="flex justify-center items-center relative">
             <div
                 className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] rounded-[20px] overflow-hidden border border-solid ${
                     proficiencyLevel
@@ -263,7 +263,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
             </div>
 
             {/* Tailwind classes are now explicitly referenced in SKILL_LEVEL_META */}
-        </IonCol>
+        </AppCol>
     );
 };
 

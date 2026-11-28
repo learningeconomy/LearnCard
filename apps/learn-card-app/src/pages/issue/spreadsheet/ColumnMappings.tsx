@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     checkmarkOutline,
@@ -10,7 +10,7 @@ import {
     linkOutline,
     calendarOutline,
     calculatorOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import {
     normalizeColumn,
@@ -104,7 +104,7 @@ export const ColumnMappings: React.FC<ColumnMappingsProps> = props => {
         <section className="space-y-v3-4 rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins">
             <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                    <IonIcon icon={swapHorizontalOutline} className="h-6 w-6" aria-hidden="true" />
+                    <AppIcon icon={swapHorizontalOutline} className="h-6 w-6" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
                     <h3 className="text-base font-semibold text-grayscale-900">
@@ -134,7 +134,7 @@ export const ColumnMappings: React.FC<ColumnMappingsProps> = props => {
                             key={column.id}
                             className="inline-flex max-w-full items-center gap-1 rounded-full bg-grayscale-100 px-3 py-2 text-xs text-grayscale-700"
                         >
-                            <IonIcon icon={checkmarkOutline} aria-hidden="true" />
+                            <AppIcon icon={checkmarkOutline} aria-hidden="true" />
                             <span className="truncate">{column.label}</span>
                         </span>
                     ))}
@@ -145,7 +145,7 @@ export const ColumnMappings: React.FC<ColumnMappingsProps> = props => {
                 className="flex w-full items-center justify-between gap-3 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-900 hover:bg-grayscale-10 transition-colors"
             >
                 {m['issueFlow.sheet.design.mapColumns']()}
-                <IonIcon
+                <AppIcon
                     icon={chevronForwardOutline}
                     className="rtl:rotate-180"
                     aria-hidden="true"
@@ -266,7 +266,7 @@ export const ColumnMappingsEditor: React.FC<
                                             })}
                                         </p>
                                     </div>
-                                    <IonIcon
+                                    <AppIcon
                                         icon={arrowForwardOutline}
                                         className="mt-8 hidden text-grayscale-400 sm:block rtl:rotate-180"
                                         aria-hidden="true"
@@ -279,7 +279,7 @@ export const ColumnMappingsEditor: React.FC<
                                             <span
                                                 className={`inline-flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-medium ${style.color}`}
                                             >
-                                                <IonIcon icon={style.icon} aria-hidden="true" />
+                                                <AppIcon icon={style.icon} aria-hidden="true" />
                                                 {m[`issueFlow.sheet.target.${target}`]()}
                                             </span>
                                         ) : (
@@ -339,7 +339,7 @@ export const ColumnMappingsEditor: React.FC<
                                             }
                                         }}
                                     >
-                                        <IonIcon
+                                        <AppIcon
                                             icon={selected ? checkmarkOutline : addOutline}
                                             aria-hidden="true"
                                         />

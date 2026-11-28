@@ -31,7 +31,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     alertCircleOutline,
@@ -45,7 +45,7 @@ import {
     libraryOutline,
     searchOutline,
     warningOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
@@ -171,7 +171,7 @@ const OverlayFrame: React.FC<{
                                transition-all duration-200 z-10"
                         style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
                     >
-                        <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
+                        <AppIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
                     </button>
 
                     {children}
@@ -390,7 +390,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                         {/* Header */}
                         <header className="space-y-v3-1 pr-10">
                             <div className="flex items-center gap-2 text-grayscale-500 text-xs uppercase tracking-wide font-medium">
-                                <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                                <AppIcon icon={cloudDownloadOutline} className="text-base" />
                                 Build · Import
                             </div>
 
@@ -435,7 +435,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
 
                         {/* Search input */}
                         <div className="relative">
-                            <IonIcon
+                            <AppIcon
                                 icon={searchOutline}
                                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-grayscale-400 text-lg pointer-events-none"
                             />
@@ -514,7 +514,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                             >
                                 <span>Know a specific CTID? Import it directly</span>
 
-                                <IonIcon
+                                <AppIcon
                                     icon={chevronDownOutline}
                                     className={`text-base transition-transform duration-200 ${
                                         showAdvanced ? 'rotate-180' : ''
@@ -583,7 +583,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                             onClick={backToBrowse}
                             className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
-                            <IonIcon icon={arrowBackOutline} className="text-base" />
+                            <AppIcon icon={arrowBackOutline} className="text-base" />
                             Back to browse
                         </button>
 
@@ -605,7 +605,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
 
                         {view.kind === 'error' && (
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-red-400 text-lg mt-0.5 shrink-0"
                                 />
@@ -718,7 +718,7 @@ const CatalogCard: React.FC<{
                 className="shrink-0 w-14 h-14 rounded-xl bg-grayscale-100
                             flex items-center justify-center"
             >
-                <IonIcon icon={libraryOutline} className="text-grayscale-400 text-2xl" />
+                <AppIcon icon={libraryOutline} className="text-grayscale-400 text-2xl" />
             </div>
         )}
 
@@ -733,7 +733,7 @@ const CatalogCard: React.FC<{
                     <>
                         {' · '}
                         <span className="inline-flex items-center gap-0.5">
-                            <IonIcon icon={layersOutline} className="text-[11px]" />~
+                            <AppIcon icon={layersOutline} className="text-[11px]" />~
                             {entry.componentCount} steps
                         </span>
                     </>
@@ -840,7 +840,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathw
             className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 space-y-v3-3"
         >
             <div className="flex items-start gap-2.5">
-                <IonIcon
+                <AppIcon
                     icon={checkmarkCircleOutline}
                     className="text-emerald-500 text-lg mt-0.5 shrink-0"
                 />
@@ -884,7 +884,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathw
             {warnings.length > 0 && (
                 <details className="pt-1">
                     <summary className="text-xs font-medium text-amber-700 cursor-pointer flex items-center gap-1.5">
-                        <IonIcon icon={warningOutline} className="text-base" />
+                        <AppIcon icon={warningOutline} className="text-base" />
                         {warnings.length} note{warnings.length === 1 ? '' : 's'} about this import
                     </summary>
 
@@ -899,7 +899,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathw
             )}
 
             <div className="pt-2 border-t border-emerald-100 flex items-start gap-1.5">
-                <IonIcon
+                <AppIcon
                     icon={informationCircleOutline}
                     className="text-grayscale-500 text-sm mt-0.5 shrink-0"
                 />
