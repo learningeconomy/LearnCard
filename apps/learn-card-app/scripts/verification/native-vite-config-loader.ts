@@ -14,18 +14,25 @@
  * wrapper is registered before any `import("vite")`.
  */
 import { plugin } from 'bun';
+import type * as Vite from 'vite';
 
 const realVite = await import(import.meta.resolve('vite'));
-const loadConfigFromFile = realVite.loadConfigFromFile;
+const loadConfigFromFile = realVite.loadConfigFromFile as typeof Vite.loadConfigFromFile;
 
-const loadConfigFromFileNatively: typeof loadConfigFromFile = (
-    configEnv,
-    configFile,
-    configRoot,
-    logLevel,
-    customLogger,
-    configLoader = 'native'
-) => loadConfigFromFile(configEnv, configFile, configRoot, logLevel, customLogger, configLoader);
+const loadConfigFromFileNatively = (
+    ...args: Parameters<typeof loadConfigFromFile>
+): ReturnType<typeof loadConfigFromFile> => {
+    const [configEnv, configFile, configRoot, logLevel, customLogger, configLoader = 'native'] =
+        args;
+    return loadConfigFromFile(
+        configEnv,
+        configFile,
+        configRoot,
+        logLevel,
+        customLogger,
+        configLoader
+    );
+};
 
 plugin({
     name: 'lc-native-vite-config-loader',
