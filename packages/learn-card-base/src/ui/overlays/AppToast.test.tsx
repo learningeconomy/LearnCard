@@ -75,6 +75,17 @@ describe('AppToast', () => {
         expect(onDidDismiss.mock.calls[0][0].detail.role).toBe('timeout');
         expect(toasts()).toHaveLength(0);
     });
+
+    it('stays visible when className or color updates while open', async () => {
+        const { rerender } = render(<AppToast isOpen message="Saved" color="success" />);
+
+        await waitFor(() => expect(toasts()[0]).not.toHaveClass('app-overlay-hidden'));
+
+        rerender(<AppToast isOpen message="Failed" color="danger" className="extra-toast" />);
+
+        expect(toasts()[0]).toHaveClass('app-color-danger', 'extra-toast');
+        expect(toasts()[0]).not.toHaveClass('app-overlay-hidden');
+    });
 });
 
 describe('useAppToast', () => {

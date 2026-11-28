@@ -1,13 +1,21 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import { AppSpinner, type AppSpinnerName } from '../feedback/AppSpinner';
 import { playAnimation } from './overlayAnimation';
-import { getOverlayRoot, nextOverlayIndex, type OverlayDismissEvent } from './overlayStack';
+import {
+    getOverlayRoot,
+    nextOverlayIndex,
+    nextStackZIndex,
+    type OverlayDismissEvent,
+} from './overlayStack';
 import { OVERLAY_HIDDEN_CLASS, useIsOpen, useOverlayLifecycle } from './useOverlayLifecycle';
 
 import './overlays.css';
+
+/** Ionic's loading z-index tier (40000 + overlay index). */
+const LOADING_TIER = 40000;
 
 type SpinnerName = AppSpinnerName;
 
@@ -63,6 +71,7 @@ export const AppLoading: React.FC<AppLoadingProps> = ({
     const mode = modeProp ?? getIonMode();
     const spinnerName = spinner === undefined ? (mode === 'ios' ? 'lines' : 'crescent') : spinner;
     const [overlayIndex] = useState(nextOverlayIndex);
+    const [zIndex, setZIndex] = useState(LOADING_TIER);
     const durationTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     const lifecycle = useOverlayLifecycle({
@@ -72,6 +81,7 @@ export const AppLoading: React.FC<AppLoadingProps> = ({
         keyboardClose,
         animated,
         enter: host => {
+            flushSync(() => setZIndex(nextStackZIndex(LOADING_TIER, host)));
             const { backdrop, wrapper } = parts(host);
             return playAnimation(
                 [
@@ -122,7 +132,7 @@ export const AppLoading: React.FC<AppLoadingProps> = ({
         onWillDismiss,
         onDidDismiss,
     });
-    const { hostRef, mounted, present, dismiss } = lifecycle;
+    const { hostRef, mounted, hidden, present, dismiss } = lifecycle;
 
     useIsOpen(isOpen, present, dismiss);
 
@@ -142,7 +152,7 @@ export const AppLoading: React.FC<AppLoadingProps> = ({
         'app-loading',
         mode,
         translucent && 'app-loading-translucent',
-        OVERLAY_HIDDEN_CLASS,
+        hidden && OVERLAY_HIDDEN_CLASS,
         cssClass,
         className,
     ]
@@ -158,7 +168,7 @@ export const AppLoading: React.FC<AppLoadingProps> = ({
             aria-modal="true"
             aria-labelledby={message !== undefined ? msgId : undefined}
             tabIndex={-1}
-            style={{ zIndex: 40000 + overlayIndex }}
+            style={{ zIndex }}
         >
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Escape is the keyboard dismiss (overlayStack); the backdrop is aria-hidden like ion-backdrop */}
             <div

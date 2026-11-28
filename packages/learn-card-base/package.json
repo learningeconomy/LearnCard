@@ -89,5 +89,9 @@
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
-    "sideEffects": false
+    "sideEffects": [
+        "**/*.css",
+        "**/*.scss",
+        "./src/ui/overlays/overlayStack.ts"
+    ]
 }

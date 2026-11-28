@@ -49,7 +49,7 @@ export const playAnimation = (
 /** Ionic's `keyboardClose`: an overlay opening or closing blurs a focused text field. */
 export const blurFocusedTextField = (doc: Document): void => {
     const active = doc.activeElement as HTMLElement | null;
-    if (active?.matches('input,ion-input, ion-textarea')) active.blur();
+    if (active?.matches('input, textarea, ion-input, ion-textarea')) active.blur();
 };
 
 /** Serializes present / dismiss calls like Ionic's lock controller. */

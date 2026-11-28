@@ -61,6 +61,7 @@ export const useOverlayLifecycle = (options: OverlayLifecycleOptions) => {
     });
     const hostRef = useRef<HTMLDivElement | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [hidden, setHidden] = useState(true);
     const lock = useRef(createLock()).current;
     const state = useRef<{
         presented: boolean;
@@ -95,7 +96,12 @@ export const useOverlayLifecycle = (options: OverlayLifecycleOptions) => {
                 host.classList.add(OVERLAY_HIDDEN_CLASS);
                 host.style.removeProperty('pointer-events');
                 s.entry = undefined;
-                if (!s.unmounted) flushSync(() => setMounted(false));
+                if (!s.unmounted) {
+                    flushSync(() => {
+                        setHidden(true);
+                        setMounted(false);
+                    });
+                }
                 didDismissOverlay();
                 const restore = s.restoreFocus;
                 s.restoreFocus = undefined;
@@ -126,12 +132,13 @@ export const useOverlayLifecycle = (options: OverlayLifecycleOptions) => {
                     backdropDismiss: opts.backdropDismiss,
                     trap: opts.trap,
                     trapRoot: opts.trapRoot?.(host) ?? undefined,
-                    dismiss: role => void dismiss(role),
+                    dismiss: role => dismiss(role),
                 };
                 s.entry = entry;
                 s.presented = true;
                 willPresentOverlay(entry);
                 opts.onWillPresent?.();
+                flushSync(() => setHidden(false));
                 host.classList.remove(OVERLAY_HIDDEN_CLASS);
                 if (opts.keyboardClose) blurFocusedTextField(document);
                 const enter = opts.enter(host);
@@ -181,7 +188,7 @@ export const useOverlayLifecycle = (options: OverlayLifecycleOptions) => {
 
     const isPresented = useCallback(() => state.current.presented, []);
 
-    return { hostRef, mounted, present, dismiss, isPresented };
+    return { hostRef, mounted, hidden, present, dismiss, isPresented };
 };
 
 /** Drives `present` / `dismiss` from a controlled `isOpen` prop, as Ionic's `onIsOpenChange`. */

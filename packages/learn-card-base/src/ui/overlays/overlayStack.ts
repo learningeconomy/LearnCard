@@ -47,7 +47,7 @@ export type OverlayEntry = {
      * saw its light DOM (the content), not the drag handle in its shadow root.
      */
     trapRoot?: HTMLElement;
-    dismiss: (role?: OverlayRole) => void;
+    dismiss: (role?: OverlayRole) => Promise<boolean> | void;
     /** Last element focused inside the overlay (Ionic's `lastFocus`). */
     lastFocus?: Element | null;
 };
@@ -158,11 +158,40 @@ export const dismissClosestModalOrPopover = (el: Element, role: OverlayRole): bo
         }
         const entry = entries.get(node as HTMLElement);
         if (entry && (entry.kind === 'modal' || entry.kind === 'popover')) {
-            entry.dismiss(role);
+            void entry.dismiss(role);
             return true;
         }
         node = node.parentElement?.closest(`ion-modal, ion-popover, [${APP_OVERLAY_ATTR}]`) ?? null;
     }
+    return false;
+};
+
+/**
+ * Dismisses the closest modal or popover around `el` and awaits its dismiss animation.
+ * Resolves `true` if an overlay was found and dismissed, `false` otherwise.
+ */
+export const dismissClosestOverlay = async (el: Element, role?: OverlayRole): Promise<boolean> => {
+    let node: Element | null = el.closest(`ion-modal, ion-popover, [${APP_OVERLAY_ATTR}]`);
+
+    while (node) {
+        if (node.tagName === 'ION-MODAL' || node.tagName === 'ION-POPOVER') {
+            return (
+                node as HTMLElement & {
+                    dismiss: (data?: unknown, role?: string) => Promise<boolean>;
+                }
+            ).dismiss(undefined, role);
+        }
+
+        const entry = entries.get(node as HTMLElement);
+
+        if (entry && (entry.kind === 'modal' || entry.kind === 'popover')) {
+            await entry.dismiss(role);
+            return true;
+        }
+
+        node = node.parentElement?.closest(`ion-modal, ion-popover, [${APP_OVERLAY_ATTR}]`) ?? null;
+    }
+
     return false;
 };
 

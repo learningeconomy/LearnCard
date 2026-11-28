@@ -1,12 +1,15 @@
 import React, { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import { playAnimation, type OverlayAnimation } from './overlayAnimation';
-import { getOverlayRoot, nextOverlayIndex, type OverlayDismissEvent } from './overlayStack';
+import { getOverlayRoot, nextStackZIndex, type OverlayDismissEvent } from './overlayStack';
 import { OVERLAY_HIDDEN_CLASS, useIsOpen, useOverlayLifecycle } from './useOverlayLifecycle';
 
 import './overlays.css';
+
+/** Ionic's toast z-index tier (60000 + overlay index). */
+const TOAST_TIER = 60000;
 
 export type AppToastPosition = 'top' | 'bottom' | 'middle';
 
@@ -121,7 +124,7 @@ export const AppToast: React.FC<AppToastProps> = ({
     onDidDismiss,
 }) => {
     const mode = modeProp ?? getIonMode();
-    const [overlayIndex] = useState(nextOverlayIndex);
+    const [zIndex, setZIndex] = useState(TOAST_TIER);
     const [revealContent, setRevealContent] = useState(false);
     const durationTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const lastPosition = useRef<AnimationPosition>({ top: '', bottom: '' });
@@ -133,6 +136,7 @@ export const AppToast: React.FC<AppToastProps> = ({
         keyboardClose: false,
         animated,
         enter: host => {
+            flushSync(() => setZIndex(nextStackZIndex(TOAST_TIER, host)));
             lastPosition.current = getAnimationPosition(position, mode);
             return enterAnimation(host, mode, position, lastPosition.current);
         },
@@ -155,7 +159,7 @@ export const AppToast: React.FC<AppToastProps> = ({
             onDidDismiss?.(event);
         },
     });
-    const { hostRef, mounted, present, dismiss } = lifecycle;
+    const { hostRef, mounted, hidden: overlayHidden, present, dismiss } = lifecycle;
 
     useIsOpen(isOpen, present, dismiss);
 
@@ -166,7 +170,7 @@ export const AppToast: React.FC<AppToastProps> = ({
         mode,
         color && `app-color app-color-${color}`,
         translucent && 'app-toast-translucent',
-        OVERLAY_HIDDEN_CLASS,
+        overlayHidden && OVERLAY_HIDDEN_CLASS,
         cssClass,
         className,
     ]
@@ -184,7 +188,7 @@ export const AppToast: React.FC<AppToastProps> = ({
             className={hostClasses}
             data-app-overlay="toast"
             tabIndex={-1}
-            style={{ zIndex: 60000 + overlayIndex }}
+            style={{ zIndex }}
         >
             <div className={`app-toast-wrapper app-toast-${position} app-toast-layout-baseline`}>
                 <div className="app-toast-container">

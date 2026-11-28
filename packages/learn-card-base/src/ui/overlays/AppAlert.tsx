@@ -278,7 +278,7 @@ export const AppAlert: React.FC<AppAlertProps> = props => {
         },
         onDidDismiss: event => propsRef.current.onDidDismiss?.(event),
     });
-    const { hostRef, mounted, present, dismiss } = lifecycle;
+    const { hostRef, mounted, hidden, present, dismiss } = lifecycle;
 
     const dismissFromIsOpen = useCallback(() => dismiss(), [dismiss]);
     useIsOpen(isOpen, present, dismissFromIsOpen);
@@ -344,7 +344,7 @@ export const AppAlert: React.FC<AppAlertProps> = props => {
         'app-alert',
         classList(cssClass),
         mode,
-        OVERLAY_HIDDEN_CLASS,
+        hidden && OVERLAY_HIDDEN_CLASS,
         translucent && 'alert-translucent',
     ]
         .filter(Boolean)

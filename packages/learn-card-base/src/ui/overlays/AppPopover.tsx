@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal, flushSync } from 'react-dom';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import { playAnimation, type OverlayAnimation } from './overlayAnimation';
-import { getOverlayRoot, nextOverlayIndex, type OverlayDismissEvent } from './overlayStack';
+import { getOverlayRoot, nextStackZIndex, type OverlayDismissEvent } from './overlayStack';
 import {
     calculateWindowAdjustment,
     getPopoverPosition,
@@ -53,6 +53,8 @@ export type AppPopoverProps = {
     children?: React.ReactNode;
 };
 
+/** Ionic's popover z-index tier (20000 + overlay index, shared with modals and alerts). */
+const POPOVER_TIER = 20000;
 const POPOVER_IOS_BODY_PADDING = 5;
 const POPOVER_MD_BODY_PADDING = 12;
 
@@ -281,19 +283,21 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
 }) => {
     const mode = modeProp ?? getIonMode();
     const align = alignment ?? (mode === 'ios' ? 'center' : 'start');
-    const [overlayIndex] = useState(nextOverlayIndex);
+    const [zIndex, setZIndex] = useState(POPOVER_TIER);
     const [desktop] = useState(isDesktop);
+    const bottomClassRef = useRef(false);
     const presentOptions = useRef<Partial<PresentOptions> | null>(null);
     const triggerEl = useRef<HTMLElement | null>(null);
 
-    const { hostRef, mounted, present, dismiss } = useOverlayLifecycle({
+    const { hostRef, mounted, hidden, present, dismiss } = useOverlayLifecycle({
         kind: 'popover',
         backdropDismiss,
         trap: 'shadow',
         keyboardClose,
         animated,
-        enter: host =>
-            enterAnimation(host, {
+        enter: host => {
+            flushSync(() => setZIndex(nextStackZIndex(POPOVER_TIER, host)));
+            const animation = enterAnimation(host, {
                 mode,
                 reference,
                 side,
@@ -302,15 +306,26 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
                 trigger: triggerEl.current,
                 event,
                 ...presentOptions.current,
-            }),
+            });
+            bottomClassRef.current = host.classList.contains('app-popover-bottom');
+            return animation;
+        },
         leave: host => leaveAnimation(host, mode),
         onWillPresent,
         onDidPresent,
         onWillDismiss,
-        onDidDismiss,
+        onDidDismiss: ev => {
+            bottomClassRef.current = false;
+            onDidDismiss?.(ev);
+        },
     });
 
     useIsOpen(isOpen, present, dismiss);
+
+    // Keep the enter-time `app-popover-bottom` placement class when React updates hostClasses.
+    useLayoutEffect(() => {
+        hostRef.current?.classList.toggle('app-popover-bottom', bottomClassRef.current);
+    });
 
     // `trigger`: the element's clicks present the popover against it.
     useEffect(() => {
@@ -354,7 +369,7 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
         mode,
         desktop && 'app-popover-desktop',
         `app-popover-side-${side}`,
-        OVERLAY_HIDDEN_CLASS,
+        hidden && OVERLAY_HIDDEN_CLASS,
         className,
     ]
         .filter(Boolean)
@@ -368,7 +383,7 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
             data-app-overlay="popover"
             aria-modal="true"
             tabIndex={-1}
-            style={{ ...style, zIndex: 20000 + overlayIndex }}
+            style={{ ...style, zIndex }}
             onClick={onClick}
             onPointerDown={onPointerDown}
             onTouchStart={onTouchStart}

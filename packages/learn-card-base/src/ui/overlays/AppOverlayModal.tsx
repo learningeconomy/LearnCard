@@ -269,10 +269,11 @@ export const AppOverlayModal = forwardRef<AppOverlayModalHandle, AppOverlayModal
             onDidDismiss: event => {
                 dispatchLifecycle(LIFECYCLE.didDismiss);
                 runtime.current.breakpoint = undefined;
+                setShown(false);
                 propsRef.current.onDidDismiss?.(event);
             },
         });
-        const { hostRef, mounted, present, dismiss: lifecycleDismiss } = lifecycle;
+        const { hostRef, mounted, hidden, present, dismiss: lifecycleDismiss } = lifecycle;
 
         const dismiss = useCallback(
             (data?: unknown, dismissRole?: OverlayRole) => lifecycleDismiss(dismissRole, data),
@@ -365,7 +366,7 @@ export const AppOverlayModal = forwardRef<AppOverlayModalHandle, AppOverlayModal
             'app-modal',
             mode,
             isSheet ? 'modal-sheet' : 'modal-default',
-            !shown && OVERLAY_HIDDEN_CLASS,
+            (hidden || !shown) && OVERLAY_HIDDEN_CLASS,
             shown && 'show-modal',
             focusTrap === false && FOCUS_TRAP_DISABLE_CLASS,
             classList(cssClass),

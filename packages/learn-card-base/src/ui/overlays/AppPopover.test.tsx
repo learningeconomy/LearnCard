@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AppOverlayModal } from './AppOverlayModal';
 import { AppPopover } from './AppPopover';
 import { AppToast } from './AppToast';
-import type { OverlayDismissEvent } from './overlayStack';
+import { dismissClosestOverlay, type OverlayDismissEvent } from './overlayStack';
 
 let ionApp: HTMLElement;
 
@@ -265,5 +266,83 @@ describe('AppPopover', () => {
         await new Promise(r => setTimeout(r, 50));
         expect(onDidDismiss).not.toHaveBeenCalled();
         expect(host()).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('keeps the popover visible when className changes while open', async () => {
+        const { rerender } = render(
+            <AppPopover isOpen className="initial-class">
+                <p>Visible</p>
+            </AppPopover>
+        );
+
+        await waitFor(() => expect(host()).not.toHaveClass('app-overlay-hidden'));
+
+        rerender(
+            <AppPopover isOpen className="updated-class">
+                <p>Visible</p>
+            </AppPopover>
+        );
+
+        expect(host()).toHaveClass('updated-class');
+        expect(host()).not.toHaveClass('app-overlay-hidden');
+    });
+
+    it('stacks a popover above a modal opened before it, even if mounted earlier', async () => {
+        const { rerender } = render(
+            <>
+                <AppPopover isOpen={false}>
+                    <p>Popover body</p>
+                </AppPopover>
+                <AppOverlayModal isOpen>
+                    <div className="ion-page">Modal body</div>
+                </AppOverlayModal>
+            </>
+        );
+
+        await waitFor(() => expect(document.querySelector('.app-modal')).toHaveClass('show-modal'));
+
+        rerender(
+            <>
+                <AppPopover isOpen>
+                    <p>Popover body</p>
+                </AppPopover>
+                <AppOverlayModal isOpen>
+                    <div className="ion-page">Modal body</div>
+                </AppOverlayModal>
+            </>
+        );
+
+        await waitFor(() => expect(host()).not.toHaveClass('app-overlay-hidden'));
+
+        const modalZ = Number(document.querySelector<HTMLElement>('.app-modal')?.style.zIndex ?? 0);
+        const popoverZ = Number(host()?.style.zIndex ?? 0);
+
+        expect(popoverZ).toBeGreaterThan(modalZ);
+    });
+
+    it('blurs a focused textarea when opening and supports dismissClosestOverlay', async () => {
+        const onDidDismiss = vi.fn();
+        const textarea = document.createElement('textarea');
+        document.body.appendChild(textarea);
+        textarea.focus();
+
+        expect(document.activeElement).toBe(textarea);
+
+        render(
+            <AppPopover isOpen onDidDismiss={onDidDismiss}>
+                <button type="button">Action</button>
+            </AppPopover>
+        );
+
+        const button = await screen.findByRole('button', { name: 'Action' });
+        await waitFor(() => expect(document.activeElement).toBe(host()));
+
+        expect(document.activeElement).not.toBe(textarea);
+
+        await expect(dismissClosestOverlay(button)).resolves.toBe(true);
+        await waitFor(() => expect(host()).toBeNull());
+        expect(onDidDismiss).toHaveBeenCalledTimes(1);
+
+        textarea.remove();
     });
 });

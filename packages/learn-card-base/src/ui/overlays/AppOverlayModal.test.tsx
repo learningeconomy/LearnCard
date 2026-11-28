@@ -151,6 +151,36 @@ describe('AppOverlayModal', () => {
             expect(document.querySelector('ion-content')).not.toHaveAttribute('role')
         );
     });
+
+    it('resets shown state after dismiss so a second open starts hidden before enter', async () => {
+        const { rerender } = render(
+            <AppOverlayModal isOpen>
+                <div className="ion-page">Reopenable</div>
+            </AppOverlayModal>
+        );
+
+        await presented();
+
+        rerender(
+            <AppOverlayModal isOpen={false}>
+                <div className="ion-page">Reopenable</div>
+            </AppOverlayModal>
+        );
+
+        await waitFor(() => expect(host()).toBeNull());
+
+        rerender(
+            <AppOverlayModal isOpen>
+                <div className="ion-page">Reopenable</div>
+            </AppOverlayModal>
+        );
+
+        // Immediately after mount (before the two-frame enter), modal starts hidden.
+        await waitFor(() => expect(host()).not.toBeNull());
+        expect(host()).toHaveClass('app-overlay-hidden');
+
+        await presented();
+    });
 });
 
 describe('useAppOverlayModal', () => {
