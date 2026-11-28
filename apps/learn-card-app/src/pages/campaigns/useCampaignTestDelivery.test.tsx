@@ -1,8 +1,8 @@
 import React from 'react';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import { inAppMessageValidator, type MyCampaign, type InAppMessage } from '@learncard/types';
 import { useCampaignTestDelivery } from './useCampaignTestDelivery';
 
@@ -57,12 +57,12 @@ const pending: MyCampaign = {
     state: { shownCount: 0 },
 };
 const mount = (path = '/wallet') => {
-    const history = createMemoryHistory({ initialEntries: [path] });
+    const history = createTestHistory({ initialEntries: [path] });
     return {
         history,
         ...renderHook(useCampaignTestDelivery, {
             wrapper: ({ children }: { children: React.ReactNode }) => (
-                <Router history={history}>{children}</Router>
+                <TestRouter history={history}>{children}</TestRouter>
             ),
         }),
     };
@@ -85,7 +85,7 @@ it('waits until returning from the composer and acknowledges only actual present
     const view = mount('/admin/campaigns/private-test');
     expect(view.result.current).toBeUndefined();
     expect(state.get).not.toHaveBeenCalled();
-    act(() => view.history.push('/wallet'));
+    await act(() => view.history.push('/wallet'));
     await waitFor(() => expect(view.result.current?.message.title).toBe('Private test'));
     expect(state.record).not.toHaveBeenCalled();
     act(() => {

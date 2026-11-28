@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { BrandingEnum, getHeaderBrandingColor } from './headerBrandingHelpers';
 import { useBrandingAssets, useTenantConfig } from '../../config/TenantConfigProvider';
@@ -24,7 +24,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
     disableClick,
 }) => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
     const brandingAssets = useBrandingAssets();
     const tenantConfig = useTenantConfig();
 
@@ -52,7 +52,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
     if (branding === BrandingEnum.scoutPass) {
         return (
             <button
-                onClick={() => history.push('/campfire')}
+                onClick={() => navigate('/campfire')}
                 className={`flex items-center justify-start ion-padding ${className}`}
                 disabled={disableClick}
             >
@@ -74,7 +74,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
 
     return (
         <button
-            onClick={() => history.push(tenantConfig.branding.homeRoute ?? '/wallet')}
+            onClick={() => navigate(tenantConfig.branding.homeRoute ?? '/wallet')}
             className={`text-sm z-10 tracking-[6px] font-bold select-none ${getHeaderBrandingColor(
                 branding,
                 location.pathname

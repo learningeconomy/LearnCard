@@ -674,7 +674,9 @@ export const doctorStack = async (
             throw new Error(`Frontend root ${root}: HTTP ${response.status}`);
         }
         const html = await response.text();
-        if (!html.includes('id="root"') || !html.includes('/src/index')) {
+        // The document is src/root.tsx; the client entry is src/entry.client.tsx (renamed from
+        // src/index.tsx when the app moved to React Router framework mode).
+        if (!html.includes('id="root"') || !html.includes('/src/entry.client')) {
             permanentFrontendFailure = true;
             throw new Error(`Frontend root ${root} is not the prepared LearnCard HTML`);
         }
@@ -853,23 +855,24 @@ export const startStack = async (
         signal?.throwIfAborted();
         const log = openSync(join(canonical, 'frontend.log'), 'a', 0o600);
         try {
-            const child = spawn(
-                process.execPath,
-                [
-                    '--no-env-file',
-                    '--no-install',
-                    '--conditions=development',
-                    join(APP, 'scripts/verification/server.ts'),
-                    canonical,
-                    token,
-                ],
-                {
-                    cwd: APP,
-                    detached: true,
-                    stdio: ['ignore', log, log],
-                    env: { ...cleanEnvironment(), LC_VERIFY_DIRECTORY: canonical },
-                }
-            );
+            // --preload wraps Vite's loadConfigFromFile so React Router's child
+            // compiler also uses the native loader (see native-vite-config-loader.ts).
+            const frontendArgs = [
+                '--no-env-file',
+                '--no-install',
+                '--conditions=development',
+                '--preload',
+                join(APP, 'scripts/verification/native-vite-config-loader.ts'),
+                join(APP, 'scripts/verification/server.ts'),
+                canonical,
+                token,
+            ];
+            const child = spawn(process.execPath, frontendArgs, {
+                cwd: APP,
+                detached: true,
+                stdio: ['ignore', log, log],
+                env: { ...cleanEnvironment(), LC_VERIFY_DIRECTORY: canonical },
+            });
             let frontendExit: { code: number | null; signal: NodeJS.Signals | null } | undefined;
             child.once('exit', (code, exitSignal) => {
                 frontendExit = { code, signal: exitSignal };
@@ -881,14 +884,7 @@ export const startStack = async (
             // Ownership acquisition is bounded and joined even if cancellation arrives.
             // Otherwise cancellation could leave a live child without a recoverable identity.
             state.frontend = await waitForChildIdentity(child.pid!, {
-                expectedArgs: [
-                    '--no-env-file',
-                    '--no-install',
-                    '--conditions=development',
-                    join(APP, 'scripts/verification/server.ts'),
-                    canonical,
-                    token,
-                ],
+                expectedArgs: frontendArgs,
                 hasExited: () => frontendExit !== undefined,
             });
             if (!state.frontend)
@@ -905,7 +901,10 @@ export const startStack = async (
         }
         progress('readiness');
         await measure('readiness', async () => {
-            const deadline = Date.now() + 240_000;
+            // 300s is a buffer for three shards sharing a CI runner, not the
+            // fix. Cold warmup should land well under 240s after the smaller
+            // HTTP crawl; shard 1 previously finished in 237s under the 240s cap.
+            const deadline = Date.now() + 300_000;
             let report: Record<string, unknown> | undefined;
             while (Date.now() < deadline) {
                 signal?.throwIfAborted();

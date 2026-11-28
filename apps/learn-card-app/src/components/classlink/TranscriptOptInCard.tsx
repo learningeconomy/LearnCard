@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
@@ -108,7 +108,7 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
     receivedAt,
 }) => {
     const { initWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [timedOut, setTimedOut] = useState(false);
     const {
         entry: transcriptEntry,
@@ -172,7 +172,7 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
                     <p className="text-sm text-grayscale-600">
                         {m['transcriptOptIn.inPassport']()}
                     </p>
-                    <PrimaryButton onClick={() => history.push('/passport')}>
+                    <PrimaryButton onClick={() => navigate('/passport')}>
                         {m['transcriptOptIn.viewInPassport']()}
                     </PrimaryButton>
                 </div>
@@ -208,7 +208,7 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
 };
 
 const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source, variant }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const locale = getLocale();
     const { track } = useAnalytics();
 
@@ -269,7 +269,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                     <button
                         type="button"
                         className="shrink-0 rounded-[20px] bg-grayscale-900 px-3 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
-                        onClick={() => history.push('/school-connect')}
+                        onClick={() => navigate('/school-connect')}
                     >
                         {failed ? m['transcriptOptIn.tryAgain']() : m['transcriptOptIn.getIt']()}
                     </button>
@@ -300,7 +300,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         setReauthError('');
         const outcome = await runClassLinkLogin(
             getClassLinkAuthorizeUrl,
-            path => history.push(path),
+            path => navigate(path),
             window.location.pathname,
             'connect'
         );
@@ -446,7 +446,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                                 </p>
                             </div>
                         </div>
-                        <PrimaryButton onClick={() => history.push('/notifications')}>
+                        <PrimaryButton onClick={() => navigate('/notifications')}>
                             {m['transcriptOptIn.openNotifications']()}
                         </PrimaryButton>
                     </div>
@@ -490,7 +490,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                                         type="button"
                                         data-testid="transcript-optin-open-notifications"
                                         className="w-full py-3 px-4 rounded-[20px] border border-grayscale-200 text-grayscale-900 font-medium text-sm hover:bg-grayscale-50 transition-colors"
-                                        onClick={() => history.push('/notifications')}
+                                        onClick={() => navigate('/notifications')}
                                     >
                                         {m['transcriptOptIn.openNotifications']()}
                                     </button>

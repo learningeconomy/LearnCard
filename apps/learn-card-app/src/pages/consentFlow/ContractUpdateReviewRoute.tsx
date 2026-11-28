@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigationType, useNavigate } from 'react-router';
 import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { useQuery } from '@tanstack/react-query';
 import { buildContractUpdatePreview, hasOpenNewOptionsWindow } from '@learncard/helpers';
@@ -26,7 +26,8 @@ import ContractUpdateReview from './ContractUpdateReview';
 
 const ContractUpdateReviewRoute: React.FC = () => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
+    const navigationType = useNavigationType();
     const uri = new URLSearchParams(location.search).get('uri') ?? '';
     const locale = useLocale();
     const readerDid = walletStore.use.wallet()?.id.did();
@@ -266,7 +267,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
             onAccept={accept}
             onDecline={decline}
             onClose={() =>
-                history.action === 'POP' ? history.replace('/wallet') : history.goBack()
+                navigationType === 'POP' ? navigate('/wallet', { replace: true }) : navigate(-1)
             }
         />
     );

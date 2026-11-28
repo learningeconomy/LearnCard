@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { BoostSmallCard } from '@learncard/react';
 
@@ -44,7 +44,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
     useCMSModal = false,
     returnToParentAfterSave = false,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const flags = useFlags();
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -67,7 +67,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
         handleCloseModal();
         if (!useCMSModal) {
             const redirect = `/boost?boostUserType=${BoostUserTypeEnum.someone}&boostCategoryType=${category}&boostSubCategoryType=${achievementType}`;
-            history.push(redirect);
+            navigate(redirect);
         } else {
             newModal(
                 <BoostCMS

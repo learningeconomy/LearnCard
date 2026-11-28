@@ -9,18 +9,26 @@ const { init, parse } = await import(
 await init;
 const root = resolve(build);
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
-const entry = [...html.matchAll(/<script\b(?=[^>]*type="module")[^>]*src="([^"]+)"/g)]
-    .map(match => match[1])
-    .find(src => src.startsWith('/assets/'));
-if (!entry) throw new Error('Missing application module entry');
+// Plain Vite pages load one `<script type="module" src>`. React Router pages load the route
+// modules and the client entry from an inline module script (`import ...` / `import("...")`).
+const scriptEntries = [...html.matchAll(/<script\b(?=[^>]*type="module")[^>]*src="([^"]+)"/g)].map(
+    match => match[1]
+);
+const inlineEntries = [
+    ...html.matchAll(/<script\b(?=[^>]*type="module")(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g),
+].flatMap(match =>
+    [...match[1].matchAll(/import\s*(?:[^'"()]*?from\s*)?\(?\s*"([^"]+)"/g)].map(m => m[1])
+);
+const entries = [...scriptEntries, ...inlineEntries].filter(src => src.startsWith('/assets/'));
+if (entries.length === 0) throw new Error('Missing application module entry');
 const assets = await readdir(resolve(root, 'assets'));
 const find = prefix => {
     const matches = assets.filter(file => file.startsWith(prefix + '-') && file.endsWith('.js'));
     if (matches.length !== 1) throw new Error(`Expected one ${prefix} chunk; found ${matches}`);
     return resolve(root, 'assets', matches[0]);
 };
-const main = resolve(root, entry.replace(/^\//, ''));
-const allRoots = [main, find('FullApp'), find('Routes'), find('AiPathways')];
+const mains = [...new Set(entries)].map(entry => resolve(root, entry.replace(/^\//, '')));
+const allRoots = [...mains, find('FullApp'), find('Routes'), find('AiPathways')];
 const measure = async roots => {
     const seen = new Set();
     let rawBytes = 0;
@@ -49,7 +57,7 @@ const measure = async roots => {
 };
 const result = {
     roots: allRoots.map(file => relative(root, file)),
-    entry: await measure([main]),
+    entry: await measure(mains),
     signedInPathways: await measure(allRoots),
     method: 'Built ESM static import closure, dynamic imports excluded; sum per-file gzip at Node default level; JS only, no WASM/CSS/HTML.',
 };

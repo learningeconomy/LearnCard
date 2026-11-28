@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import useAiSession from '../../hooks/useAiSession';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
@@ -21,7 +21,7 @@ export const AiSessionTopicsContainer: React.FC = () => {
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const {
         startNewSession: _startNewSession,
@@ -66,9 +66,12 @@ export const AiSessionTopicsContainer: React.FC = () => {
 
             // Set the param to false to prevent repeated triggering
             const newParams = { ...restParams, startNewSession: 'false' };
-            history.replace({
-                search: `?${queryString.stringify(newParams)}`,
-            });
+            navigate(
+                {
+                    search: `?${queryString.stringify(newParams)}`,
+                },
+                { replace: true }
+            );
         }
     }, [startNewSession]);
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import queryString from 'query-string';
 
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
@@ -61,7 +61,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const adapter = useSignInAdapter();
     const queryClient = useQueryClient();
@@ -102,10 +102,10 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         const isServerError = errorType === 500;
 
         if (isClientError) {
-            history.push('/launchpad');
+            navigate('/launchpad');
             newModal(<ConsentFlowError errorType={uri === '' ? 400 : errorType} />);
         } else if (isServerError) {
-            history.push('/launchpad');
+            navigate('/launchpad');
             newModal(<ConsentFlowError errorType={errorType} uri={uri} />);
         }
     }, [error]);
@@ -164,7 +164,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             if (hasCredentialFrontDoor) {
                 setStep(Step.credFrontDoor);
             } else {
-                history.push(
+                navigate(
                     `/consent-flow-sync-data?${queryString.stringify({
                         challenge,
                         domain,
@@ -200,7 +200,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         domain,
         presentToast,
         track,
-        history,
+        navigate,
     ]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
@@ -226,7 +226,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const redirectToLogin = () => {
         const redirectPath = location.pathname + location.search;
         redirectStore.set.authRedirect(redirectPath);
-        history.push(`/login?redirectTo=${redirectPath}`);
+        navigate(`/login?redirectTo=${redirectPath}`);
     };
 
     if (isPending) {

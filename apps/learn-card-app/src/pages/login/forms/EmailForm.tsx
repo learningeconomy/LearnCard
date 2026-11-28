@@ -4,7 +4,7 @@ import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import { useLocale } from '../../../i18n';
 import Countdown from 'react-countdown';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
@@ -96,7 +96,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const flags = useFlags();
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
@@ -324,7 +324,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             if (!suppressRedirect) {
                 const redirectTo =
                     redirectStore.get.authRedirect() || query.get('redirectTo') || '/wallet';
-                history.push(redirectTo);
+                navigate(redirectTo);
                 // ! hotFix: hard refresh on login, otherwise sidememu does not display
                 // window.location.href = '/wallet';
             }
@@ -417,7 +417,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const resetForm = () => {
         setCurrentStep(EmailFormStepsEnum.email);
         if (resetRedirectPath !== null) {
-            history.replace(resetRedirectPath);
+            navigate(resetRedirectPath, { replace: true });
         }
         redirectStore.set.email(null);
         capturedEmailRef.current = null;

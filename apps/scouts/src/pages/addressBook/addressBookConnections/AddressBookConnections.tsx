@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
@@ -41,7 +41,7 @@ const AddressBookConnections: React.FC<{
     resolvedCredential,
 }) => {
     const queryClient = useQueryClient();
-    const { url } = useRouteMatch();
+    const { pathname: url } = useLocation();
     const { initWallet } = useWallet();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [matchingConnections, setMatchingConnections] = useState<any[] | null>(null);

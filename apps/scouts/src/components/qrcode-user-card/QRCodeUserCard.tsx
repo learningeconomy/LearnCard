@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { QRCodeSVG } from 'qrcode.react';
@@ -46,7 +46,7 @@ const log = getLogger('qr-code-user-card');
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
     branding: BrandingEnum;
-    history: RouteComponentProps['history'];
+    history: NavigateFunction;
     qrOnly?: boolean;
 }> = ({ handleQRCodeCardModal, branding, history, qrOnly = false }) => {
     const { initWallet } = useWallet();
@@ -204,7 +204,7 @@ const QrCodeUserCard: React.FC<{
                             onClick={() => {
                                 handleQRCodeCardModal();
                                 setTimeout(() => {
-                                    history.push('/contacts');
+                                    history('/contacts');
                                 }, 800);
                             }}
                             className="mr-1 text-indigo-500 font-semibold text-lg text-center"

@@ -53,7 +53,7 @@ import {
     sparklesOutline,
     trashOutline,
 } from 'learn-card-base/icons/ionicons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AnalyticsEvents, useAnalytics } from '../../analytics';
 import { pathwayStore } from '../../stores/pathways';
@@ -311,7 +311,7 @@ interface PathwaySwitcherProps {
 }
 
 const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
 
     const pathways = pathwayStore.use.pathways();
@@ -442,7 +442,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) =
             });
         }
 
-        history.push('/pathways/map');
+        navigate('/pathways/map');
     };
 
     const handleRemove = (pathwayId: string, title: string) => {
@@ -474,7 +474,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) =
 
     const handleAdd = () => {
         setOpen(false);
-        history.push('/pathways/onboard');
+        navigate('/pathways/onboard');
     };
 
     /**

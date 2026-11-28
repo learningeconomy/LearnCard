@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useBoostModal from '../hooks/useBoostModal';
@@ -63,7 +63,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     returnToParentAfterSave = false,
     useManagedCardSkeleton = false,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     /*
         * start **
         Managed boosts query + pagination
@@ -114,7 +114,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
-    const { handlePresentBoostModal } = useBoostModal(history, category);
+    const { handlePresentBoostModal } = useBoostModal(navigate, category);
 
     const credentialsBackgroundFetching = managedBoostsFetching && !managedBoostsLoading;
 

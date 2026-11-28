@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
@@ -87,7 +87,7 @@ import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const query = usePathQuery();
 
@@ -358,8 +358,9 @@ const UpdateBoostCMS: React.FC = () => {
                 displayType: getDefaultDisplayType(categoryType),
             },
         });
-        history.replace(
-            `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${categoryType}&boostSubCategoryType=${achievementType}`
+        navigate(
+            `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${categoryType}&boostSubCategoryType=${achievementType}`,
+            { replace: true }
         );
     };
 
@@ -388,8 +389,9 @@ const UpdateBoostCMS: React.FC = () => {
     const handlePrevStep = () => {
         if (currentStep === BoostCMSStepsEnum.issueTo) {
             if (issueMode) {
-                history.replace(
-                    `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
+                navigate(
+                    `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`,
+                    { replace: true }
                 );
             }
             setCurrentStep(BoostCMSStepsEnum.create);
@@ -469,10 +471,11 @@ const UpdateBoostCMS: React.FC = () => {
                 });
 
                 if (goBack) {
-                    history.goBack();
+                    navigate(-1);
                 } else {
-                    history.replace(
-                        `/${BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]}?managed=true`
+                    navigate(
+                        `/${BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]}?managed=true`,
+                        { replace: true }
                     );
                 }
             }
@@ -571,7 +574,7 @@ const UpdateBoostCMS: React.FC = () => {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
-                    history.goBack();
+                    navigate(-1);
                 }
             } else {
                 setIsSaveLoading(true);
@@ -582,7 +585,7 @@ const UpdateBoostCMS: React.FC = () => {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
-                    history.goBack();
+                    navigate(-1);
                 }
             }
         } catch (e) {

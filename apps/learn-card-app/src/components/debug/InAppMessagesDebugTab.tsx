@@ -24,7 +24,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     AlertTriangle,
     Eye,
@@ -127,7 +127,7 @@ const MessageRow: React.FC<{
     onForceShow: (message: InAppMessage) => void;
 }> = ({ diagnostic, message, lastSeen, copied, onCopy, onForceShow }) => {
     const [expanded, setExpanded] = useState(false);
-    const history = useHistory();
+    const navigate = useNavigate();
 
     return (
         <div className="bg-gray-900/60 rounded-sm overflow-hidden">
@@ -223,9 +223,7 @@ const MessageRow: React.FC<{
                         <button
                             type="button"
                             className="text-xs text-emerald-400"
-                            onClick={() =>
-                                history.push(encodeURI(`/m/${encodeURIComponent(diagnostic.id)}`))
-                            }
+                            onClick={() => navigate(`/m/${encodeURIComponent(diagnostic.id)}`)}
                         >
                             Test deep link
                         </button>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     useModal,
     useContract,
@@ -27,7 +27,7 @@ export const useConsentFlow = (
     app?: LaunchPadAppListItem,
     contractUri?: string
 ) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -71,7 +71,7 @@ export const useConsentFlow = (
                 consentedContract?.status === 'suspended')
         ) {
             closeAllModals();
-            history.push(`/consent-flow/review?uri=${encodeURIComponent(contract.uri)}`);
+            navigate(`/consent-flow/review?uri=${encodeURIComponent(contract.uri)}`);
             return;
         }
         if (contract?.needsGuardianConsent && !hasConsented) {

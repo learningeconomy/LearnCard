@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
@@ -41,7 +41,7 @@ export interface AppLaunchOptions {
  * to call from a surface that isn't already inside a modal.
  */
 const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseAppLaunchArgs) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
@@ -290,8 +290,8 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                     path: options.path,
                 },
             };
-            if (options.replace) history.replace(destination);
-            else history.push(destination);
+            if (options.replace) navigate(destination, { replace: true });
+            else navigate(destination);
             return;
         }
 

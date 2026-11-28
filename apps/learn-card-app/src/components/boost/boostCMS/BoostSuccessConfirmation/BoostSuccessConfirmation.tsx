@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AppRow } from 'learn-card-base/ui/layout';
 import BoostCMSAppearanceController from '../boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
@@ -19,7 +19,7 @@ export const BoostSuccessConfirmation: React.FC<{
     state: BoostCMSState;
     handlePreview: () => void;
 }> = ({ state, handlePreview }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -102,7 +102,7 @@ export const BoostSuccessConfirmation: React.FC<{
                     </button>
                     <button
                         onClick={() =>
-                            history.push(
+                            navigate(
                                 `/${
                                     BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]
                                 }?managed=true`

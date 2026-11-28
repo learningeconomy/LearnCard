@@ -1,7 +1,7 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import type { NotificationType } from '@learncard/lca-api-plugin';
 import NotificationToastListener from './NotificationToastListener';
 
@@ -35,12 +35,12 @@ it.each([
     ['pilot', undefined],
     [undefined, true],
 ])('opens the campaign or inbox from a foreground toast (%s)', (campaignId, campaignHasInApp) => {
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     state.data = { notifications: [] };
     const view = render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <NotificationToastListener />
-        </Router>
+        </TestRouter>
     );
     expect(state.present).not.toHaveBeenCalled();
     state.data = {
@@ -54,9 +54,9 @@ it.each([
         ],
     };
     view.rerender(
-        <Router history={history}>
+        <TestRouter history={history}>
             <NotificationToastListener />
-        </Router>
+        </TestRouter>
     );
     expect(state.present).toHaveBeenCalledOnce();
     render(state.present.mock.calls[0][0]);

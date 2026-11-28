@@ -6,7 +6,7 @@ import {
     closeOutline,
     gitNetworkOutline,
 } from 'learn-card-base/icons/ionicons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import type { LearnCardAssistantCard, LearnCardAssistantCardType } from './learnCardAssistant.api';
 import {
@@ -48,7 +48,7 @@ export const AssistantCardDetailsModal: React.FC<{
     onClose: () => void;
     onOpenChat: (prompt: string) => void;
 }> = ({ card, open, onClose, onOpenChat }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     if (!open || !card) return null;
 
@@ -64,7 +64,7 @@ export const AssistantCardDetailsModal: React.FC<{
 
         const ctaAction = getLearnCardAssistantCtaAction(card.cta.href);
         if (ctaAction.kind === 'internal') {
-            history.push(ctaAction.href);
+            navigate(ctaAction.href);
             onClose();
             return;
         }

@@ -1,6 +1,6 @@
 import React from 'react';
 import queryString from 'query-string';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';

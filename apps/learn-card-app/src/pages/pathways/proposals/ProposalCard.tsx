@@ -26,7 +26,7 @@
 
 import React, { useState } from 'react';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -52,7 +52,7 @@ const CAPABILITY_LABELS: Record<Capability, string> = {
 };
 
 const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
     const pathway = proposal.pathwayId
@@ -85,7 +85,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
             // structural and benefit more from Today's rollup view.
             const isRouteSwap = kind === 'route-swap';
 
-            history.push(isRouteSwap ? '/pathways/map' : '/pathways/today');
+            navigate(isRouteSwap ? '/pathways/map' : '/pathways/today');
         } catch (err) {
             setBusy(false);
             setError(
@@ -116,7 +116,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                 ownerDid: learnerDid,
                 track: analytics.track,
             });
-            history.push('/pathways/build');
+            navigate('/pathways/build');
         } catch (err) {
             setBusy(false);
             setError(

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import queryString from 'query-string';
 import { useImmer } from 'use-immer';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
@@ -99,7 +99,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
         }
     }, [JSON.stringify(contractDetails ?? '')]);
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     const { returnTo } = queryString.parse(location.search);
@@ -168,13 +168,13 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     // }
 
                     window.location.href = urlObj.toString();
-                } else history.push(redirectUrl);
+                } else navigate(redirectUrl);
                 // } else
             } else {
                 presentToast(m['consentFlow.connectedMsg']({ name: contractDetails.name }), {
                     type: ToastTypeEnum.Success,
                 });
-                history.push(`/`);
+                navigate(`/`);
                 // history.push(`/launchpad?uri=${contractDetails.uri}`);
             }
         } catch (err: unknown) {
@@ -205,7 +205,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                                 window.location.href = urlObj.toString();
                                             } else {
                                                 closeAllModals();
-                                                history.push(redirectUrl);
+                                                navigate(redirectUrl);
                                             }
                                         } catch (e) {
                                             log.error('Redirect failed:', e);
@@ -219,7 +219,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                     className="px-4 py-2 rounded-full bg-sp-purple-base text-white font-medium"
                                     onClick={() => {
                                         closeAllModals();
-                                        history.push('/campfire');
+                                        navigate('/campfire');
                                     }}
                                 >
                                     {m['consentFlow.takeMeHome']()}
@@ -273,7 +273,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
         }
 
         closeAllModals();
-        history.push('/');
+        navigate('/');
     };
 
     return (
@@ -361,7 +361,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     />
                     <button
                         onClick={() => {
-                            history.push('/');
+                            navigate('/');
                         }}
                         type="button"
                         className="text-grayscale-900 text-center text-base w-full font-medium mt-4"

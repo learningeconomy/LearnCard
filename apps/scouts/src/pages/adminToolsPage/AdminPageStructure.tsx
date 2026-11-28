@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import MainHeader from '../../components/main-header/MainHeader';
 
@@ -22,7 +22,7 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
     children,
 }) => {
     const flags = useFlags();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const hasAdminAccess = flags.enableAdminTools;
 
@@ -36,7 +36,7 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
                         <>
                             <h1 className="text-grayscale-900 text-[28px] font-notoSans font-[600] flex gap-[20px] items-center">
                                 {!hideBackButton && (
-                                    <button onClick={() => history.goBack()}>
+                                    <button onClick={() => navigate(-1)}>
                                         <CaretLeft className="rtl-mirror" />
                                     </button>
                                 )}

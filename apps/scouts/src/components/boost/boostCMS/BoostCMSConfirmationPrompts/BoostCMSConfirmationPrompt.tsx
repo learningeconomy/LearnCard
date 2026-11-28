@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal } from 'learn-card-base';
 import { BoostCMSState, BoostCMSStepsEnum } from '../../boost';
 import {
@@ -28,7 +28,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
     isSaveLoading,
     skipHistoryGoBack,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeModal, closeAllModals } = useModal();
 
     const { title } = boostCategoryOptions[state?.basicInfo?.type];
@@ -40,7 +40,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
         } else {
             closeAllModals();
             if (!skipHistoryGoBack) {
-                history.goBack();
+                navigate(-1);
             }
         }
     };
@@ -98,7 +98,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
                         <button
                             onClick={() => {
                                 closeModal();
-                                history.push(
+                                navigate(
                                     `/${
                                         BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]
                                     }?managed=true`

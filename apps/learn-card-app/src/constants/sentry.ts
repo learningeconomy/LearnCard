@@ -1,5 +1,12 @@
 import { isSharePrivateSession, scrubShareTelemetry } from '../components/share-links/sharePrivacy';
 import * as Sentry from '@sentry/react';
+import { useEffect } from 'react';
+import {
+    createRoutesFromChildren,
+    matchRoutes,
+    useLocation,
+    useNavigationType,
+} from 'react-router';
 import { configureSentryTransport } from 'learn-card-base';
 import { getResolvedTenantConfig, isTenantAnalyticsEnabled } from '../config/tenantConfigState';
 let optionalTelemetryEnabled = false;
@@ -56,7 +63,13 @@ export const initSentryFromTenant = (): void => {
                 showBranding: false,
                 autoInject: false,
             }),
-            Sentry.reactRouterV5BrowserTracingIntegration({ history }),
+            Sentry.reactRouterV6BrowserTracingIntegration({
+                useEffect,
+                useLocation,
+                useNavigationType,
+                createRoutesFromChildren,
+                matchRoutes,
+            }),
             Sentry.replayIntegration({
                 maskAllText: true,
                 blockAllMedia: true,

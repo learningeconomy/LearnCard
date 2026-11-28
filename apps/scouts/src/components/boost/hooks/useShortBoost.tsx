@@ -4,14 +4,15 @@ import * as m from '../../../paraglide/messages.js';
 import ShortBoostUserOptions from '../boost-options/boostUserOptions/ShortBoostUserOptions';
 
 import { ModalTypes, useModal } from 'learn-card-base';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import { UnsignedVC, VC } from '@learncard/types';
 
 const useShortBoost = (
-    history: RouteComponentProps['history'],
+    history: NavigateFunction,
     boostCredential: VC | UnsignedVC,
     boostUri: string,
     profileId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
     boost: any
 ) => {
     const { newModal, closeModal } = useModal({

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     appsOutline,
@@ -132,7 +132,7 @@ const ProjectRow: React.FC<{ project: ProjectSummary; onOpen: () => void }> = ({
 };
 
 const BuildHomePage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { integrations, isLoadingIntegrations } = useDeveloperPortalContext();
     const { useMyApps } = useDeveloperPortal();
     const { data: apps, isLoading: isLoadingApps } = useMyApps(
@@ -156,7 +156,7 @@ const BuildHomePage: React.FC = () => {
 
                     <button
                         type="button"
-                        onClick={() => history.push(guidePath(FEATURED_GUIDE))}
+                        onClick={() => navigate(guidePath(FEATURED_GUIDE))}
                         className="group mt-8 w-full text-left rounded-[20px] bg-grayscale-900 p-6 sm:p-8 hover:opacity-95 transition-opacity"
                     >
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white text-xs font-medium">
@@ -182,7 +182,7 @@ const BuildHomePage: React.FC = () => {
                             <GuideCard
                                 key={id}
                                 id={id}
-                                onOpen={() => history.push(guidePath(id))}
+                                onOpen={() => navigate(guidePath(id))}
                             />
                         ))}
                     </div>
@@ -205,7 +205,7 @@ const BuildHomePage: React.FC = () => {
                                     <ProjectRow
                                         key={project.integration.id}
                                         project={project}
-                                        onOpen={() => history.push(project.path)}
+                                        onOpen={() => navigate(project.path)}
                                     />
                                 ))}
                             </div>
@@ -213,7 +213,7 @@ const BuildHomePage: React.FC = () => {
                         {appCount > 0 && (
                             <button
                                 type="button"
-                                onClick={() => history.push('/app-store/developer')}
+                                onClick={() => navigate('/app-store/developer')}
                                 className="mt-4 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors inline-flex items-center gap-1"
                             >
                                 {appCount === 1

@@ -1,6 +1,6 @@
 import React, { ReactElement, useEffect } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import WalletSquare from './WalletSquare';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -34,7 +34,7 @@ const WalletPage: React.FC = () => {
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     const currentUser = useCurrentUser();
@@ -110,13 +110,13 @@ const WalletPage: React.FC = () => {
 
     const handleClickSquare = (subtype: WalletCategoryTypes) => {
         if (subtype === WalletCategoryTypes.meritBadges) {
-            history.push('/badges');
+            navigate('/badges');
         }
         if (subtype === WalletCategoryTypes.socialBadges) {
-            history.push('/boosts');
+            navigate('/boosts');
         }
         if (subtype === WalletCategoryTypes.membership) {
-            history.push('/troops');
+            navigate('/troops');
         }
     };
 

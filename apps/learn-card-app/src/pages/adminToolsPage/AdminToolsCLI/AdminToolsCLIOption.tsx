@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { useModal } from 'learn-card-base';
 
@@ -10,12 +10,12 @@ type AdminToolsCLIOptionProps = {
 };
 
 const AdminToolsCLIOption: React.FC<AdminToolsCLIOptionProps> = ({ option }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
 
     const handleOpenCLI = () => {
         closeAllModals();
-        history.push('/cli');
+        navigate('/cli');
     };
 
     return (

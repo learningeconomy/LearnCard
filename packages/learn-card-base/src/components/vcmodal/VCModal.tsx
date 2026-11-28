@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
@@ -40,7 +40,7 @@ export const LoadingVcCard: React.FC = () => {
 
 // Just used as an example for now
 export const VCClaimModalController = () => {
-    const { uri } = useParams<{ uri: string }>();
+    const { uri } = useParams() as { uri: string };
     useEffect(() => {
         if (uri) {
             modalStateStore.set.presentVcModal({

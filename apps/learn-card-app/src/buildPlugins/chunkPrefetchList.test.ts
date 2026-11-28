@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { chunkPrefetchFiles, type BundleChunk } from './chunkPrefetchList';
+import {
+    chunkPrefetchElementHtml,
+    chunkPrefetchFiles,
+    devChunkPrefetchList,
+    type BundleChunk,
+} from './chunkPrefetchList';
 
 const chunk = (
     fileName: string,
@@ -32,5 +37,29 @@ describe('chunkPrefetchFiles', () => {
 
     it('is empty when no chunk is built for the module', () => {
         expect(chunkPrefetchFiles(bundle, 'assets/index.js', '/app/src/Missing.tsx')).toEqual([]);
+    });
+
+    it('skips files any entry already loads (React Router loads route modules and the client entry)', () => {
+        expect(
+            chunkPrefetchFiles(
+                bundle,
+                ['assets/index.js', 'assets/PhoneForm.js'],
+                '/app/src/Modal.tsx'
+            )
+        ).toEqual([]);
+    });
+});
+
+describe('chunk prefetch element', () => {
+    it('lists source modules in dev', () => {
+        expect(devChunkPrefetchList('/')).toEqual({
+            'my-learncard': ['/src/components/learncard/MyLearnCardModalContent.tsx'],
+        });
+    });
+
+    it('escapes < so the JSON cannot close the script element', () => {
+        expect(chunkPrefetchElementHtml({ 'my-learncard': ['/a</script>.js'] })).toBe(
+            '<script type="application/json" id="lc-chunk-prefetch">{"my-learncard":["/a\\u003c/script>.js"]}</script>'
+        );
     });
 });

@@ -1,4 +1,4 @@
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 import TrustedAppRequestModal from 'learn-card-base/components/connected-applications/TrustedAppRequestModal';
@@ -6,7 +6,7 @@ import UnknownAppRequestModal from 'learn-card-base/components/connected-applica
 import { closeAll } from '../helpers/uiHelpers';
 
 export const useAppConnectModal = (profileId: string, challenge: string) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { data: trustedAppRegistry, isLoading: trustedAppRegistryLoading } =
         useTrustedAppsRegistry();
 
@@ -24,22 +24,27 @@ export const useAppConnectModal = (profileId: string, challenge: string) => {
         newModal(
             <Component
                 appProfileId={profileId.toLowerCase()}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
                 appInfo={trustedAppInfo as any}
                 challenge={challenge}
                 handleCloseModal={() => {
                     closeModal();
-                    history.push('/launchpad');
+                    navigate('/launchpad');
                 }}
                 onSuccess={() => {
                     closeModal();
-                    history.push(`/select-credentials/${encodeURI(profileId)}`);
+                    navigate(`/select-credentials/${encodeURI(profileId)}`);
                     closeAll();
                 }}
             />
         );
     };
 
-    return { presentConnectAppModal, dismissConnectAppModal: closeModal, loading: trustedAppRegistryLoading };
+    return {
+        presentConnectAppModal,
+        dismissConnectAppModal: closeModal,
+        loading: trustedAppRegistryLoading,
+    };
 };
 
 export default useAppConnectModal;

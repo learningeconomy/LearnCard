@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { AppTabs, AppTabBar, AppTabButton } from 'learn-card-base/ui/app-shell/AppTabs';
 import { AppOutlet } from 'learn-card-base/ui/app-shell/AppOutlet';

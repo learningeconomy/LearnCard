@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -163,7 +163,7 @@ const ClaimBoost: React.FC<{
     dismissClaimModal?: () => void;
     vc?: VC | null;
 }> = ({ uri, claimChallenge, dismissClaimModal = () => {}, vc }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
@@ -311,7 +311,7 @@ const ClaimBoost: React.FC<{
         }
 
         dismissClaimModal?.();
-        history?.push('/');
+        navigate('/');
     };
 
     const beginClaimAttempt = (claimCredential?: VC) => {
@@ -412,7 +412,7 @@ const ClaimBoost: React.FC<{
                 if (duplicateResolution.action === 'skip') {
                     setIsClaimed(true);
                     dismissClaimModal?.();
-                    history.replace('/');
+                    navigate('/', { replace: true });
                     presentToast(m['claim.duplicate.skippedToast'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
@@ -628,10 +628,11 @@ const ClaimBoost: React.FC<{
 
             sessionStorage.removeItem(session.storageKey);
             dismissClaimModal?.();
-            history.replace(
+            navigate(
                 category === CredentialCategoryEnum.family
                     ? `/families?boostUri=${encodeURIComponent(session.attempt.credentialUri!)}&showPreview=true`
-                    : '/'
+                    : '/',
+                { replace: true }
             );
             presentClaimSuccessToast();
         } catch (error) {
@@ -665,7 +666,7 @@ const ClaimBoost: React.FC<{
         if (duplicateResolution.action === 'skip') {
             setIsClaimed(true);
             dismissClaimModal?.();
-            history.replace('/');
+            navigate('/', { replace: true });
             presentToast(m['claim.duplicate.skippedToast'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
@@ -687,7 +688,7 @@ const ClaimBoost: React.FC<{
             setIsClaimLoading(false);
             dismissClaimModal?.();
 
-            history.replace('/');
+            navigate('/', { replace: true });
 
             presentClaimSuccessToast();
         } catch (e) {

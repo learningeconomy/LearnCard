@@ -40,7 +40,7 @@ import {
     openOutline,
     trailSignOutline,
 } from 'learn-card-base/icons/ionicons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -65,7 +65,7 @@ interface CompositeNodeBodyProps {
 // ---------------------------------------------------------------------------
 
 const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({ parentPathway, parentNode }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
 
     const pathways = pathwayStore.use.pathways();
@@ -93,13 +93,13 @@ const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({ parentPathway, pa
         // feed for it. Previously we replaced to Today, which felt
         // like a context collapse; the sub-pathway would show up
         // there too, but out of spatial context.
-        history.replace('/pathways/map');
+        navigate('/pathways/map', { replace: true });
     };
 
     const handleImport = () => {
         // The referenced pathway isn't loaded. The author wants the
         // learner to add it — Build is where CTDL import lives.
-        history.push('/pathways/build');
+        navigate('/pathways/build');
     };
 
     // -----------------------------------------------------------------

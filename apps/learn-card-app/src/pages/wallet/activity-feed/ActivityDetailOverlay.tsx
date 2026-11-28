@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { formatLocaleDate } from '../../../i18n/formatters';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline, arrowForwardOutline, calendarOutline } from 'learn-card-base/icons/ionicons';
 import { UserProfilePicture } from 'learn-card-base';
@@ -13,7 +13,7 @@ export const ActivityDetailOverlay: React.FC<{
     item: ActivityFeedItemVM;
     onClose: () => void;
 }> = ({ item, onClose }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const dialogRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
 
@@ -22,7 +22,7 @@ export const ActivityDetailOverlay: React.FC<{
             (item.isGenericCredential ? undefined : CATEGORY_TO_ROUTE[item.category]) ??
             '/passport';
         onClose();
-        history.push(route);
+        navigate(route);
     };
 
     useEffect(() => {

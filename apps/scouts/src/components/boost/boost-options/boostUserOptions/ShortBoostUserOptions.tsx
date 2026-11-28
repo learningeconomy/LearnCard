@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -36,7 +36,7 @@ type ShortBoostUserOptionsProps = {
     boost: any;
     boostUri: string;
     profileId: string;
-    history: RouteComponentProps['history'];
+    history: NavigateFunction;
 };
 
 const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({

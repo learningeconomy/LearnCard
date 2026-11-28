@@ -1,9 +1,9 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { createMemoryHistory, type MemoryHistory } from 'history';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { AppShellRouter } from './AppShellRouter';
+import { AppShellRouter, resetInAppHistory } from './AppShellRouter';
+import { createTestHistory, TestRouter, type TestHistory } from '../../test-utils/testRouter';
 import { AppTabs, AppTabBar, AppTabButton } from './AppTabs';
 import { AppOutlet } from './AppOutlet';
 import { AppSplitPane } from './AppSplitPane';
@@ -16,47 +16,49 @@ const LINKS = [
     { id: 'launchpad', path: '/launchpad', label: 'Apps' },
 ];
 
-const Shell: React.FC<{ history: MemoryHistory; showBar?: boolean }> = ({
+const Shell: React.FC<{ history: TestHistory; showBar?: boolean }> = ({
     history,
     showBar = true,
 }) => (
-    <AppShellRouter history={history}>
-        <AppSplitPane contentId="main">
-            <AppMenu contentId="main" menuId="appSideMenu">
-                <p>Menu</p>
-            </AppMenu>
-            <div id="main">
-                <AppTabs className="nav-color">
-                    <AppOutlet>
-                        <div className="ion-page">page</div>
-                    </AppOutlet>
-                    {showBar ? (
-                        <AppTabBar className="lc-footer-nav" style={{ paddingBottom: '15px' }}>
-                            <AppTabButton
-                                tab="/"
-                                href="#"
-                                className="mobile-nav-hamburger-button"
-                                aria-label="Open menu"
-                            >
-                                <AppMenuToggle menu="appSideMenu">
-                                    <span data-testid="burger">≡</span>
-                                </AppMenuToggle>
-                            </AppTabButton>
-                            {LINKS.map(link => (
-                                <AppTabButton key={link.id} tab={link.id} href={link.path}>
-                                    {React.createElement('ion-label', null, link.label)}
+    <TestRouter history={history}>
+        <AppShellRouter>
+            <AppSplitPane contentId="main">
+                <AppMenu contentId="main" menuId="appSideMenu">
+                    <p>Menu</p>
+                </AppMenu>
+                <div id="main">
+                    <AppTabs className="nav-color">
+                        <AppOutlet>
+                            <div className="ion-page">page</div>
+                        </AppOutlet>
+                        {showBar ? (
+                            <AppTabBar className="lc-footer-nav" style={{ paddingBottom: '15px' }}>
+                                <AppTabButton
+                                    tab="/"
+                                    href="#"
+                                    className="mobile-nav-hamburger-button"
+                                    aria-label="Open menu"
+                                >
+                                    <AppMenuToggle menu="appSideMenu">
+                                        <span data-testid="burger">≡</span>
+                                    </AppMenuToggle>
                                 </AppTabButton>
-                            ))}
-                        </AppTabBar>
-                    ) : null}
-                </AppTabs>
-            </div>
-        </AppSplitPane>
-    </AppShellRouter>
+                                {LINKS.map(link => (
+                                    <AppTabButton key={link.id} tab={link.id} href={link.path}>
+                                        {React.createElement('ion-label', null, link.label)}
+                                    </AppTabButton>
+                                ))}
+                            </AppTabBar>
+                        ) : null}
+                    </AppTabs>
+                </div>
+            </AppSplitPane>
+        </AppShellRouter>
+    </TestRouter>
 );
 
 const tab = (name: string): HTMLElement => screen.getByRole('tab', { name });
-const url = (history: MemoryHistory): string =>
+const url = (history: TestHistory): string =>
     `${history.location.pathname}${history.location.search}${history.location.hash}`;
 const press = async (element: Element): Promise<void> => {
     await act(async () => {
@@ -65,10 +67,11 @@ const press = async (element: Element): Promise<void> => {
 };
 
 describe('AppTabs', () => {
+    beforeEach(() => resetInAppHistory());
     afterEach(() => cleanup());
 
     it('renders Ionic’s tabs layout and tab semantics', () => {
-        const history = createMemoryHistory({ initialEntries: ['/dashboard'] });
+        const history = createTestHistory({ initialEntries: ['/dashboard'] });
         const { container } = render(<Shell history={history} />);
 
         const page = container.querySelector('#main > .ion-page')!;
@@ -93,7 +96,7 @@ describe('AppTabs', () => {
     });
 
     it('navigates with history.push and remembers the last path inside each tab', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/dashboard'] });
+        const history = createTestHistory({ initialEntries: ['/dashboard'] });
         render(<Shell history={history} />);
 
         await press(tab('Apps'));
@@ -101,7 +104,7 @@ describe('AppTabs', () => {
         expect(history.action).toBe('PUSH');
         expect(tab('Apps')).toHaveAttribute('aria-selected', 'true');
 
-        act(() => history.push('/launchpad/browse?q=1'));
+        await act(() => history.push('/launchpad/browse?q=1'));
         await press(tab('Dashboard'));
         expect(url(history)).toBe('/dashboard');
 
@@ -111,27 +114,27 @@ describe('AppTabs', () => {
     });
 
     it('returns to the tab root when the active tab is tapped again', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/launchpad/browse'] });
+        const history = createTestHistory({ initialEntries: ['/launchpad/browse'] });
         render(<Shell history={history} />);
-        const length = history.length;
+        const length = history.entries.length;
 
         await press(tab('Apps'));
         expect(url(history)).toBe('/launchpad');
-        expect(history.length).toBe(length + 1);
+        expect(history.entries.length).toBe(length + 1);
 
         await press(tab('Apps'));
         expect(url(history)).toBe('/launchpad');
-        expect(history.length).toBe(length + 1);
+        expect(history.entries.length).toBe(length + 1);
     });
 
     it('keeps tab memory while the bar is hidden', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/launchpad'] });
+        const history = createTestHistory({ initialEntries: ['/launchpad'] });
         const { rerender } = render(<Shell history={history} />);
-        act(() => history.push('/launchpad/browse'));
+        await act(() => history.push('/launchpad/browse'));
 
         rerender(<Shell history={history} showBar={false} />);
         expect(screen.queryByRole('tablist')).toBeNull();
-        act(() => history.push('/dashboard'));
+        await act(() => history.push('/dashboard'));
         rerender(<Shell history={history} />);
 
         await press(tab('Apps'));
@@ -139,16 +142,16 @@ describe('AppTabs', () => {
     });
 
     it('hamburger toggles the menu and, like IonTabButton href="#", pushes the bare pathname', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/launchpad?x=1#h'] });
+        const history = createTestHistory({ initialEntries: ['/launchpad?x=1#h'] });
         render(<Shell history={history} />);
-        const length = history.length;
+        const length = history.entries.length;
 
         await press(screen.getByTestId('burger'));
 
         expect(appMenuController.getState().isOpen).toBe(true);
         expect(url(history)).toBe('/launchpad');
         expect(history.action).toBe('PUSH');
-        expect(history.length).toBe(length + 1);
+        expect(history.entries.length).toBe(length + 1);
         // #main is aria-hidden while the drawer is open.
         expect(screen.getByRole('tab', { name: 'Open menu', hidden: true })).not.toHaveAttribute(
             'aria-selected'
@@ -156,7 +159,7 @@ describe('AppTabs', () => {
     });
 
     it('selects on Space like ion-tab-button', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/dashboard'] });
+        const history = createTestHistory({ initialEntries: ['/dashboard'] });
         render(<Shell history={history} />);
 
         await act(async () => {
@@ -166,7 +169,7 @@ describe('AppTabs', () => {
     });
 
     it('hides the bar while the native keyboard is open', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/dashboard'] });
+        const history = createTestHistory({ initialEntries: ['/dashboard'] });
         render(<Shell history={history} />);
         // Listeners attach after the (absent) Keyboard plugin's resize mode resolves.
         await act(async () => undefined);
@@ -191,7 +194,7 @@ describe('fullscreen content under the tab bar', () => {
     afterEach(cleanup);
 
     it('marks only fullscreen ion-content inside the outlet, like ion-tabs measured them', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/dashboard'] });
+        const history = createTestHistory({ initialEntries: ['/dashboard'] });
         const FullscreenContent: React.FC<{ fullscreen: boolean; id: string }> = ({
             fullscreen,
             id,
@@ -205,14 +208,16 @@ describe('fullscreen content under the tab bar', () => {
         };
 
         render(
-            <AppShellRouter history={history}>
-                <AppTabs>
-                    <AppOutlet>
-                        <FullscreenContent fullscreen id="full" />
-                        <FullscreenContent fullscreen={false} id="plain" />
-                    </AppOutlet>
-                </AppTabs>
-            </AppShellRouter>
+            <TestRouter history={history}>
+                <AppShellRouter>
+                    <AppTabs>
+                        <AppOutlet>
+                            <FullscreenContent fullscreen id="full" />
+                            <FullscreenContent fullscreen={false} id="plain" />
+                        </AppOutlet>
+                    </AppTabs>
+                </AppShellRouter>
+            </TestRouter>
         );
         await act(async () => {
             await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));

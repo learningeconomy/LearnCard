@@ -36,8 +36,7 @@ services:
             - ./scripts:/app/apps/learn-card-app/scripts
             - ./environments:/app/apps/learn-card-app/environments
             - ./public:/app/apps/learn-card-app/public
-            - ./index.html:/app/apps/learn-card-app/index.html
-            - ./index.template.html:/app/apps/learn-card-app/index.template.html
+            - ./react-router.config.ts:/app/apps/learn-card-app/react-router.config.ts
             - ./package.json:/app/apps/learn-card-app/package.json
             - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
             - ./vite.config.mts:/app/apps/learn-card-app/vite.config.mts

@@ -1,13 +1,13 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Sparkles, ArrowRight, Code2, Rocket } from 'lucide-react';
 import * as m from '../../paraglide/messages.js';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const handleClick = () => {
-        history.push('/app-store/developer');
+        navigate('/app-store/developer');
     };
 
     return (

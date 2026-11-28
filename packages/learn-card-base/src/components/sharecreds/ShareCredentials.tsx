@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import queryString from 'query-string';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';

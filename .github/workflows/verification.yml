@@ -310,6 +310,42 @@ jobs:
                     services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
                     > "$PRIVATE_LOG_DIR/campaigns.log" 2>&1
 
+            # Copy non-secret runtime logs before teardown may remove $STACK_DIR.
+            # Redact only this stack's token so git SHAs in traces stay intact.
+            - name: Stage verification runtime logs
+              if: ${{ always() }}
+              run: |
+                  umask 077
+                  mkdir -p "$PRIVATE_LOG_DIR/runtime"
+                  token=""
+                  if [[ -f "$STACK_DIR/state.json" ]]; then
+                    token="$(node -e "try { process.stdout.write(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).token || '') } catch {}" "$STACK_DIR/state.json")"
+                  fi
+                  stage() {
+                    local src="$1" dest="$2"
+                    if [[ ! -f "$src" ]]; then
+                      return
+                    fi
+                    if [[ -n "$token" ]]; then
+                      node -e "
+                        const fs = require('fs');
+                        const src = process.argv[1];
+                        const dest = process.argv[2];
+                        const token = process.argv[3];
+                        const body = fs.readFileSync(src, 'utf8').split(token).join('[redacted-token]');
+                        fs.writeFileSync(dest, body, { mode: 0o600 });
+                      " "$src" "$dest" "$token"
+                    else
+                      cp -p "$src" "$dest"
+                      chmod 600 "$dest"
+                    fi
+                  }
+                  stage "$PRIVATE_LOG_DIR/startup.log" "$PRIVATE_LOG_DIR/runtime/startup.log"
+                  stage "$STACK_DIR/frontend.log" "$PRIVATE_LOG_DIR/runtime/frontend.log"
+                  stage "$STACK_DIR/startup-failure.json" "$PRIVATE_LOG_DIR/runtime/startup-failure.json"
+                  stage "$STACK_DIR/readiness.json" "$PRIVATE_LOG_DIR/runtime/readiness.json"
+                  stage "$STACK_DIR/startup-timings.json" "$PRIVATE_LOG_DIR/runtime/startup-timings.json"
+
             - name: Always tear down owned resources
               id: teardown
               if: ${{ always() }}
@@ -318,6 +354,15 @@ jobs:
                   if [[ -f "$STACK_DIR/state.json" ]]; then
                     bun run --cwd apps/learn-card-app lc verify down --force --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/teardown.log" 2>&1
                   fi
+
+            - name: Upload verification runtime logs
+              if: ${{ failure() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-verification-runtime-logs-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+                  path: ${{ env.PRIVATE_LOG_DIR }}/runtime
+                  if-no-files-found: ignore
+                  retention-days: 14
 
             # Read retained private traces in place; publish only fixed labels and numbers.
             - name: Profile retained browser calls

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('oid4vci-exchange');
@@ -110,7 +110,7 @@ type Phase =
  *  3. **Bare page**: no query params \u2014 we render a friendly error.
  */
 const Oid4vciExchange: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const params = queryString.parse(search);
     const isLoggedIn = useIsLoggedIn();
@@ -289,8 +289,8 @@ const Oid4vciExchange: React.FC = () => {
 
     const handleCancel = useCallback(() => {
         clearAuthCodeState();
-        history.push('/');
-    }, [history]);
+        navigate('/');
+    }, [navigate]);
 
     const handleAccept = useCallback(
         async ({ txCode }: { txCode?: string }) => {
@@ -410,12 +410,12 @@ const Oid4vciExchange: React.FC = () => {
                     category as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
                 ];
 
-            history.push(route ? `/${route}` : '/passport');
+            navigate(route ? `/${route}` : '/passport');
             return;
         }
 
-        history.push('/passport');
-    }, [history, phase]);
+        navigate('/passport');
+    }, [navigate, phase]);
 
     const handleRetry = useCallback(() => {
         if (phase.kind !== 'error' || !phase.retryOffer) return;
@@ -447,7 +447,7 @@ const Oid4vciExchange: React.FC = () => {
                             suggestion:
                                 'Scan the QR code or click the link the issuer gave you again.',
                         }}
-                        onCancel={() => history.push('/')}
+                        onCancel={() => navigate('/')}
                     />
                 </AppContent>
             </AppPage>
@@ -499,8 +499,8 @@ const Oid4vciExchange: React.FC = () => {
                         issuerName={phase.issuerName}
                         issuerLogoUri={phase.issuerLogoUri}
                         onViewWallet={handleViewWallet}
-                        onShare={() => history.push('/wallet')}
-                        onDone={() => history.push('/')}
+                        onShare={() => navigate('/wallet')}
+                        onDone={() => navigate('/')}
                     />
                 )}
 
@@ -528,7 +528,7 @@ const Oid4vciExchange: React.FC = () => {
                             })
                         }
                         onRetry={phase.retryOffer ? handleRetry : undefined}
-                        onCancel={() => history.push('/')}
+                        onCancel={() => navigate('/')}
                     />
                 )}
             </AppContent>

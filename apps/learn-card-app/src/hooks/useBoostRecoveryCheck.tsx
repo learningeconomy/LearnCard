@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal, ModalTypes, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../components/boost/boost';
 import RecoveryPrompt from '../components/common/RecoveryPrompt';
@@ -42,7 +42,7 @@ interface RecoveredStateInfo {
 
 export function useBoostRecoveryCheck() {
     const { newModal, closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const parseStoredState = useCallback(
         (stored: string, storageKey: string): RecoveredStateInfo | null => {
@@ -158,7 +158,7 @@ export function useBoostRecoveryCheck() {
                 // Signal to BoostCMS to auto-recover without showing its own modal
                 params.set('recovering', 'true');
 
-                history.push(`/boost?${params.toString()}`);
+                navigate(`/boost?${params.toString()}`);
             };
 
             const handleDiscard = () => {
@@ -190,7 +190,7 @@ export function useBoostRecoveryCheck() {
             clearAllSavedStates,
             clearSpecificSavedState,
             closeModal,
-            history,
+            navigate,
             newModal,
         ]
     );

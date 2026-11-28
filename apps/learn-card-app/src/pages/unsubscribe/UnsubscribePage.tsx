@@ -1,6 +1,6 @@
 import { enterSharePrivacy } from '../../components/share-links/sharePrivacy';
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { getAnonymousClient } from '@learncard/network-brain-client';
 import { networkStore } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';

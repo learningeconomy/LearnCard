@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
@@ -60,7 +60,7 @@ const LaunchPad: React.FC = () => {
         })[tab]();
 
     const { isAiEnabled, reason } = useAiFeatureGate();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const {
         connectTo,
@@ -158,7 +158,7 @@ const LaunchPad: React.FC = () => {
             showBackdrop: false,
             onDidDismiss: dismissInfo => {
                 if (dismissInfo.detail.role === 'backdrop') {
-                    history.push('/launchpad');
+                    navigate('/launchpad');
                 }
             },
         });
@@ -175,7 +175,7 @@ const LaunchPad: React.FC = () => {
         if (contractDetails && !suppressContractModal && !consentedContractLoading) {
             const searchParams = new URLSearchParams(window.location.search);
             searchParams.set('suppressContractModal', 'true');
-            history.push({
+            navigate({
                 search: searchParams.toString(),
             });
             openConsentFlowModal();

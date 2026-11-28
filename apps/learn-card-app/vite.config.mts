@@ -4,8 +4,9 @@ import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type ConfigEnv, type Plugin, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import { reactRouter } from '@react-router/dev/vite';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
@@ -18,9 +19,14 @@ import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
 import { minifySvgPathDataInSource } from './src/buildPlugins/minifySvgPathData';
 import {
     chunkPrefetchFiles,
-    CHUNK_PREFETCH_ELEMENT_ID,
+    PREFETCH_CHUNKS,
     type BundleChunk,
 } from './src/buildPlugins/chunkPrefetchList';
+import { CHUNK_PREFETCH_LIST_FILE } from './scripts/finalize-static-build';
+import { cssModulesInEvaluationOrder, orderEntryCss } from './src/buildPlugins/entryCssOrder';
+import { serveStaticDevHtml } from './scripts/serve-static-dev-html';
+import { warmDevServer } from './scripts/warm-dev-server';
+import { documentBrandingFor } from './src/config/documentBranding';
 import { createManualChunks } from './src/buildPlugins/vendorChunks';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
 import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
@@ -250,49 +256,85 @@ const paraglideBarrelWithoutSideEffects = (): Plugin => ({
 });
 
 // Lazy chunks the app warms ahead of time with plain fetch() (src/helpers/prefetchChunk.ts).
-// Writes each one's file URLs into index.html as JSON. Dev has no chunks, so it lists the
-// source module, which is what the dev server's import() requests.
-const PREFETCH_CHUNKS = {
-    'my-learncard': 'src/components/learncard/MyLearnCardModalContent.tsx',
-} as const;
-
+// Lists each one's file URLs for the client build; finalizeStaticBuild writes the list into every
+// HTML file once React Router has prerendered them. Dev lists source modules (see root.tsx).
 const chunkPrefetchList = (): Plugin => {
     let base = '/';
     let root = __dirname;
     return {
         name: 'learncard-chunk-prefetch-list',
+        apply: 'build',
         configResolved(config) {
             base = config.base;
             root = config.root;
         },
-        transformIndexHtml: {
-            order: 'post',
-            handler(_html, ctx) {
-                const list = Object.fromEntries(
-                    Object.entries(PREFETCH_CHUNKS).map(([key, source]) => {
-                        if (!ctx.bundle || !ctx.chunk) return [key, [`${base}${source}`]];
-                        const files = chunkPrefetchFiles(
-                            ctx.bundle as Record<string, BundleChunk>,
-                            ctx.chunk.fileName,
-                            path.resolve(root, source)
-                        );
-                        if (files.length === 0)
-                            throw new Error(`[chunk-prefetch-list] no chunk for ${source}`);
-                        return [key, files.map(file => `${base}${file}`)];
-                    })
-                );
-                return [
-                    {
-                        tag: 'script',
-                        attrs: { type: 'application/json', id: CHUNK_PREFETCH_ELEMENT_ID },
-                        children: JSON.stringify(list).replace(/</g, '\\u003c'),
-                        injectTo: 'head',
-                    },
-                ];
-            },
+        generateBundle(_options, bundle) {
+            if (this.environment.name !== 'client') return;
+            const chunks = bundle as Record<string, BundleChunk & { isEntry?: boolean }>;
+            // React Router's HTML imports every entry chunk (client entry and route modules).
+            const entries = Object.values(chunks)
+                .filter(chunk => chunk.type === 'chunk' && chunk.isEntry)
+                .map(chunk => chunk.fileName);
+            const list = Object.fromEntries(
+                Object.entries(PREFETCH_CHUNKS).map(([key, source]) => {
+                    const files = chunkPrefetchFiles(chunks, entries, path.resolve(root, source));
+                    if (files.length === 0)
+                        throw new Error(`[chunk-prefetch-list] no chunk for ${source}`);
+                    return [key, files.map(file => `${base}${file}`)];
+                })
+            );
+            this.emitFile({
+                type: 'asset',
+                fileName: CHUNK_PREFETCH_LIST_FILE,
+                source: JSON.stringify(list),
+            });
         },
     };
 };
+
+// Keep the startup stylesheet order of the old index.html (see src/buildPlugins/entryCssOrder.ts).
+// Runs before Vite writes .vite/manifest.json, which React Router reads to link the root route's CSS.
+const reactRouterEntryCssOrder = (): Plugin => ({
+    name: 'learncard-react-router-entry-css-order',
+    apply: 'build',
+    generateBundle: {
+        order: 'pre',
+        handler(_options, bundle) {
+            if (this.environment.name !== 'client') return;
+            const entry = Object.values(bundle).find(
+                chunk =>
+                    chunk.type === 'chunk' &&
+                    chunk.isEntry &&
+                    chunk.facadeModuleId === path.join(__dirname, 'src/entry.client.tsx')
+            );
+            if (!entry || entry.type !== 'chunk' || !entry.facadeModuleId) return;
+            const cssModules = cssModulesInEvaluationOrder(
+                entry.facadeModuleId,
+                id => this.getModuleInfo(id)?.importedIds ?? []
+            );
+            orderEntryCss(bundle as Record<string, BundleChunk>, entry.fileName, cssModules);
+        },
+    },
+});
+
+/** Title strings for the document head, from the tenant config prepare-native-config wrote. */
+const documentBranding = () => {
+    const tenantConfig = path.join(__dirname, 'public/tenant-config.json');
+    const branding = existsSync(tenantConfig)
+        ? (
+              JSON.parse(readFileSync(tenantConfig, 'utf8')) as {
+                  branding?: { name?: string; shortName?: string };
+              }
+          ).branding
+        : undefined;
+    return documentBrandingFor(branding);
+};
+
+// Browser polyfills for Node built-ins. `module` stays out: the polyfill is an empty mock, and
+// React Router's prerender (server) build needs the real `node:module` for Rolldown's runtime.
+const browserStdlibAliases = Object.fromEntries(
+    Object.entries(stdlibbrowser).filter(([name]) => name !== 'module' && name !== 'node:module')
+);
 
 const paraglideBaseLocale = (
     JSON.parse(readFileSync(path.join(__dirname, 'project.inlang/settings.json'), 'utf8')) as {
@@ -300,7 +342,15 @@ const paraglideBaseLocale = (
     }
 ).baseLocale;
 
-export default defineConfig(async ({ mode, command }) => {
+/**
+ * The app's Vite config. `frameworkMode` adds React Router's framework plugins, which own the
+ * document and the build; without it the React plugin alone compiles the source, for plain Vite
+ * pages such as the visual-regression fixtures (tests/visual/vite.config.mts).
+ */
+export const learnCardViteConfig = async (
+    { mode, command }: ConfigEnv,
+    { frameworkMode }: { frameworkMode: boolean }
+): Promise<UserConfig> => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
         { ...loadedEnvironment, ...process.env, MODE: mode },
@@ -342,9 +392,17 @@ export default defineConfig(async ({ mode, command }) => {
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
-            chunkPrefetchList(),
             paraglideBarrelWithoutSideEffects(),
-            react(),
+            // The prefetch list and stylesheet order are for the documents React Router writes.
+            ...(frameworkMode
+                ? [
+                      serveStaticDevHtml(__dirname),
+                      warmDevServer(),
+                      chunkPrefetchList(),
+                      reactRouterEntryCssOrder(),
+                      ...reactRouter(),
+                  ]
+                : [react()]),
             svgr(),
             tsconfigPaths({ root: '../../' }),
             paraglideVitePlugin({
@@ -361,7 +419,7 @@ export default defineConfig(async ({ mode, command }) => {
                 ? [
                       visualizer({
                           open: true,
-                          filename: path.join(__dirname, 'build', 'stats.html'),
+                          filename: path.join(__dirname, 'build', 'client', 'stats.html'),
                           gzipSize: true,
                           template: 'treemap',
                       }),
@@ -391,7 +449,6 @@ export default defineConfig(async ({ mode, command }) => {
                 'buffer',
                 'process',
                 'react-router',
-                'react-router-dom',
                 'crypto-browserify',
                 '@learncard/helpers > @noble/hashes/sha2',
                 '@learncard/helpers > @sd-jwt/core',
@@ -437,6 +494,50 @@ export default defineConfig(async ({ mode, command }) => {
                 'moment/dist/locale/ar',
                 'moment/dist/locale/es',
                 'moment/dist/locale/fr',
+                // Discovered during verification/mock sign-in on a cold Vite 8 cache.
+                // Without these, "optimized dependencies changed. reloading" detaches the Sign in button.
+                '@capacitor-mlkit/barcode-scanning',
+                '@capacitor/network',
+                '@capacitor/share',
+                '@capawesome/capacitor-badge',
+                '@nanostores/react',
+                '@tanstack/react-query-persist-client',
+                'base64url',
+                'capacitor-native-settings',
+                'dompurify',
+                'html2canvas',
+                'jspdf',
+                'lodash-es/isEqual',
+                'lodash-es/omit',
+                'lodash/debounce',
+                // Discovered mid-warmup when the HTTP crawl walked the whole @fs graph
+                // and triggered "optimized dependencies changed. reloading" in CI.
+                'react-google-autocomplete/lib/usePlacesAutocompleteService',
+                '@xterm/addon-fit',
+                '@xterm/addon-web-links',
+                '@xterm/xterm',
+                '@streamdown/code',
+                '@streamdown/math',
+                'filestack-js',
+                'prop-types',
+                'streamdown',
+                'emoji-picker-react',
+                'date-fns/locale',
+                'react-datepicker',
+                '@xyflow/react',
+                'posthog-js',
+                'qr-scanner',
+                'pdf-lib',
+                'react-colorful',
+                'react-lottie-player',
+                'react-oauth2-code-pkce',
+                'zustand',
+                '@capacitor-community/media',
+                'papaparse',
+                '@typeform/embed-react',
+                'jszip',
+                'react-countdown',
+                'react-phone-number-input',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
@@ -459,6 +560,7 @@ export default defineConfig(async ({ mode, command }) => {
             ),
             __APP_BUILD_ENV__: JSON.stringify(environment),
             IS_PRODUCTION: mode === 'production',
+            __LC_DOCUMENT_BRANDING__: JSON.stringify(documentBranding()),
         },
         resolve: {
             // See useSourceConditions above: the `development` condition resolves @learncard/*
@@ -468,7 +570,7 @@ export default defineConfig(async ({ mode, command }) => {
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),
             alias: {
-                ...stdlibbrowser,
+                ...browserStdlibAliases,
                 // cbor-x (via @sd-jwt/sd-jwt-vc status lists) declares a top-level `Buffer` that
                 // collides with the injected Buffer polyfill in pre-bundled deps. Its UMD build keeps it scoped.
                 'cbor-x': 'cbor-x/index-no-eval',
@@ -488,8 +590,6 @@ export default defineConfig(async ({ mode, command }) => {
                 'react',
                 'react-dom',
                 'react-router',
-                'react-router-dom',
-                'history',
                 // Required: learn-card-base is aliased to raw TS source and imports
                 // react-query with bare specifiers. Without this pin the prod build
                 // resolves two react-query instances, splitting the QueryClient React
@@ -509,4 +609,13 @@ export default defineConfig(async ({ mode, command }) => {
             },
         },
     };
-});
+};
+
+// React Router framework mode builds and serves the app (react-router.config.ts). `vite preview`
+// serves the finished static build/ directly, except for the preview server React Router starts
+// itself to prerender, which needs the plugin.
+export default defineConfig(environment =>
+    learnCardViteConfig(environment, {
+        frameworkMode: !environment.isPreview || process.env.IS_RR_BUILD_REQUEST === 'yes',
+    })
+);

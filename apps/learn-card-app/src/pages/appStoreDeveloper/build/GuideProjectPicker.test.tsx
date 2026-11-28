@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { RouteProbe } from 'learn-card-base/test-utils/RouteProbe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -26,17 +27,26 @@ vi.mock('../useDeveloperPortal', () => ({
 const renderPicker = (integrations: LCNIntegration[] = []) =>
     render(
         <MemoryRouter initialEntries={['/app-store/developer/guides/embed-claim']}>
-            <Route exact path="/app-store/developer/guides/embed-claim">
-                <GuideProjectPicker guideType="embed-claim" integrations={integrations} />
-            </Route>
-            <Route
-                path="/app-store/developer/integrations/:id/guides/:useCase"
-                render={({ match }) => (
-                    <div>
-                        Guide {match.params.useCase} in {match.params.id}
-                    </div>
-                )}
-            />
+            <Routes>
+                <Route
+                    path="/app-store/developer/guides/embed-claim"
+                    element={
+                        <GuideProjectPicker guideType="embed-claim" integrations={integrations} />
+                    }
+                />
+                <Route
+                    path="/app-store/developer/integrations/:id/guides/:useCase/*"
+                    element={
+                        <RouteProbe
+                            render={({ id, useCase }) => (
+                                <div>
+                                    Guide {useCase} in {id}
+                                </div>
+                            )}
+                        />
+                    }
+                />
+            </Routes>
         </MemoryRouter>
     );
 

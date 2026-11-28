@@ -294,17 +294,17 @@ Switching is git-clean — platform output files are gitignored. Only the
 
 ### Template files
 
-Some platform files (Vite's `index.html`, iOS entitlements) need to exist but
+Some platform files (iOS entitlements, Android manifests) need to exist but
 are patched per-tenant. These use a **template pattern**:
 
 | Template (tracked)                             | Generated (gitignored)                |
 | ---------------------------------------------- | ------------------------------------- |
-| `index.template.html`                          | `index.html`                          |
 | `ios/App/App/App.entitlements.template`        | `ios/App/App/App.entitlements`        |
 | `ios/App/App/AppRelease.entitlements.template` | `ios/App/App/AppRelease.entitlements` |
 
 `prepare-native-config.ts` copies the template → generated file, then patches
-it with tenant-specific values (title, deep link domains, etc.). On a fresh
+it with tenant-specific values (deep link domains, display names, etc.). The web
+document (`src/root.tsx`) reads its title from `public/tenant-config.json` at build time. On a fresh
 clone the generated files won't exist until you run the script (e.g. via
 `bun run lc dev`).
 

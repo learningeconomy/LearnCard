@@ -3,7 +3,7 @@ import { formatLocaleDate } from '../../i18n/formatters';
 import type { SupportedLanguage } from '../../i18n';
 import { LCNBoostStatusEnum, VC, VerificationItem } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import type { BoostCMSState } from 'learn-card-base/components/boost/boost';
 import { defaultCategoryThumbImages } from 'learn-card-base/components/boost/boostOptions/boostOptions';
 import {
@@ -26,9 +26,9 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
         ? replaceUnderscoresWithWhiteSpace(
               getAchievementTypeFromCustomType(state.basicInfo.achievementType ?? '') ?? ''
           )
-        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
+        : (CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
               options => options.type === state.basicInfo.achievementType
-          )?.title ?? '';
+          )?.title ?? '');
 
     return {
         ...state,
@@ -165,6 +165,7 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
                 name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title, // title
                 image: vcInput?.appearance?.badgeThumbnail, // badge image
                 alignment:
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
                     (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
             },
         },
@@ -274,9 +275,11 @@ export const createBoost = async (
         // Set alignments on the unsigned credential if we have any
         if (alignments.length > 0) {
             unsignedCredential.credentialSubject = unsignedCredential.credentialSubject ?? {};
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- legacy typing, out of scope for the router migration
             // @ts-ignore
             unsignedCredential.credentialSubject.achievement =
                 unsignedCredential.credentialSubject.achievement ?? {};
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- legacy typing, out of scope for the router migration
             // @ts-ignore
             unsignedCredential.credentialSubject.achievement.alignment = alignments;
         }
@@ -385,11 +388,14 @@ export const updateBoost = async (
     // Ensure OBv3 alignments live under credential.credentialSubject.achievement.alignment
     try {
         const alignments =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
             (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []);
         updatedCredential.credentialSubject = updatedCredential.credentialSubject ?? {};
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- legacy typing, out of scope for the router migration
         // @ts-ignore
         updatedCredential.credentialSubject.achievement =
             updatedCredential.credentialSubject.achievement ?? {};
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- legacy typing, out of scope for the router migration
         // @ts-ignore
         updatedCredential.credentialSubject.achievement.alignment = alignments;
     } catch (e) {
@@ -490,6 +496,7 @@ export const getDefaultAchievementTypeImage = (
     stylesPack: LCAStylesPackRegistryEntry[] | undefined
 ): string => {
     if (category === BoostCategoryOptionsEnum.meritBadge) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
         const categoryDefaults: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
             options => options?.type === achievementType
         );
@@ -513,6 +520,7 @@ export const getDefaultAchievementTypeImage = (
     else if (!defaultStylePackEntry && !isDefaultAchievementTypeImage)
         return boostCategoryOptions[category]?.CategoryImage;
     // oxlint-disable-next-line no-dupe-else-if
+    // eslint-disable-next-line no-dupe-else-if -- unreachable legacy branch, kept as is
     else if (!defaultStylePackEntry && !isDefaultCategoryImage && !isDefaultAchievementTypeImage)
         return currentBadgeImage;
 
@@ -625,6 +633,7 @@ export const getDefaultBoostTitle = (
 
             return customTypeTitle;
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
             const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
                 options => options?.type === achievementType
             );
@@ -657,6 +666,7 @@ export const getDefaultBoostDescription = (
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
     ) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
         const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
             options => options?.type === achievementType
         );
@@ -680,6 +690,7 @@ export const getDefaultBoostCriteria = (
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
     ) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
         const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
             options => options?.type === achievementType
         );
@@ -695,19 +706,16 @@ export const getDefaultBoostCriteria = (
 };
 
 export const setQueryParam = (
-    history: RouteComponentProps['history'],
+    history: NavigateFunction,
     pathname: string,
     queryParamName: string,
     newValue: string
 ) => {
     if (history) {
-        let searchParams = new URLSearchParams(window.location.search);
+        const searchParams = new URLSearchParams(window.location.search);
         searchParams.set(queryParamName, newValue);
 
-        history.replace({
-            pathname,
-            search: searchParams.toString(),
-        });
+        history({ pathname, search: searchParams.toString() }, { replace: true });
     } else {
         throw new Error('History object is required but missing');
     }

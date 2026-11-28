@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     keyOutline,
@@ -60,7 +60,7 @@ const DeveloperSignInPage: React.FC = () => {
     const loginBgColor =
         colors?.defaults?.loginBgColor ?? colors?.defaults?.loaders?.[0] ?? '#058760';
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -127,7 +127,7 @@ const DeveloperSignInPage: React.FC = () => {
 
         if (privateKey === pendingSeed) {
             consumePendingDeveloperSeed(pendingSeed);
-            history.replace(nextPath);
+            navigate(nextPath, { replace: true });
             return;
         }
 
@@ -149,7 +149,7 @@ const DeveloperSignInPage: React.FC = () => {
         try {
             await signInWithSeed(seedToUse, { profileId: requestedProfileId });
             consumePendingDeveloperSeed(seedToUse);
-            history.replace(nextPath);
+            navigate(nextPath, { replace: true });
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : m['login.seedPhrase.error.generic']());
             setIsSigningIn(false);
@@ -164,7 +164,7 @@ const DeveloperSignInPage: React.FC = () => {
         }
 
         if (currentUser?.privateKey === seedToUse) {
-            history.replace(nextPath);
+            navigate(nextPath, { replace: true });
             return;
         }
 
@@ -289,7 +289,7 @@ const DeveloperSignInPage: React.FC = () => {
                                 </button>
                             )}
                             <button
-                                onClick={() => history.replace(nextPath)}
+                                onClick={() => navigate(nextPath, { replace: true })}
                                 disabled={isBusy}
                                 className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
@@ -410,7 +410,7 @@ const DeveloperSignInPage: React.FC = () => {
                     <p className="text-xs text-grayscale-600">
                         {m['login.developerSignIn.notDeveloper']()}
                         <button
-                            onClick={() => history.push('/login')}
+                            onClick={() => navigate('/login')}
                             className="text-grayscale-900 font-medium hover:underline"
                         >
                             {m['login.developerSignIn.signInNormally']()}

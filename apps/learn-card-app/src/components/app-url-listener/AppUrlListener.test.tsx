@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import AppUrlListener, { resetRoutedClassLinkLaunchUrls } from './AppUrlListener';
 import {
@@ -49,11 +49,11 @@ afterEach(cleanup);
 
 it('routes cold tenant message links before claim-like query parameters', async () => {
     state.launch = { url: 'https://tenant.example/m/welcome?boostUri=x&challenge=y' };
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     const view = render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(history.location.pathname).toBe('/m/welcome'));
     expect(history.location.search).toBe('');
@@ -62,11 +62,11 @@ it('routes cold tenant message links before claim-like query parameters', async 
 });
 
 it('accepts warm tenant links, rejects other origins and ignores callbacks after unmount', async () => {
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     const view = render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(state.listener).toBeDefined());
     act(() => state.listener?.({ url: 'https://evil.example/m/private' }));
@@ -83,11 +83,11 @@ it.each(['guide/intro', 'discount%off', 'literal%2Fvalue'])(
     async messageId => {
         const path = `/m/${encodeURIComponent(messageId)}/`;
         state.launch = { url: `https://tenant.example${path}` };
-        const history = createMemoryHistory();
+        const history = createTestHistory();
         render(
-            <Router history={history}>
+            <TestRouter history={history}>
                 <AppUrlListener />
-            </Router>
+            </TestRouter>
         );
         await waitFor(() => expect(history.location.pathname).toBe(path));
         act(() => state.listener?.({ url: `https://tenant.example${path}` }));
@@ -99,22 +99,22 @@ const CLASSLINK_LAUNCH = 'com.learncard.app://auth/classlink/callback?code=x&sta
 
 it('routes a cold-start ClassLink callback to the callback route once', async () => {
     state.launch = { url: CLASSLINK_LAUNCH };
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     const first = render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(history.location.pathname).toBe('/auth/classlink/callback'));
     expect(history.location.search).toBe('?code=x&state=y');
     first.unmount();
 
     // A remount in the same JS context must not replay the consumed callback.
-    history.replace('/wallet');
+    await act(() => history.replace('/wallet'));
     render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(state.listener).toBeDefined());
     await act(async () => undefined);
@@ -126,28 +126,27 @@ it('routes a retained cold-start ClassLink appUrlOpen event once, not again from
     // returns the same URL.
     state.retained = { url: CLASSLINK_LAUNCH };
     state.launch = { url: CLASSLINK_LAUNCH };
-    const history = createMemoryHistory();
-    const replace = vi.spyOn(history, 'replace');
+    const history = createTestHistory();
     render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(history.location.pathname).toBe('/auth/classlink/callback'));
     expect(history.location.search).toBe('?code=x&state=y');
     await act(async () => undefined);
     // A duplicate delivery of the same URL is not routed again.
     act(() => state.listener?.({ url: CLASSLINK_LAUNCH }));
-    expect(replace).toHaveBeenCalledOnce();
+    expect(history.entries).toEqual(['REPLACE /auth/classlink/callback?code=x&state=y']);
 });
 
 it('leaves ClassLink callbacks to an in-flight native auth session', async () => {
     setClassLinkNativeSessionInFlight(true);
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(state.listener).toBeDefined());
     act(() => state.listener?.({ url: CLASSLINK_LAUNCH }));
@@ -156,11 +155,11 @@ it('leaves ClassLink callbacks to an in-flight native auth session', async () =>
 
 it('ignores other custom-scheme paths on the bundle ID', async () => {
     state.launch = { url: 'com.learncard.app://auth/classlink/callbackX?code=x' };
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(state.listener).toBeDefined());
     await act(async () => undefined);

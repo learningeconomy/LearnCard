@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import * as m from '../../paraglide/messages.js';
 
@@ -9,7 +9,7 @@ import * as m from '../../paraglide/messages.js';
  * re-checks the login session itself, and asks before changing anything.
  */
 const SecureAccountPage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { openSecureAccount, isReady } = useAppAuth();
     const opened = useRef(false);
 
@@ -17,8 +17,8 @@ const SecureAccountPage: React.FC = () => {
         if (!isReady || opened.current) return;
         opened.current = true;
         openSecureAccount();
-        history.replace('/');
-    }, [isReady, openSecureAccount, history]);
+        navigate('/', { replace: true });
+    }, [isReady, openSecureAccount, navigate]);
 
     return (
         <div role="status" className="flex flex-col items-center justify-center min-h-full p-8">

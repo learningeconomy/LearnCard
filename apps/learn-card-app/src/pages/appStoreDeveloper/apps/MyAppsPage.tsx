@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
@@ -121,7 +121,7 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
 };
 
 const MyAppsPage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { integrations, isLoadingIntegrations } = useDeveloperPortalContext();
     const { useMyApps } = useDeveloperPortal();
     const { data, isLoading, isError, refetch } = useMyApps(
@@ -208,7 +208,7 @@ const MyAppsPage: React.FC = () => {
                                     key={app.listing.listing_id}
                                     app={app}
                                     onOpen={() =>
-                                        history.push(getAppStatusPath(app.listing.listing_id))
+                                        navigate(getAppStatusPath(app.listing.listing_id))
                                     }
                                 />
                             ))}
@@ -218,9 +218,9 @@ const MyAppsPage: React.FC = () => {
                     {isNewAppOpen && (
                         <NewAppSheet
                             onClose={() => setIsNewAppOpen(false)}
-                            onBuildApp={() => history.push('/app-store/developer/guides/embed-app')}
+                            onBuildApp={() => navigate('/app-store/developer/guides/embed-app')}
                             onListExisting={type =>
-                                history.push(`/app-store/developer/apps/new?type=${type}`)
+                                navigate(`/app-store/developer/apps/new?type=${type}`)
                             }
                             onOpenDocs={() => openExternalLink(DEVELOPER_DOCS_URL)}
                         />

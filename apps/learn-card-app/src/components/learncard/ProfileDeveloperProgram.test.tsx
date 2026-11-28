@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 
 import ProfileDeveloperProgram from './ProfileDeveloperProgram';
 import LaunchPadBecomeAnApp from '../../pages/launchPad/LaunchPadBecomeAnApp';
@@ -57,7 +57,10 @@ const renderEntry = (): void => {
     render(
         <MemoryRouter>
             <ProfileDeveloperProgram />
-            <Route path="/app-store/developer" render={() => <h1>Developer portal</h1>} />
+            <Routes>
+                <Route path="/app-store/developer/*" element={<h1>Developer portal</h1>} />
+                <Route path="*" element={null} />
+            </Routes>
         </MemoryRouter>
     );
 };
@@ -144,7 +147,10 @@ describe('profile Developer Program entry', () => {
         render(
             <MemoryRouter>
                 <LaunchPadBecomeAnApp />
-                <Route path="/app-store/developer" render={() => <h1>Developer portal</h1>} />
+                <Routes>
+                    <Route path="/app-store/developer/*" element={<h1>Developer portal</h1>} />
+                    <Route path="*" element={null} />
+                </Routes>
             </MemoryRouter>
         );
         fireEvent.click(screen.getByRole('button', { name: /Developer Program/ }));

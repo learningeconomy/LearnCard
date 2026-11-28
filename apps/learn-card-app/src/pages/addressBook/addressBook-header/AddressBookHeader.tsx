@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
@@ -40,7 +40,7 @@ export const AddressBookHeader: React.FC<{
     const { getColorSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
 
@@ -66,7 +66,7 @@ export const AddressBookHeader: React.FC<{
                         <button
                             className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                             onClick={() => {
-                                history.goBack();
+                                navigate(-1);
                             }}
                             aria-label={m['common.back']()}
                         >

@@ -6,7 +6,7 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigationType, useNavigate } from 'react-router';
 
 import { getIonMode } from './ionMode';
 import './app-shell.css';
@@ -139,12 +139,13 @@ export type AppTabsProps = {
  */
 export const AppTabs: React.FC<AppTabsProps> = ({ className, children }) => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
+    const navigationType = useNavigationType();
     const memoryRef = useRef<TabMemory>({ tabs: {}, order: [] });
     const routeRef = useRef<RouteLocation>({
         pathname: location.pathname,
         search: location.search,
-        action: history.action,
+        action: navigationType,
     });
 
     // IonReactRouter ignored history changes whose pathname equals the current URL
@@ -153,7 +154,7 @@ export const AppTabs: React.FC<AppTabsProps> = ({ className, children }) => {
         routeRef.current = {
             pathname: location.pathname,
             search: location.search,
-            action: history.action,
+            action: navigationType,
         };
     }
     syncActiveTab(memoryRef.current, routeRef.current);
@@ -176,11 +177,11 @@ export const AppTabs: React.FC<AppTabsProps> = ({ className, children }) => {
             if (memory.activeTab === tab) {
                 // Re-tapping the active tab returns to its root.
                 if (tapped.originalHref !== routeRef.current.pathname) {
-                    history.push(tapped.originalHref);
+                    navigate(tapped.originalHref);
                 }
                 return;
             }
-            history.push(tapped.currentHref);
+            navigate(tapped.currentHref);
         },
     };
 

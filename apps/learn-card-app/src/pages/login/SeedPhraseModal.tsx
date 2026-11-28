@@ -3,7 +3,7 @@ import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { useModal, redirectStore, resumeAuthRedirect } from 'learn-card-base';
 import AlertTriangle from '../../components/svgs/AlertTriangle';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useTheme from '../../theme/hooks/useTheme';
 import { useSeedLogin } from './useSeedLogin';
@@ -17,7 +17,7 @@ const SeedPhraseModal: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
 
     const { closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { signInWithSeed, validate } = useSeedLogin();
 
     const handleLogin = async () => {
@@ -34,9 +34,9 @@ const SeedPhraseModal: React.FC = () => {
             const returnTo = redirectStore.get.lcnRedirect();
             if (returnTo) {
                 redirectStore.set.lcnRedirect(null);
-                resumeAuthRedirect(history, returnTo);
+                resumeAuthRedirect(navigate, returnTo);
             } else {
-                history.push('/wallet');
+                navigate('/wallet');
             }
         } catch (e) {
             setErrorMessage(m['login.seedPhrase.error.generic']());

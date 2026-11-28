@@ -1,6 +1,6 @@
 import React from 'react';
 import queryString from 'query-string';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import GamePromptHeader from './GamePromptHeader';
 
@@ -20,7 +20,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     contractDetails,
     returnToPrevStep,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const brandingConfig = useBrandingConfig();
     const { challenge, domain, returnTo: urlReturnTo } = queryString.parse(location.search);
@@ -63,7 +63,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                         returnTo,
                         wallet,
                     });
-                } else history.push(returnTo);
+                } else navigate(returnTo);
             }
         } catch {
             presentToast('Unable to complete sign in. Please try again.', {
@@ -96,7 +96,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 {m['consentFlow.continueToGame']()}
             </button>
             <button
-                onClick={() => history.push('/wallet')}
+                onClick={() => navigate('/wallet')}
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >

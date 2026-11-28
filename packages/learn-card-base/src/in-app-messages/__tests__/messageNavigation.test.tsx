@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { act, cleanup, renderHook } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { useInAppMessageActions } from '../useInAppMessageActions';
 import { MessageNavigationContext } from '../MessageNavigationContext';

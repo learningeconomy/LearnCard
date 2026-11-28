@@ -1,5 +1,5 @@
 import React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 
 import ShortBoostUserOptions from '../boost-options/boostUserOptions/ShortBoostUserOptions';
 
@@ -8,7 +8,7 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import { UnsignedVC, VC } from '@learncard/types';
 
 const useShortBoost = (
-    history: RouteComponentProps['history'],
+    history: NavigateFunction,
     boostCredential: VC | UnsignedVC,
     boostUri: string,
     profileId: string,

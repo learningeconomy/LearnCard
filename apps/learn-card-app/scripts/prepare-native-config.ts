@@ -67,7 +67,6 @@ import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchem
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
 import { deepMerge } from 'learn-card-base/src/config/deepMerge';
 import type { TenantConfig } from 'learn-card-base/src/config/tenantConfigSchema';
-import { renderTenantHtml } from './render-tenant-html';
 
 const requireFromHere = createRequire(import.meta.url);
 const { readDefaultChannel } = requireFromHere('../../../tools/capgo/readDefaultChannel.cjs') as {
@@ -1091,34 +1090,18 @@ if (nativeConfig?.deepLinkDomains?.length) {
     }
 }
 // ---------------------------------------------------------------------------
-// 11. Patch index.html with tenant branding name + apple-touch-icon
+// 11. Document branding
+//     React Router renders the HTML (src/root.tsx). Vite reads the title and iOS
+//     home-screen title from public/tenant-config.json (written above), so there is
+//     no index.html to patch. Remove one left by an older checkout.
 // ---------------------------------------------------------------------------
 
-const indexHtmlPath = resolve(APP_ROOT, 'index.html');
-const indexTemplatePath = resolve(APP_ROOT, 'index.template.html');
-
-// Always start from the template so tenant switches produce a clean result
-if (existsSync(indexTemplatePath)) {
-    cpSync(indexTemplatePath, indexHtmlPath);
+const legacyIndexHtmlPath = resolve(APP_ROOT, 'index.html');
+if (existsSync(legacyIndexHtmlPath)) {
+    rmSync(legacyIndexHtmlPath);
+    log.info('\n📄 Removed legacy generated index.html (React Router renders the document now)');
 }
-
-if (existsSync(indexHtmlPath)) {
-    log.info('\n📄 Patching index.html with tenant branding...');
-
-    try {
-        const html = renderTenantHtml(
-            readFileSync(indexHtmlPath, 'utf-8'),
-            validatedConfig.branding
-        );
-
-        writeFileSync(indexHtmlPath, html, 'utf-8');
-        log.info(`   ✓ <title>${manifestName}</title>`);
-        log.info(`   ✓ apple-mobile-web-app-title="${manifestShortName}"`);
-        log.info('   ✓ apple-touch-icon link');
-    } catch (err) {
-        log.warn('   ⚠️  Failed to patch index.html:', err);
-    }
-}
+log.info(`\n📄 Document title: ${manifestName} (iOS home screen: ${manifestShortName})`);
 
 // ---------------------------------------------------------------------------
 // 12. Sync runtime files into native asset directories

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('my-learn-card-modal');
@@ -86,7 +86,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const [user, setUser] = useState(_user);
 
     const { initWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
     const currentUser = useCurrentUser();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
@@ -293,7 +293,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 caretText: '',
                 onClick: () => {
                     closeModal();
-                    history.push('/privacy-and-data');
+                    navigate('/privacy-and-data');
                 },
             },
             {
@@ -723,7 +723,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         newModal(
             <QrCodeUserCardModal
                 branding={branding}
-                history={history}
+                history={navigate}
                 connections={connections ?? []}
                 qrOnly
             />,

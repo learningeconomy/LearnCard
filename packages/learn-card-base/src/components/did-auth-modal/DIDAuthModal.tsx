@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useHistory, useParams, useLocation } from 'react-router-dom';
+import { Link, useParams, useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { useDIDAuthPresentation } from './useDIDAuthPresentation';
 
@@ -24,12 +24,12 @@ import {
 } from 'learn-card-base/ui/widgets';
 
 export const DIDAuthModal = () => {
-    const { challenge } = useParams<{ challenge: string }>();
+    const { challenge } = useParams() as { challenge: string };
     const { search } = useLocation();
     const parsedDomain = queryString.parse(search).domain;
     const domain = typeof parsedDomain === 'string' ? parsedDomain : undefined;
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const [authInitiated, setAuthInitiated] = useState(false);
 
     const [verificationCode, setVerificationCode] = useState<string>();
@@ -52,7 +52,7 @@ export const DIDAuthModal = () => {
     };
 
     const dismiss = async ({ historyPush }) => {
-        history.push(historyPush ?? '/wallet');
+        navigate(historyPush ?? '/wallet');
     };
     const handleDismiss = async ({ redirectToLogin, redirectToLoginRememberParams }) => {
         if (redirectToLogin) {

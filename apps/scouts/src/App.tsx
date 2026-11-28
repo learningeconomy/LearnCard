@@ -1,5 +1,4 @@
 import React from 'react';
-import { createBrowserHistory } from 'history';
 import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import * as Sentry from '@sentry/react';
 import { Capacitor } from '@capacitor/core';
@@ -42,8 +41,6 @@ import './index.scss';
 import 'swiper/css';
 import 'learn-card-base/swiper/swiper-defaults.css';
 const FullApp = lazyWithRetry(() => import('./FullApp'));
-const history = createBrowserHistory();
-
 initAppPlatform();
 
 const App: React.FC = () => {
@@ -63,7 +60,7 @@ const App: React.FC = () => {
     // If they have, then show the app as usual
     if (!introSlidesCompleted && !isLoggedIn && isNativePlatform) {
         return (
-            <AppShellRouter history={history}>
+            <AppShellRouter>
                 <AppRoot>
                     <IntroSlides />
                 </AppRoot>

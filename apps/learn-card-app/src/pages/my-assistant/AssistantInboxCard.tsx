@@ -7,7 +7,7 @@ import {
     informationCircleOutline,
     thumbsDownOutline,
 } from 'learn-card-base/icons/ionicons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import type { LearnCardAssistantCard, LearnCardAssistantCardType } from './learnCardAssistant.api';
 import type { AssistantAvatarConfig } from './assistantAvatarOptions';
@@ -41,7 +41,7 @@ export const AssistantInboxCard: React.FC<{
     onOpenDetails: (card: LearnCardAssistantCard) => void;
     onOpenChat: (prompt?: string) => void;
 }> = ({ avatarConfig, card, onMarkRead, onFeedback, onOpenDetails, onOpenChat }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const isNew = isLearnCardAssistantCardNew(card);
     const [isMarkingRead, setIsMarkingRead] = useState(false);
     const [feedbackNoted, setFeedbackNoted] = useState(card.feedback?.type === 'thumbs-down');
@@ -73,7 +73,7 @@ export const AssistantInboxCard: React.FC<{
 
         const action = getLearnCardAssistantCtaAction(card.cta.href);
         if (action.kind === 'internal') {
-            history.push(action.href);
+            navigate(action.href);
             return;
         }
 

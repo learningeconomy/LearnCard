@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import SocialBadges from '../../../svgs/SocialBadges';
 import SocialServices from '../../../svgs/SocialServices';
@@ -10,12 +10,12 @@ import { VC } from '@learncard/types';
 import * as m from '../../../../paraglide/messages.js';
 
 export const FamilyBoostList: React.FC<{ credential: VC }> = ({ credential }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
 
     const handleIssue = () => {
         closeAllModals();
-        history.push('/issue');
+        navigate('/issue');
     };
 
     const familyBoosts = [

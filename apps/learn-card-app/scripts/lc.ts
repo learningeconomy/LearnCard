@@ -1223,7 +1223,7 @@ const setNativeBuildEnv = (stageId: string): void => {
     process.env.VITE_ENABLE_AUTH_DEBUG_WIDGET = isProduction ? 'false' : 'true';
 };
 
-const VITE_BUILD_COMMAND = 'NODE_OPTIONS="--max-old-space-size=16608" npx vite build';
+const VITE_BUILD_COMMAND = 'NODE_OPTIONS="--max-old-space-size=16608" npx react-router build';
 
 /**
  * Pinned to the same version CI uses (.github/workflows/capgo-upload.yml). `@latest`

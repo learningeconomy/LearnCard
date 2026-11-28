@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useModal, useGetProfile, switchedProfileStore } from 'learn-card-base';
 
@@ -17,7 +17,7 @@ import { LearnCardRolesEnum } from '../../../components/onboarding/onboarding.he
 export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOptionsEnum }> = ({
     shortCircuitDevTool,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const flags = useFlags();
     const { closeAllModals } = useModal();
     const { data: lcNetworkProfile } = useGetProfile();
@@ -56,7 +56,7 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                         <li
                             onClick={() => {
                                 closeAllModals();
-                                history.push('/app-store/developer');
+                                navigate('/app-store/developer');
                             }}
                             role="button"
                             className="w-full flex items-center justify-between py-[15px] cursor-pointer border-b border-grayscale-200 last:border-b-0"

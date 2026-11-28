@@ -25,10 +25,13 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: state.initWallet }),
     useSyncConsentFlow: () => ({ refetch: vi.fn() }),
 }));
-vi.mock('react-router-dom', () => ({
-    useLocation: () => ({ search: state.search }),
-    useHistory: () => ({ push: state.push }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useLocation: () => ({ search: state.search }),
+        useNavigate: () => navigateFromHistory({ push: state.push }),
+    };
+});
 vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
     useBrandingConfig: () => ({ name: 'Test' }),
 }));

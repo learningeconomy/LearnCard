@@ -6,10 +6,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CredentialListTabEnum, EarnedAndManagedTabs } from './EarnedAndManagedTabs';
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ replace: vi.fn() }),
-    useLocation: () => ({ pathname: '/wallet' }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('../../test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ replace: vi.fn() }),
+        useLocation: () => ({ pathname: '/wallet' }),
+    };
+});
 
 const mocks = vi.hoisted(() => ({ isSearchActive: false }));
 

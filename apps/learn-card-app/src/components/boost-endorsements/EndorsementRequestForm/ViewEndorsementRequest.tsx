@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-endorsement-request');
 

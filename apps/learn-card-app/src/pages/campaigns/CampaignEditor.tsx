@@ -8,7 +8,7 @@ import {
     eyeOutline,
     paperPlaneOutline,
 } from 'learn-card-base/icons/ionicons';
-import { Link, Prompt, useHistory } from 'react-router-dom';
+import { Link, useBlocker, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { setInAppMessageOverride } from 'learn-card-base/in-app-messages/debugOverrideStore';
 import type { Campaign, CampaignStatus } from '@learncard/types';
@@ -37,7 +37,7 @@ import {
 } from './ui';
 
 const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, campaign }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const [createdId, setCreatedId] = useState<string>();
     const [edited, setEdited] = useState<Set<keyof CampaignForm>>(() => new Set());
     const [saved, setSaved] = useState(campaign);
@@ -50,12 +50,22 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     const queries = useQueryClient();
     const dirty = JSON.stringify(form) !== baseline;
     const busy = Boolean(action.busy) || audienceBusy || dispatchBusy;
+    const leaveMessage = busy
+        ? 'A request is running. Leaving stops remaining batches, but the current request may still complete. Leave?'
+        : 'Discard unsaved campaign changes?';
+    // React Router 5's <Prompt> asked with window.confirm; keep that.
+    const blocker = useBlocker(dirty || busy);
+    useEffect(() => {
+        if (blocker.state !== 'blocked') return;
+        if (window.confirm(leaveMessage)) blocker.proceed();
+        else blocker.reset();
+    }, [blocker, leaveMessage]);
     // Replace only after the successful save has committed and Prompt has unblocked navigation.
     useEffect(() => {
         if (!createdId || dirty || busy) return;
         setCreatedId(undefined);
-        history.replace(`/admin/campaigns/${encodeURIComponent(createdId)}`);
-    }, [createdId, dirty, busy, history]);
+        navigate(`/admin/campaigns/${encodeURIComponent(createdId)}`, { replace: true });
+    }, [createdId, dirty, busy, navigate]);
     const validation = validateForm(form, saved?.status);
     const preview = previewMessage(form);
     useEffect(() => () => setInAppMessageOverride(null), []);
@@ -157,14 +167,6 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     });
     return (
         <div className="space-y-7">
-            <Prompt
-                when={dirty || busy}
-                message={
-                    busy
-                        ? 'A request is running. Leaving stops remaining batches, but the current request may still complete. Leave?'
-                        : 'Discard unsaved campaign changes?'
-                }
-            />
             <header className="space-y-5">
                 <Link
                     to="/admin/campaigns"

@@ -1,7 +1,7 @@
 import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
-import { useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -216,7 +216,7 @@ const ActionButton: React.FC<{
     onClick?: () => void;
     role?: string;
 }> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, newModalWithToken, forceCloseModalByToken, closeModal, closeAllModals } =
         useModal();
     const { checkAndPromptRecovery } = useBoostRecoveryCheck();
@@ -238,7 +238,7 @@ const ActionButton: React.FC<{
             return;
         }
         if (to) {
-            history.push(to);
+            navigate(to);
             closeModal();
             return;
         }
@@ -253,7 +253,7 @@ const ActionButton: React.FC<{
                 );
                 return;
             case 'Create Family':
-                history.push('/families?createFamily=1');
+                navigate('/families?createFamily=1');
                 closeModal();
                 return;
             case 'Switch Child': {
@@ -295,7 +295,7 @@ const ActionButton: React.FC<{
                             const link = user?.profileId
                                 ? `${baseLink}&otherUserProfileId=${user.profileId}`
                                 : baseLink;
-                            history.push(link);
+                            navigate(link);
                         }}
                         onPlayerSwitch={() => closeAllModals()}
                     />,
@@ -357,7 +357,7 @@ const ActionButton: React.FC<{
             case 'Create Credential':
                 checkAndPromptRecovery(() => {
                     closeAllModals();
-                    history.push('/issue');
+                    navigate('/issue');
                 });
                 return;
             case 'Create API Token':
@@ -413,7 +413,7 @@ const ActionButton: React.FC<{
                 closeModal();
                 return;
             case 'Understand My Skills':
-                history.push('/ai/insights');
+                navigate('/ai/insights');
                 closeModal();
                 return;
             case 'Customize AI Sessions':
@@ -425,7 +425,7 @@ const ActionButton: React.FC<{
                 );
                 return;
             case 'New AI Tutoring Session':
-                history.push('/ai/topics');
+                navigate('/ai/topics');
                 closeModal();
                 return;
             case 'Claim Credential':
@@ -476,7 +476,8 @@ const ActionButton: React.FC<{
 
 const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFooterNav }) => {
     const { newModal, closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
+    const location = useLocation();
     const { initWallet } = useWallet();
     const { colors: themeColors } = useTheme();
     const actionModalButtonColors = themeColors?.defaults?.actionModalButtonColors;
@@ -731,17 +732,17 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     };
 
     const handleViewChildInsights = () => {
-        history.push(`/ai/insights?tab=${AiInsightsTabsEnum.ChildInsights}`);
+        navigate(`/ai/insights?tab=${AiInsightsTabsEnum.ChildInsights}`);
         closeModal();
     };
 
     const handleEditSkillsFrameworks = () => {
-        history.push('/skills?tab=admin-panel');
+        navigate('/skills?tab=admin-panel');
         closeModal();
     };
 
     const handleViewLearnerInsights = () => {
-        history.push(`/ai/insights?tab=${AiInsightsTabsEnum.LearnerInsights}`);
+        navigate(`/ai/insights?tab=${AiInsightsTabsEnum.LearnerInsights}`);
         closeModal();
     };
 
@@ -959,7 +960,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                                     mobile: ModalTypes.FullScreen,
                                                 }
                                             );
-                                            history.push('/families');
+                                            navigate('/families');
                                         }
                                       : label === 'View Learner Insights'
                                         ? handleViewLearnerInsights
@@ -981,7 +982,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     <button
                         type="button"
                         onClick={() => {
-                            history.push('/passport');
+                            navigate('/passport');
                             closeModal();
                         }}
                         className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
@@ -997,10 +998,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     <button
                         type="button"
                         onClick={() => {
-                            if (history.location.pathname === '/launchpad') {
+                            if (location.pathname === '/launchpad') {
                                 closeModal();
                             } else {
-                                history.push('/launchpad');
+                                navigate('/launchpad');
                                 closeModal();
                             }
                         }}

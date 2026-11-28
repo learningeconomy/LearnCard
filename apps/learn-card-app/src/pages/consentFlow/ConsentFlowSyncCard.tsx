@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import queryString from 'query-string';
 import { useImmer } from 'use-immer';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
@@ -103,7 +103,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
         }
     }, [JSON.stringify(contractDetails?.contract ?? '')]);
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const brandingConfig = useBrandingConfig();
 
@@ -259,8 +259,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                             returnTo,
                                             wallet,
                                         });
-                                    } else history.push(returnTo);
-                                } else history.push(`/launchpad?uri=${contractDetails.uri}`);
+                                    } else navigate(returnTo);
+                                } else navigate(`/launchpad?uri=${contractDetails.uri}`);
                             } catch (error) {
                                 presentToast(
                                     error instanceof AiPassportReauthenticationRequired

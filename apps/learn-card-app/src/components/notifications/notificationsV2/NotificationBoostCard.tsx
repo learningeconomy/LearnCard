@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { capitalize } from 'lodash-es';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
@@ -104,7 +104,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
     const credentialUri = notification?.data?.vcUris?.[0];
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
     const _uri = query.get('uri') ?? '';
     const _claim = query.get('claim') ?? '';
@@ -261,12 +261,12 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     successCallback={async () => {
                         await handleSuccess();
                         setClaimModalOpen(false);
-                        history.replace('/notifications');
+                        navigate('/notifications', { replace: true });
                     }}
                     onDismiss={async () => {
                         handleReadStatus();
                         setClaimModalOpen(false);
-                        history.replace('/notifications');
+                        navigate('/notifications', { replace: true });
                     }}
                     notification={notification}
                     hideEndorsementRequestCard
@@ -428,7 +428,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     queryClient.invalidateQueries({ queryKey: ['transcriptStatus'] }),
                     queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] }),
                 ]);
-                history.replace('/school-connect?view=transcript');
+                navigate('/school-connect?view=transcript', { replace: true });
             } catch (error) {
                 log.error('transcript.auto-claim.failed', error);
                 presentToast(m['transcriptOptIn.autoAcceptFailed'](), {
@@ -457,7 +457,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         initWallet,
         addVCtoWallet,
         queryClient,
-        history,
+        navigate,
         presentToast,
     ]);
     let buttonText: string = '';

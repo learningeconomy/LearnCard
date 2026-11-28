@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { LocationState, SubheaderTypeEnum } from './MainSubHeader.types';
 import AddAward from 'learn-card-base/svgs/AddAward';
 import BoostSelectMenu from '../boost/boost-select-menu/BoostSelectMenu';
@@ -22,11 +22,11 @@ const SubheaderPlusActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
     handleShareCreds,
     subheaderType,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     const { handlePresentBoostModal } = useBoostModal(
-        history,
+        navigate,
         BoostCategoryOptionsEnum.socialBadge
     );
 

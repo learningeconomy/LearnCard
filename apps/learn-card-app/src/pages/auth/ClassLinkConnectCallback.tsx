@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
     usePathQuery,
@@ -33,7 +33,7 @@ const SHOWN_ERROR_CODES = ['BAD_REQUEST', 'CONFLICT', 'PRECONDITION_FAILED', 'TO
  */
 const ClassLinkConnectCallback: React.FC = () => {
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { state: authState } = useAppAuth();
@@ -44,7 +44,7 @@ const ClassLinkConnectCallback: React.FC = () => {
 
     const fail = (message: string, path = SCHOOL_CONNECT_PATH) => {
         presentToast(message, { type: ToastTypeEnum.Error, hasDismissButton: true });
-        history.replace(path);
+        navigate(path, { replace: true });
     };
 
     useEffect(() => {
@@ -118,7 +118,7 @@ const ClassLinkConnectCallback: React.FC = () => {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
-                history.replace(returnTo);
+                navigate(returnTo, { replace: true });
             } catch (e) {
                 log.error('School connect failed', e);
                 const trpcError = e as { data?: { code?: string }; message?: string };

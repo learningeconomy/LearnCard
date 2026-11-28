@@ -1,5 +1,5 @@
 import React, { type JSX } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -65,7 +65,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     resolvedCredential,
 }) => {
     const queryClient = useQueryClient();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
 
@@ -305,7 +305,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 handleBlockUser={handleBlockUser}
                 showUnblockButton={showUnblockButton}
                 handleUnblockUser={handleUnblockUser}
-                history={history}
+                history={navigate}
             />,
             {
                 sectionClassName: 'max-w-[400px]!',

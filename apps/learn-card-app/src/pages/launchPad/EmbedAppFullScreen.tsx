@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router';
 
 import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
 import { Network } from '@capacitor/network';
@@ -17,9 +17,9 @@ import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
 import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
 
-interface EmbedAppParams {
+type EmbedAppParams = {
     appId: string;
-}
+};
 
 /**
  * Full-screen dedicated page for embedded partner applications.
@@ -37,14 +37,9 @@ interface LaunchConfig {
 }
 
 export const EmbedAppFullScreen: React.FC = () => {
-    const history = useHistory<{
-        embedUrl?: string;
-        appName?: string;
-        launchConfig?: LaunchConfig;
-        isInstalled?: boolean;
-        path?: string;
-    }>();
-    const { appId } = useParams<EmbedAppParams>();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { appId } = useParams() as EmbedAppParams;
     const [isLoading, setIsLoading] = useState(true);
     const [hasLoadFailed, setHasLoadFailed] = useState(false);
     const [iframeKey, setIframeKey] = useState(0);
@@ -92,13 +87,13 @@ export const EmbedAppFullScreen: React.FC = () => {
 
     // Get embedUrl and appName from query params or location state
     const queryParams = React.useMemo(
-        () => new URLSearchParams(history.location.search),
-        [history.location.search]
+        () => new URLSearchParams(location.search),
+        [location.search]
     );
 
-    const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
-    const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
-    const initialPath = queryParams.get('path') ?? history.location.state?.path;
+    const embedUrl = queryParams.get('embedUrl') || location.state?.embedUrl;
+    const appName = queryParams.get('appName') || location.state?.appName || 'Partner App';
+    const initialPath = queryParams.get('path') ?? location.state?.path;
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -116,16 +111,16 @@ export const EmbedAppFullScreen: React.FC = () => {
         onTapAction: handleTapNotificationAction,
     });
 
-    const launchConfig = history.location.state?.launchConfig;
-    const isInstalled = history.location.state?.isInstalled ?? false;
+    const launchConfig = location.state?.launchConfig;
+    const isInstalled = location.state?.isInstalled ?? false;
 
     // Redirect back if no embedUrl provided
     React.useEffect(() => {
         if (!embedUrl) {
             log.error('No embedUrl provided in query params or state, redirecting back');
-            history.goBack();
+            navigate(-1);
         }
-    }, [embedUrl, history]);
+    }, [embedUrl, navigate]);
 
     // Extract origin from embedUrl for security
     const embedOrigin = React.useMemo(() => {
@@ -167,7 +162,7 @@ export const EmbedAppFullScreen: React.FC = () => {
             <AppHeader>
                 <AppToolbar>
                     <AppButtons slot="start">
-                        <AppButton onClick={() => history.goBack()}>
+                        <AppButton onClick={() => navigate(-1)}>
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-6 w-6"

@@ -1,4 +1,4 @@
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 import TrustedAppRequestModal from 'learn-card-base/components/connected-applications/TrustedAppRequestModal';
@@ -6,7 +6,7 @@ import UnknownAppRequestModal from 'learn-card-base/components/connected-applica
 import { closeAll } from 'apps/learn-card-app/src/helpers/uiHelpers';
 
 export const useAppConnectModal = (profileId: string, challenge: string) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { data: trustedAppRegistry, isLoading: trustedAppRegistryLoading } =
         useTrustedAppsRegistry();
 
@@ -22,11 +22,11 @@ export const useAppConnectModal = (profileId: string, challenge: string) => {
             challenge,
             handleCloseModal: () => {
                 dismissConnectAppModal();
-                history.push('/launchpad');
+                navigate('/launchpad');
             },
             onSuccess: () => {
                 dismissConnectAppModal();
-                history.push(`/select-credentials/${encodeURI(profileId)}`);
+                navigate(`/select-credentials/${encodeURI(profileId)}`);
                 closeAll();
             },
         }

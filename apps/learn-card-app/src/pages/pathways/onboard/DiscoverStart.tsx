@@ -46,7 +46,7 @@ import * as m from '../../../paraglide/messages.js';
 
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { cloudDownloadOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -82,7 +82,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
     onSkip,
     onQuickBuild,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
 
@@ -132,7 +132,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
             importSource: 'onboard',
         });
 
-        history.replace('/pathways/map');
+        navigate('/pathways/map', { replace: true });
     };
 
     return (
@@ -275,7 +275,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
             <div className="text-center pt-1">
                 <button
                     type="button"
-                    onClick={() => history.push('/pathways/build')}
+                    onClick={() => navigate('/pathways/build')}
                     disabled={isPicking}
                     className="inline-flex items-center gap-1.5 text-xs font-medium
                                text-grayscale-500 hover:text-grayscale-900 transition-colors

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
@@ -16,7 +16,7 @@ import ShareBoostsBundle from './ShareBoostsBundle';
 import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const ViewCredsBundle: React.FC = () => {
-    const { uri, seed } = useParams<{ uri: string; seed: string }>();
+    const { uri, seed } = useParams() as { uri: string; seed: string };
     const [vc, setVC] = useState<VP>();
     const [sortedCreds, setSortedCreds] = useState<SyncCredentialsVCs | null>(null);
     const [pin, setPin] = useState<string | number | null>(null);

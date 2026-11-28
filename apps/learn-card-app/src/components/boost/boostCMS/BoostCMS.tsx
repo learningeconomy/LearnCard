@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useBlocker, useLocation, useNavigate } from 'react-router';
 import {
     BoostUserTypeEnum,
     lazyWithRetry,
@@ -149,7 +149,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // oxlint-disable-next-line no-unused-vars
     profileId: propProfileId,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const query = usePathQuery();
     const { initWallet } = useWallet();
@@ -342,63 +342,64 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     }, [state, saveToLocal, propBoostCMSState, publishedBoostUri]);
 
     // Block navigation when there are unsaved changes and show warning modal
-    useEffect(() => {
-        if (!hasUnsavedChanges || publishedBoostUri) return;
+    const blocker = useBlocker(() => {
+        if (!hasUnsavedChanges || publishedBoostUri) return false;
 
-        const unblock = history.block((location, action) => {
-            // Skip blocking if this is an intentional navigation (Save & Quit, Quit Without Saving)
-            if (isIntentionalNavigationRef.current) {
-                isIntentionalNavigationRef.current = false;
-                return;
-            }
-
-            // Skip blocking if a modal operation is in progress (e.g., saving category/type from a nested modal)
-            if (isModalOperationInProgressRef.current) {
-                isModalOperationInProgressRef.current = false;
-                return;
-            }
-
-            newModalRef.current(
-                <div className="pt-[36px] pb-[16px]">
-                    <div className="flex flex-col items-center justify-center w-full">
-                        <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
-                            <h6 className="font-semibold text-black font-poppins text-xl mb-2">
-                                {m['boost.cms.leavePage.title']()}
-                            </h6>
-                            <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
-                                {m['boost.cms.leavePage.body']()}
-                            </p>
-                            <button
-                                onClick={() => {
-                                    closeModal();
-                                    unblock();
-                                    history.push(location);
-                                }}
-                                className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
-                            >
-                                {m['boost.cms.leavePage.leave']()}
-                            </button>
-                            <button
-                                onClick={() => closeModalRef.current()}
-                                className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
-                            >
-                                {m['boost.cms.leavePage.stay']()}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                { sectionClassName: 'max-w-[400px]!' },
-                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-            );
-
-            // Return false to block navigation
+        // Skip blocking if this is an intentional navigation (Save & Quit, Quit Without Saving)
+        if (isIntentionalNavigationRef.current) {
+            isIntentionalNavigationRef.current = false;
             return false;
-        });
+        }
 
-        return () => {
-            unblock();
-        };
-    }, [hasUnsavedChanges, publishedBoostUri, history]);
+        // Skip blocking if a modal operation is in progress (e.g., saving category/type from a nested modal)
+        if (isModalOperationInProgressRef.current) {
+            isModalOperationInProgressRef.current = false;
+            return false;
+        }
+
+        return true;
+    });
+
+    useEffect(() => {
+        if (blocker.state !== 'blocked') return;
+        // Cancel now, as React Router 5's block() returning false did; "Leave" retries it.
+        const nextLocation = blocker.location;
+        blocker.reset();
+
+        newModalRef.current(
+            <div className="pt-[36px] pb-[16px]">
+                <div className="flex flex-col items-center justify-center w-full">
+                    <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
+                        <h6 className="font-semibold text-black font-poppins text-xl mb-2">
+                            {m['boost.cms.leavePage.title']()}
+                        </h6>
+                        <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
+                            {m['boost.cms.leavePage.body']()}
+                        </p>
+                        <button
+                            onClick={() => {
+                                closeModal();
+                                // Same as React Router 5's unblock() + push: retry it unblocked.
+                                isIntentionalNavigationRef.current = true;
+                                navigate(nextLocation);
+                            }}
+                            className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
+                        >
+                            {m['boost.cms.leavePage.leave']()}
+                        </button>
+                        <button
+                            onClick={() => closeModalRef.current()}
+                            className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
+                        >
+                            {m['boost.cms.leavePage.stay']()}
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            { sectionClassName: 'max-w-[400px]!' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    }, [blocker, navigate]);
 
     useEffect(() => {
         const initializeWallet = async () => {
@@ -570,7 +571,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         if (_otherUserProfileId) {
             link = `${link}&otherUserProfileId=${_otherUserProfileId}`;
         }
-        history.replace(link);
+        navigate(link, { replace: true });
     };
 
     const clearAIBoostStore = () => {
@@ -593,7 +594,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     }, []);
 
     if (_boostCategoryType === BoostCategoryOptionsEnum.family) {
-        return <FamilyCMS handleCloseModal={() => history.goBack()} />;
+        return <FamilyCMS handleCloseModal={() => navigate(-1)} />;
     }
 
     const handleNextStep = async () => {
@@ -740,8 +741,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 // Mark as intentional navigation to bypass the blocker
                 isIntentionalNavigationRef.current = true;
-                history.replace(
-                    `/${BOOST_CATEGORY_TO_WALLET_ROUTE[state?.basicInfo?.type]}?managed=true`
+                navigate(
+                    `/${BOOST_CATEGORY_TO_WALLET_ROUTE[state?.basicInfo?.type]}?managed=true`,
+                    { replace: true }
                 );
             }
         } catch (e) {
@@ -901,7 +903,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
-                    history.goBack();
+                    navigate(-1);
                 }
             } else {
                 setIsSaveLoading(true);
@@ -913,7 +915,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
-                    history.goBack();
+                    navigate(-1);
                 }
             }
         } catch (e) {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
@@ -12,7 +12,7 @@ import * as m from '../../paraglide/messages.js';
  * student's ClassLink session is already active, so it completes without another login.
  */
 const ClassLinkStart: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { mutateAsync: getAuthorizeUrl } = useClassLinkAuthorizeUrl();
     const { presentToast } = useToast();
     const hasRun = useRef(false);
@@ -20,16 +20,18 @@ const ClassLinkStart: React.FC = () => {
     useEffect(() => {
         if (hasRun.current) return;
         hasRun.current = true;
-        void runClassLinkLogin(getAuthorizeUrl, path => history.replace(path)).then(outcome => {
-            // 'handled' already navigated to the callback route, which shows the message.
-            if (outcome !== 'failed') return;
-            presentToast(m['login.classlink.failed'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-            history.replace('/login');
-        });
-    }, [getAuthorizeUrl, history, presentToast]);
+        void runClassLinkLogin(getAuthorizeUrl, path => navigate(path, { replace: true })).then(
+            outcome => {
+                // 'handled' already navigated to the callback route, which shows the message.
+                if (outcome !== 'failed') return;
+                presentToast(m['login.classlink.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                navigate('/login', { replace: true });
+            }
+        );
+    }, [getAuthorizeUrl, navigate, presentToast]);
 
     return <LoadingPageDumb />;
 };

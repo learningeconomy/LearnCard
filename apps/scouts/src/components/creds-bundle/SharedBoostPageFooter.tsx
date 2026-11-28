@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { useIsLoggedIn } from 'learn-card-base';
 
@@ -49,10 +49,10 @@ const SharedBoostPageFooter: React.FC = () => {
 export const SharedBoostPageFooterMobile: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
 
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const redirectHome = () => {
-        history.push('/');
+        navigate('/');
     };
 
     if (isLoggedIn) return <></>;

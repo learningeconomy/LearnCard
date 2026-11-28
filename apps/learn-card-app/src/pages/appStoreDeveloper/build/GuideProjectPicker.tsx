@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import type { LCNIntegration } from '@learncard/types';
@@ -23,7 +23,7 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
     guideType,
     integrations,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { useUpdateIntegration, useCreateIntegration, useMyApps } = useDeveloperPortal();
     const { data: apps } = useMyApps(integrations);
     const appIntegrationIds = new Set((apps ?? []).map(app => app.integrationId));
@@ -38,7 +38,7 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
 
     const openGuide = async (integrationId: string) => {
         await updateIntegration.mutateAsync({ id: integrationId, updates: { guideType } });
-        history.push(`/app-store/developer/integrations/${integrationId}/guides/${guideType}`);
+        navigate(`/app-store/developer/integrations/${integrationId}/guides/${guideType}`);
     };
 
     const run = async (key: string, action: () => Promise<void>) => {
@@ -63,7 +63,7 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
         <div className="max-w-[480px] mx-auto py-10 font-poppins animate-fade-in-up">
             <button
                 type="button"
-                onClick={() => history.push('/app-store/developer/build')}
+                onClick={() => navigate('/app-store/developer/build')}
                 className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >
                 <AppIcon icon={arrowBackOutline} />

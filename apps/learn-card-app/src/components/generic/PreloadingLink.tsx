@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, LinkProps, useHistory } from 'react-router-dom';
+import { Link, LinkProps, useNavigate } from 'react-router';
 
 import { ROUTE_PRELOAD } from '../../Routes';
 
@@ -14,7 +14,7 @@ import { ROUTE_PRELOAD } from '../../Routes';
  * an `onClick` handler calls `e.preventDefault()`.
  */
 const PreloadingLink: React.FC<LinkProps> = ({ to, onClick, children, ...rest }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const path = typeof to === 'string' ? to : null;
     const preload = path ? ROUTE_PRELOAD[path] : undefined;
@@ -32,7 +32,7 @@ const PreloadingLink: React.FC<LinkProps> = ({ to, onClick, children, ...rest })
             preload(),
             new Promise<void>(resolve => setTimeout(resolve, 4000)),
         ]).catch(() => undefined);
-        history.push(path);
+        navigate(path);
     };
 
     return (

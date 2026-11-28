@@ -11,7 +11,7 @@ import {
 } from '../../helpers/verifier-history/account';
 import * as m from '../../paraglide/messages.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('oid4vp-exchange');
@@ -160,7 +160,7 @@ type Phase =
  * shared. Only on Approve do we touch the holder\u2019s keys.
  */
 const Oid4vpExchange: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const params = queryString.parse(search);
     const isLoggedIn = useIsLoggedIn();
@@ -412,8 +412,8 @@ const Oid4vpExchange: React.FC = () => {
     );
 
     const handleCancel = useCallback(() => {
-        history.push('/');
-    }, [history]);
+        navigate('/');
+    }, [navigate]);
 
     const handleRetry = useCallback(() => {
         if (phase.kind !== 'error' || !phase.retryConsent) return;
@@ -447,7 +447,7 @@ const Oid4vpExchange: React.FC = () => {
                             suggestion:
                                 'Scan the QR code or click the link the verifier gave you again.',
                         }}
-                        onCancel={() => history.push('/')}
+                        onCancel={() => navigate('/')}
                     />
                 </AppContent>
             </AppPage>
@@ -474,7 +474,7 @@ const Oid4vpExchange: React.FC = () => {
                         request={phase.request}
                         selection={phase.selection}
                         dcqlSelection={phase.dcqlSelection}
-                        onDone={() => history.push('/')}
+                        onDone={() => navigate('/')}
                     />
                 )}
 
@@ -493,7 +493,7 @@ const Oid4vpExchange: React.FC = () => {
                         clientDisplay={phase.clientInfo?.display}
                         sharedCredentials={phase.sharedCredentials}
                         sharedClaimsBreakdown={phase.sharedClaimsBreakdown}
-                        onDone={() => history.push('/')}
+                        onDone={() => navigate('/')}
                     />
                 )}
 
@@ -517,7 +517,7 @@ const Oid4vpExchange: React.FC = () => {
                             })
                         }
                         onRetry={phase.retryConsent ? handleRetry : undefined}
-                        onCancel={() => history.push('/')}
+                        onCancel={() => navigate('/')}
                     />
                 )}
             </AppContent>

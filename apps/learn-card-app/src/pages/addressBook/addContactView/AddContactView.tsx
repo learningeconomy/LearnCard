@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, useHistory, useRouteMatch } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('add-contact-view');
 
@@ -61,7 +61,7 @@ export const AddContactView: React.FC<{
     updateCacheOnSuccessCallback,
 }) => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
 
     const { colors } = useTheme();
@@ -193,7 +193,7 @@ export const AddContactView: React.FC<{
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
-            history.push('/contacts');
+            navigate('/contacts');
         } catch (err) {
             let _errMessage = err?.message;
             if (_errMessage.includes('Challenge not found'))
@@ -237,7 +237,7 @@ export const AddContactView: React.FC<{
             _url = `/boost?boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}&otherUserProfileId=${profileId}`;
         }
 
-        history.replace(_url);
+        navigate(_url, { replace: true });
         handleCancel();
     };
 

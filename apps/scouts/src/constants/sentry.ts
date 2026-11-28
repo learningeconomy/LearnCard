@@ -1,5 +1,11 @@
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
+import {
+    createRoutesFromChildren,
+    matchRoutes,
+    useLocation,
+    useNavigationType,
+} from 'react-router';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
@@ -35,7 +41,13 @@ export const initSentry = () => {
                 showBranding: false,
                 autoInject: false,
             }),
-            Sentry.reactRouterV5BrowserTracingIntegration({ history }),
+            Sentry.reactRouterV6BrowserTracingIntegration({
+                useEffect,
+                useLocation,
+                useNavigationType,
+                createRoutesFromChildren,
+                matchRoutes,
+            }),
             Sentry.replayIntegration({
                 maskAllText: false,
                 blockAllMedia: true,

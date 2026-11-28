@@ -4,7 +4,6 @@ import { deepMerge } from '../../../../packages/learn-card-base/src/config/deepM
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../../packages/learn-card-base/src/config/tenantDefaults';
 import { parseTenantConfig } from '../../../../packages/learn-card-base/src/config/tenantConfigSchema';
 import { embedSnippets } from '../../../../packages/learn-card-cli/scripts/embed-snippets';
-import { renderTenantHtml } from '../render-tenant-html';
 import { APP_ROOT } from './constants';
 import { readStackEndpoints } from './stack';
 
@@ -17,21 +16,12 @@ export const prepareVerification = async (
     signal?.throwIfAborted();
     await mkdir(directory, { recursive: true, mode: 0o700 });
     await embedSnippets(signal);
-    const template = await readFile(join(APP_ROOT, 'index.template.html'), {
-        encoding: 'utf8',
-        signal,
-    });
     // `lc verify prepare` also runs before allocation (e.g. before a CI typecheck).
     // Leave state creation to startStack, so a later --fresh still has its meaning.
     try {
         await stat(join(directory, 'state.json'));
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-        await writeFile(
-            join(directory, 'index.html'),
-            renderTenantHtml(template, DEFAULT_LEARNCARD_TENANT_CONFIG.branding),
-            { mode: 0o600, signal }
-        );
         return;
     }
     const stack = await readStackEndpoints(directory);
@@ -93,10 +83,6 @@ export const prepareVerification = async (
     };
     const tenant = parseTenantConfig(config, 'lc verify local tenant');
     await writeFile(join(directory, 'tenant-config.json'), JSON.stringify(tenant), {
-        mode: 0o600,
-        signal,
-    });
-    await writeFile(join(directory, 'index.html'), renderTenantHtml(template, tenant.branding), {
         mode: 0o600,
         signal,
     });

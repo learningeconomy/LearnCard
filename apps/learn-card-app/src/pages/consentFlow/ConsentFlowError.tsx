@@ -5,7 +5,7 @@ import SadCloud from '../../components/svgs/SadCloud';
 import CloudWarning from '../../components/svgs/CloudWarning';
 import ConsentFlowErrorFooter from './ConsentFlowErrorFooter';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { AppFooter } from 'learn-card-base/ui/chrome';
@@ -16,13 +16,13 @@ type ConsentFlowErrorProps = {
 };
 
 const ConsentFlowError: React.FC<ConsentFlowErrorProps> = ({ errorType, uri }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeModal } = useModal();
 
     const handleRetry = () => {
         closeModal();
         setTimeout(() => {
-            history.push(`/consent-flow?uri=${uri}`);
+            navigate(`/consent-flow?uri=${uri}`);
         }, 300);
     };
 

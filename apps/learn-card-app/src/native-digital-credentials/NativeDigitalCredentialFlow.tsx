@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useIsLoggedIn, useWallet, redirectStore } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 import {
@@ -29,7 +29,7 @@ export default function NativeDigitalCredentialFlow() {
     const accountReady = loggedIn && Boolean(activeWallet);
     const { initWallet } = useWallet();
     const revision = useHistoryAccountRevision();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [pending, setPending] = useState<PendingDigitalCredentialRequest>();
     const [isProvider, setIsProvider] = useState(false);
     const [prepared, setPrepared] = useState<Prepared>();
@@ -86,7 +86,7 @@ export default function NativeDigitalCredentialFlow() {
         try {
             if (pending || isProvider)
                 await nativeDigitalCredentials.cancel({ requestId: pending?.requestId });
-            else history.replace('/wallet');
+            else navigate('/wallet', { replace: true });
         } catch {
             setError(true);
             setCanceling(false);

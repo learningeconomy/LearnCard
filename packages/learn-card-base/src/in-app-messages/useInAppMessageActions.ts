@@ -1,5 +1,5 @@
 import { useCallback, useContext } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 
 import type { InAppMessageActionTarget } from '@learncard/types';
@@ -15,7 +15,7 @@ export type RunActionOutcome = 'closed' | 'capgo' | 'noop';
 export const useInAppMessageActions = (): {
     runAction: (action: InAppMessageActionTarget) => Promise<RunActionOutcome>;
 } => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const links = useLinksConfig();
     const { openApp } = useContext(MessageNavigationContext);
 
@@ -35,7 +35,7 @@ export const useInAppMessageActions = (): {
                     return 'closed';
                 }
                 case 'internalLink':
-                    history.push(action.path);
+                    navigate(action.path);
 
                     return 'closed';
 
@@ -69,7 +69,7 @@ export const useInAppMessageActions = (): {
                     return 'closed';
             }
         },
-        [history, links, openApp]
+        [navigate, links, openApp]
     );
 
     return { runAction };

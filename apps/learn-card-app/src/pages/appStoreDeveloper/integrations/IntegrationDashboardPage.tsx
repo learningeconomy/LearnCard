@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Loader2, ArrowLeft, Plus } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -11,7 +11,7 @@ import { UnifiedIntegrationDashboard } from '../dashboards';
 import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const IntegrationDashboardPage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const {
         currentIntegrationId,
@@ -22,7 +22,7 @@ const IntegrationDashboardPage: React.FC = () => {
     } = useDeveloperPortalContext();
 
     const handleBack = () => {
-        history.push('/app-store/developer/build');
+        navigate('/app-store/developer/build');
     };
 
     const headerContent = (
@@ -115,7 +115,7 @@ const IntegrationDashboardPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() =>
-                                history.push(
+                                navigate(
                                     `/app-store/developer/integrations/${currentIntegration.id}/apps/new`
                                 )
                             }

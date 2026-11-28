@@ -1,11 +1,15 @@
 import path from 'node:path';
 import { buildSync } from 'esbuild';
-import { defineConfig, type UserConfigFn } from 'vite';
-import appConfig from '../../vite.config.mts';
+import { defineConfig } from 'vite';
+import { learnCardViteConfig } from '../../vite.config.mts';
 
 // Exercise the real app pipeline and workspace source, without auth or a backend.
 export default defineConfig(async environment => {
-    const config = await (appConfig as UserConfigFn)({ ...environment, command: 'serve' });
+    // A plain Vite page: no React Router framework plugins (they own the document and the build).
+    const config = await learnCardViteConfig(
+        { ...environment, command: 'serve' },
+        { frameworkMode: false }
+    );
     const globals = buildSync({
         entryPoints: [path.resolve(import.meta.dirname, 'browser-globals.ts')],
         bundle: true,

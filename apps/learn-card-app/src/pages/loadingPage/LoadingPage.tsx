@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 
@@ -80,15 +80,17 @@ export const LoadingPage2: React.FC = React.memo(() => {
 
     const { installChapi } = useWallet();
 
-    const history = useHistory();
+    const navigate = useNavigate();
 
     useEffect(() => {
         // If logged out on waitingsofa, always go to /login, preserving redirectTo if present
         const pendingRedirect = query.get('redirectTo');
         if (!currentUser && !isLoggedIn) {
             if (pendingRedirect)
-                history.replace(`/login?redirectTo=${encodeURIComponent(pendingRedirect)}`);
-            else history.replace('/login');
+                navigate(`/login?redirectTo=${encodeURIComponent(pendingRedirect)}`, {
+                    replace: true,
+                });
+            else navigate('/login', { replace: true });
             return;
         }
 
@@ -99,10 +101,10 @@ export const LoadingPage2: React.FC = React.memo(() => {
                 const currentUserLCProfile = await wallet?.invoke?.getProfile();
 
                 if (currentUserLCProfile) {
-                    history.push(redirect);
+                    navigate(redirect);
                 }
             } catch (e) {
-                history.push(redirect);
+                navigate(redirect);
             }
         };
 
@@ -118,12 +120,12 @@ export const LoadingPage2: React.FC = React.memo(() => {
                 } catch (e) {
                     log.error(e);
                 }
-                history.push(redirectTo);
+                navigate(redirectTo);
             } else if (lcnRedirectTo) {
                 redirectStore.set.lcnRedirect(null);
                 handleLCNetworkRedirect(lcnRedirectTo);
             } else {
-                history.push('/launchpad');
+                navigate('/launchpad');
             }
             if (!isChapiInteraction) {
                 installChapi();

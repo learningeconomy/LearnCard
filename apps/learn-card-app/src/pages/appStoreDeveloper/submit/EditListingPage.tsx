@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import { useQuery } from '@tanstack/react-query';
@@ -48,8 +48,11 @@ const SAVE_STATUS_TEXT: Record<SaveState, string> = {
 };
 
 export const EditListingPage: React.FC = () => {
-    const history = useHistory();
-    const { integrationId, listingId } = useParams<{ integrationId: string; listingId: string }>();
+    const navigate = useNavigate();
+    const { integrationId, listingId } = useParams() as {
+        integrationId: string;
+        listingId: string;
+    };
     const { initWallet } = useWallet();
     const { useUpdateListing, useSubmitForReview, useManifestVersions } = useDeveloperPortal();
     const { data: manifestVersions } = useManifestVersions(integrationId);
@@ -219,7 +222,7 @@ export const EditListingPage: React.FC = () => {
 
     const handlePrimaryAction = async () => {
         if (!isDraft && !canSubmitUpdate) {
-            history.push(statusPath);
+            navigate(statusPath);
             return;
         }
         if (missingField) {
@@ -244,7 +247,7 @@ export const EditListingPage: React.FC = () => {
                 const wallet = await initWallet();
                 await wallet.invoke.submitAppStoreListingUpdate(listingId);
             }
-            history.push({ pathname: statusPath, state: { celebrate: true } });
+            navigate({ pathname: statusPath }, { state: { celebrate: true } });
         } catch (e) {
             log.error('listing.submit.failed', e, { listingId });
             const message = e instanceof Error ? e.message : '';
@@ -286,7 +289,7 @@ export const EditListingPage: React.FC = () => {
                         </h1>
                         <button
                             type="button"
-                            onClick={() => history.push('/app-store/developer')}
+                            onClick={() => navigate('/app-store/developer')}
                             className="mt-4 py-3 px-6 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
                             Back to Your Apps
@@ -321,7 +324,7 @@ export const EditListingPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() =>
-                                    history.push(isDraft ? '/app-store/developer' : statusPath)
+                                    navigate(isDraft ? '/app-store/developer' : statusPath)
                                 }
                                 className="mt-2 mb-6 flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >

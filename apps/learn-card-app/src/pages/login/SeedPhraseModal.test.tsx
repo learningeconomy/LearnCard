@@ -18,9 +18,12 @@ vi.mock('learn-card-base', async () => ({
     },
     ...(await import('../../../../../packages/learn-card-base/src/in-app-messages/authRedirectHistory')),
 }));
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: mocks.push, replace: mocks.replace }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ push: mocks.push, replace: mocks.replace }),
+    };
+});
 vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
     useBrandingConfig: () => ({ name: 'LearnCard' }),
 }));

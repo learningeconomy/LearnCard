@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { initLearnCard } from '@learncard/init';
 import { VC, VP } from '@learncard/types';
@@ -16,7 +16,7 @@ import { useAppAlert } from 'learn-card-base/ui/overlays';
 const PIN_INPUT_NAME = 'pin';
 
 const ViewCredsBundle: React.FC = () => {
-    const { uri, seed } = useParams<{ uri: string; seed: string }>();
+    const { uri, seed } = useParams() as { uri: string; seed: string };
     const [vc, setVC] = useState<VP>();
     const [sortedCreds, setSortedCreds] = useState<SyncCredentialsVCs | null>(null);
     const [pin, setPin] = useState<string | number | null>(null);

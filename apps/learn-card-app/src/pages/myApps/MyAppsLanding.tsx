@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useDeviceTypeByWidth, useFeatureConfig } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -56,7 +56,7 @@ const MOBILE_HEADER_STYLE: React.CSSProperties = {
 };
 
 const MyAppsLanding: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const { isMobile } = useDeviceTypeByWidth();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
@@ -81,10 +81,10 @@ const MyAppsLanding: React.FC = () => {
     );
 
     useEffect(() => {
-        if (hasDeepLink) history.replace(`/launchpad/browse${search}`);
-    }, [hasDeepLink, search, history]);
+        if (hasDeepLink) navigate(`/launchpad/browse${search}`, { replace: true });
+    }, [hasDeepLink, search, navigate]);
 
-    const helpers = useMemo(() => ({ push: (path: string) => history.push(path) }), [history]);
+    const helpers = useMemo(() => ({ push: (path: string) => navigate(path) }), [navigate]);
 
     const query = searchInput.trim().toLowerCase();
     const isSearching = query.length > 0;
@@ -162,7 +162,7 @@ const MyAppsLanding: React.FC = () => {
                             </h1>
                             <button
                                 type="button"
-                                onClick={() => history.push('/launchpad/browse?tab=All')}
+                                onClick={() => navigate('/launchpad/browse?tab=All')}
                                 className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[20px] bg-grayscale-900 px-4 py-3 font-poppins text-[15px] font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 md:order-3 md:text-[17px]"
                             >
                                 {m['myAppsPage.browseMore']()}{' '}

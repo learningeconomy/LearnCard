@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
     verifyCredential: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({ useLocation: () => ({}) }));
+vi.mock('react-router', () => ({ useLocation: () => ({}) }));
 vi.mock('learn-card-base/ui/overlays/useAppAlert', () => ({ useAppAlert: () => [vi.fn()] }));
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ info: vi.fn(), warn: vi.fn() }),

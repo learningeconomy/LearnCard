@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { VP } from '@learncard/types';
 import { useWallet, useIsLoggedIn } from 'learn-card-base';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { Gift, Shield, CheckCircle, Info } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
@@ -28,7 +28,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +66,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
         if (onDecline) {
             onDecline();
         } else {
-            history.push('/home');
+            navigate('/home');
         }
     };
 

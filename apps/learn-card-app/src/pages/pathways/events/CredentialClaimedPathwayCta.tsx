@@ -51,7 +51,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
@@ -213,7 +213,7 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
     onDismiss,
     className = '',
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const progress = usePathwayProgressForCredential(credentialUri ?? null);
 
@@ -354,12 +354,12 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
                 restoreFocusId: firstNode.nodeId,
             };
 
-            history.push(primaryTarget, state);
+            navigate(primaryTarget, { state });
 
             return;
         }
 
-        history.push(primaryTarget);
+        navigate(primaryTarget);
     };
 
     const handleLater = (): void => {

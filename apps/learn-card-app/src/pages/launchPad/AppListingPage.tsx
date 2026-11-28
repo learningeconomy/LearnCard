@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
 import { getLogger } from 'learn-card-base';
@@ -66,9 +66,9 @@ const getEmbedUrl = (url: string): string | null => {
     return null;
 };
 
-interface AppListingParams {
+type AppListingParams = {
     listingId: string;
-}
+};
 
 interface LocationState {
     listing?: ExtendedAppStoreListing;
@@ -81,9 +81,19 @@ interface LocationState {
 }
 
 const AppListingPage: React.FC = () => {
-    const { listingId } = useParams<AppListingParams>();
-    const history = useHistory<LocationState>();
-    const location = history.location;
+    const { listingId } = useParams() as AppListingParams;
+    const navigate = useNavigate();
+    const location = useLocation();
+    // The current entry's key, or null once this page unmounts; read by async work that must not
+    // act after the learner has left the listing.
+    const currentLocationKey = useRef<string | null>(location.key);
+    currentLocationKey.current = location.key;
+    useEffect(() => {
+        currentLocationKey.current = location.key;
+        return () => {
+            currentLocationKey.current = null;
+        };
+    }, [location.key]);
     const launchQuery = new URLSearchParams(location.search);
     const launchRequested = launchQuery.get('launch') === '1';
     const initialPath = launchQuery.get('path') ?? undefined;
@@ -259,7 +269,7 @@ const AppListingPage: React.FC = () => {
 
             if (launchRequested) {
                 // Installation may finish after the learner has left this listing.
-                if (history.location.key !== location.key) return;
+                if (currentLocationKey.current !== location.key) return;
                 await handleLaunch();
                 return;
             }
@@ -470,12 +480,15 @@ const AppListingPage: React.FC = () => {
                 throw new Error('Invalid embedded app destination');
             }
             launchedRef.current = key;
-            history.replace(`/apps/${encodeURIComponent(listing.slug || listing.listing_id)}`, {
-                embedUrl: launchConfig.url,
-                appName: listing.display_name,
-                launchConfig,
-                isInstalled: true,
-                path: initialPath,
+            navigate(`/apps/${encodeURIComponent(listing.slug || listing.listing_id)}`, {
+                replace: true,
+                state: {
+                    embedUrl: launchConfig.url,
+                    appName: listing.display_name,
+                    launchConfig,
+                    isInstalled: true,
+                    path: initialPath,
+                },
             });
             return;
         }
@@ -673,7 +686,7 @@ const AppListingPage: React.FC = () => {
                             </p>
 
                             <button
-                                onClick={() => history.push('/launchpad')}
+                                onClick={() => navigate('/launchpad')}
                                 className="px-6 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors"
                             >
                                 Browse Apps
@@ -692,7 +705,7 @@ const AppListingPage: React.FC = () => {
                 {isPreviewMode && (
                     <div className="sticky top-0 z-50 bg-amber-500 text-white px-4 py-2 flex items-center justify-between shadow-md">
                         <button
-                            onClick={() => history.goBack()}
+                            onClick={() => navigate(-1)}
                             className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -1079,7 +1092,7 @@ const AppListingPage: React.FC = () => {
                                 <button
                                     onClick={() => {
                                         setShowSignInModal(false);
-                                        history.push(`/login?returnUrl=/app/${listingId}`);
+                                        navigate(`/login?returnUrl=/app/${listingId}`);
                                     }}
                                     className="flex-1 px-4 py-2.5 rounded-xl bg-gray-900 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
                                 >

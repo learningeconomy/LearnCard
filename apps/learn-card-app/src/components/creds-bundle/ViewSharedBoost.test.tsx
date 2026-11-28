@@ -26,12 +26,15 @@ const mocks = vi.hoisted(() => ({
     requestModalProps: [] as Record<string, unknown>[],
 }));
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: vi.fn() }),
-    useLocation: () => ({
-        search: `?uri=${encodeURIComponent(storageUri)}&seed=seed&pin=1234`,
-    }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ push: vi.fn() }),
+        useLocation: () => ({
+            search: `?uri=${encodeURIComponent(storageUri)}&seed=seed&pin=1234`,
+        }),
+    };
+});
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('@capacitor/browser', () => ({ Browser: { open: vi.fn() } }));
 vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'default' }));

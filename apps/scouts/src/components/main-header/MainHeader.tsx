@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
@@ -50,7 +50,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
 }) => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const isLoading = loadingStore.use.loading();
 
@@ -98,7 +98,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                 <button
                                     className="text-grayscale-50 p-0 main-header-back-button"
                                     onClick={() => {
-                                        history.goBack();
+                                        navigate(-1);
                                     }}
                                 >
                                     <LeftArrow className="rtl-mirror w-7 h-auto text-white" />

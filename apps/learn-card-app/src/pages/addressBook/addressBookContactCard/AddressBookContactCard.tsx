@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     ProfilePicture,
     useCurrentUser,
@@ -15,7 +15,7 @@ import * as m from '../../../paraglide/messages.js';
 const AddressBookContactCard: React.FC = () => {
     const currentUser = useCurrentUser();
     const { newModal, closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { data: connections } = useGetConnections();
     const numConnectedApps = connections?.filter(c => c.isServiceProfile)?.length;
@@ -24,7 +24,7 @@ const AddressBookContactCard: React.FC = () => {
         newModal(
             <QrCodeUserCardModal
                 branding={BrandingEnum.learncard}
-                history={history}
+                history={navigate}
                 connections={connections ?? []}
                 qrOnly
             />,

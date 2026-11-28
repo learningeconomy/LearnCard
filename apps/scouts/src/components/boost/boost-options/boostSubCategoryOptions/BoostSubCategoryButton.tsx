@@ -1,3 +1,4 @@
+import type { NavigateFunction } from 'react-router';
 import React from 'react';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -11,7 +12,7 @@ export const BoostSubCategoryButton: React.FC<{
     subCategoryType: string;
     setSelectedCategoryType: React.Dispatch<React.SetStateAction<BoostCategoryOptionsEnum | null>>;
     otherUserProfileId?: string;
-    history: any;
+    history: NavigateFunction;
 }> = ({
     title,
     boostUserType,
@@ -35,7 +36,7 @@ export const BoostSubCategoryButton: React.FC<{
         <>
             <button
                 onClick={() => {
-                    history.push(link);
+                    history(link);
                     closeAllModals();
                 }}
                 className="relative flex items-center justify-center bg-white text-black rounded-full px-[18px] py-[6px]  text-2xl text-center w-full shadow-lg max-w-[90%] mb-4"

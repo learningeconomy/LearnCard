@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import ResumeBuilderHistoryDropdownButton from './ResumeBuilderHistoryDropdownButton';
 import { ResumeBuilderToolbar, type ResumeBuilderToolbarProps } from './ResumeBuilderToolbar';
@@ -19,11 +19,11 @@ export const ResumeBuilderHeader: React.FC<ResumeBuilderHeaderProps> = ({
     activeResumeRecordId,
     ...toolbarProps
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     return (
         <ResumeBuilderToolbar
             {...toolbarProps}
-            onBack={() => history.goBack()}
+            onBack={() => navigate(-1)}
             historyControl={
                 <ResumeBuilderHistoryDropdownButton
                     activeResumeRecordId={activeResumeRecordId}

@@ -1,12 +1,11 @@
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 import { AuthProvider, TAuthConfig } from 'react-oauth2-code-pkce';
 import { createStore } from '@udecode/zustood';
 
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 export type PostLoginReducerArgs =
-    | { action: 'redirect'; data: { path: string; params?: string } }
-    | { action: 'none' };
+    { action: 'redirect'; data: { path: string; params?: string } } | { action: 'none' };
 
 export const oauth2ReducerArgStore = createStore('oauth2-reducer')<{ args: PostLoginReducerArgs }>(
     { args: { action: 'none' } },
@@ -25,7 +24,7 @@ const BASE_AUTH_CONFIG: Omit<TAuthConfig, 'redirectUri'> = {
 const ExternalAuthServiceProvider: React.FC<{
     children: React.ReactNode;
 }> = ({ children }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const reducerArgs = oauth2ReducerArgStore.use.args();
 
     const authConfig: TAuthConfig = {
@@ -39,10 +38,13 @@ const ExternalAuthServiceProvider: React.FC<{
                 ...authConfig,
                 postLogin: () => {
                     if (reducerArgs.action === 'redirect') {
-                        history.replace({
-                            pathname: reducerArgs.data.path,
-                            search: reducerArgs.data.params,
-                        });
+                        navigate(
+                            {
+                                pathname: reducerArgs.data.path,
+                                search: reducerArgs.data.params,
+                            },
+                            { replace: true }
+                        );
                         oauth2ReducerArgStore.set.args({ action: 'none' });
                     }
                 },

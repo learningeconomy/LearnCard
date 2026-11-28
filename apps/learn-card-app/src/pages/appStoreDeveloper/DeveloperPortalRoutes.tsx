@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch, Redirect } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 
 import { DeveloperPortalProvider } from './DeveloperPortalContext';
 import MyAppsPage from './apps/MyAppsPage';
@@ -15,6 +15,7 @@ import { SubmitFromManifestPage, EditListingPage } from './submit';
 /**
  * All developer portal routes wrapped in the context provider.
  * This ensures URL-based state is consistent across all pages.
+ * Mounted at `/app-store/developer/*`, so route paths are relative to it.
  *
  * Route structure:
  * - /app-store/developer                                    -> MyAppsPage (every app, any project)
@@ -32,91 +33,59 @@ import { SubmitFromManifestPage, EditListingPage } from './submit';
 const DeveloperPortalRoutes: React.FC = () => {
     return (
         <DeveloperPortalProvider>
-            <Switch>
-                <Route exact path="/app-store/developer" component={MyAppsPage} />
-                <Route exact path="/app-store/developer/apps/new" component={SubmissionForm} />
+            <Routes>
+                <Route index element={<MyAppsPage />} />
+                <Route path="apps/new" element={<SubmissionForm />} />
+                <Route path="apps/:listingId" element={<AppStatusPage />} />
+                <Route path="build" element={<BuildHomePage />} />
                 <Route
-                    exact
-                    path="/app-store/developer/apps/:listingId"
-                    component={AppStatusPage}
-                />
-                <Route exact path="/app-store/developer/build" component={BuildHomePage} />
-                <Redirect
-                    exact
-                    from="/app-store/developer/projects"
-                    to="/app-store/developer/build"
-                />
-                <Redirect
-                    exact
-                    from="/app-store/developer/guides"
-                    to="/app-store/developer/build"
+                    path="projects"
+                    element={<Navigate replace to="/app-store/developer/build" />}
                 />
                 <Route
-                    exact
-                    path="/app-store/developer/submit"
-                    component={SubmitFromManifestPage}
+                    path="guides"
+                    element={<Navigate replace to="/app-store/developer/build" />}
                 />
+                <Route path="submit" element={<SubmitFromManifestPage />} />
 
                 {/* Apps routes with integration ID */}
-                <Redirect
-                    exact
-                    from="/app-store/developer/integrations/:integrationId/apps"
-                    to="/app-store/developer"
+                <Route
+                    path="integrations/:integrationId/apps"
+                    element={<Navigate replace to="/app-store/developer" />}
+                />
+                <Route path="integrations/:integrationId/apps/new" element={<SubmissionForm />} />
+                <Route
+                    path="integrations/:integrationId/apps/:listingId/listing"
+                    element={<EditListingPage />}
                 />
                 <Route
-                    exact
-                    path="/app-store/developer/integrations/:integrationId/apps/new"
-                    component={SubmissionForm}
-                />
-                <Route
-                    exact
-                    path="/app-store/developer/integrations/:integrationId/apps/:listingId/listing"
-                    component={EditListingPage}
-                />
-                <Route
-                    exact
-                    path="/app-store/developer/integrations/:integrationId/apps/:listingId"
-                    component={SubmissionForm}
+                    path="integrations/:integrationId/apps/:listingId"
+                    element={<SubmissionForm />}
                 />
 
                 {/* Legacy app routes - redirect to new structure */}
-                <Redirect exact from="/app-store/developer/new" to="/app-store/developer" />
-                <Redirect
-                    exact
-                    from="/app-store/developer/edit/:listingId"
-                    to="/app-store/developer"
+                <Route path="new" element={<Navigate replace to="/app-store/developer" />} />
+                <Route
+                    path="edit/:listingId"
+                    element={<Navigate replace to="/app-store/developer" />}
                 />
 
                 {/* Legacy route */}
-                <Redirect
-                    exact
-                    from="/app-store/developer/partner-onboarding"
-                    to="/app-store/developer/guides"
+                <Route
+                    path="partner-onboarding"
+                    element={<Navigate replace to="/app-store/developer/guides" />}
                 />
 
-                <Route exact path="/app-store/developer/guides/:useCase" component={GuidePage} />
+                <Route path="guides/:useCase" element={<GuidePage />} />
 
-                <Redirect
-                    exact
-                    from="/app-store/developer/integrations"
-                    to="/app-store/developer/build"
-                />
                 <Route
-                    exact
-                    path="/app-store/developer/integrations/:integrationId"
-                    component={IntegrationDashboardPage}
+                    path="integrations"
+                    element={<Navigate replace to="/app-store/developer/build" />}
                 />
-                <Route
-                    exact
-                    path="/app-store/developer/integrations/:integrationId/guides"
-                    component={IntegrationHub}
-                />
-                <Route
-                    exact
-                    path="/app-store/developer/integrations/:integrationId/guides/:useCase"
-                    component={GuidePage}
-                />
-            </Switch>
+                <Route path="integrations/:integrationId" element={<IntegrationDashboardPage />} />
+                <Route path="integrations/:integrationId/guides" element={<IntegrationHub />} />
+                <Route path="integrations/:integrationId/guides/:useCase" element={<GuidePage />} />
+            </Routes>
         </DeveloperPortalProvider>
     );
 };

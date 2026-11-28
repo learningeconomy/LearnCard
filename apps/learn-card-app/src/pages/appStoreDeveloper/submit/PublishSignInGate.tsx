@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'learn-card-base/icons/ionicons';
 
@@ -36,7 +36,7 @@ const readHost = (appUrl: string): string => {
 };
 
 const PublishSignInGate: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const brandingConfig = useBrandingConfig();
     const { colors } = useTheme();
@@ -59,7 +59,7 @@ const PublishSignInGate: React.FC = () => {
         } catch {
             // Storage can be unavailable (private mode); the resume banner is optional.
         }
-        history.push('/login');
+        navigate('/login');
     };
 
     return (
@@ -167,7 +167,7 @@ const PublishSignInGate: React.FC = () => {
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => history.push('/login')}
+                                    onClick={() => navigate('/login')}
                                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                                 >
                                     Go to {brandName}

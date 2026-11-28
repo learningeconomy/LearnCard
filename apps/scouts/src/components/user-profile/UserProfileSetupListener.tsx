@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import {
     getLogger,
@@ -15,7 +15,7 @@ import userProfileSetupStore from '../../stores/userProfileSetupStore';
 const log = getLogger('user-profile-setup-listener');
 
 export const UserProfileSetupListener: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
     const { data: currentUserIsLCNUser, isLoading: currentLCNUserLoading } =
@@ -31,7 +31,7 @@ export const UserProfileSetupListener: React.FC = () => {
         const params = new URLSearchParams(window.location.search);
         params.delete('profileSetup');
         const remaining = params.toString();
-        history.replace({ search: remaining || undefined });
+        navigate({ search: remaining || undefined }, { replace: true });
     });
 
     useEffect(() => {
@@ -73,7 +73,7 @@ export const UserProfileSetupListener: React.FC = () => {
                     userProfileSetupStore.set.markAutoPrompted();
                     const params = new URLSearchParams(window.location.search);
                     params.set('profileSetup', 'true');
-                    history.replace({ search: params.toString() });
+                    navigate({ search: params.toString() }, { replace: true });
                     await handlePresentJoinNetworkModal({ forceOpen: true });
                 }
             } catch (err) {
@@ -87,7 +87,7 @@ export const UserProfileSetupListener: React.FC = () => {
         currentUserIsLCNUser,
         currentLCNUserLoading,
         handlePresentJoinNetworkModal,
-        history,
+        navigate,
         initWallet,
         isUserModalOpen,
     ]);

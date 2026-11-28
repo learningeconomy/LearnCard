@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useHistory } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
@@ -18,9 +18,9 @@ const log = getLogger('connect-page');
 const ConnectPage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
-    const { profileId } = useParams<{ profileId: string }>();
+    const { profileId } = useParams() as { profileId: string };
 
     const userDid = query.get('did');
 
@@ -130,7 +130,9 @@ const ConnectPage: React.FC = () => {
                 {!loading && lcNetworkProfile && (
                     <AddContactView
                         user={lcNetworkProfile}
-                        handleCancel={() => history.push('/')}
+                        handleCancel={() => {
+                            navigate('/');
+                        }}
                         customContainerClass="mb-20"
                         mode={AddContactViewMode.requestConnection}
                     />

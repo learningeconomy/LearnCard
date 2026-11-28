@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
@@ -15,7 +15,7 @@ const AddressBookBlockedContacts: React.FC<{
     activeTab: AddressBookTabsEnum;
     setBlockedCount: React.Dispatch<React.SetStateAction<number>>;
 }> = ({ setBlockedCount, activeTab }) => {
-    const { url } = useRouteMatch();
+    const { pathname: url } = useLocation();
 
     const { data, isLoading, error } = useGetBlockedProfiles();
 

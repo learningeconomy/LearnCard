@@ -1,6 +1,5 @@
 import React, { useRef, lazy } from 'react';
 
-import { createBrowserHistory } from 'history';
 import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
@@ -40,8 +39,6 @@ import './index.scss';
 // base styles of swiper js
 import 'swiper/css';
 import 'learn-card-base/swiper/swiper-defaults.css';
-const history = createBrowserHistory();
-
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
@@ -70,7 +67,7 @@ const App: React.FC = () => {
         !/^\/s(?:\/|$)/.test(window.location.pathname)
     ) {
         return (
-            <AppShellRouter history={history}>
+            <AppShellRouter>
                 <AppRoot>
                     <React.Suspense fallback={null}>
                         <IntroSlides />

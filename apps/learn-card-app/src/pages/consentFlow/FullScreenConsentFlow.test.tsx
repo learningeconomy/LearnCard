@@ -105,10 +105,13 @@ vi.mock('learn-card-base/components/modals/useModal', () => ({
         closeAllModals: state.closeAllModals,
     }),
 }));
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: state.push }),
-    useLocation: () => ({ search: state.search }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ push: state.push }),
+        useLocation: () => ({ search: state.search }),
+    };
+});
 vi.mock('../../components/network-prompts/hooks/useLCNGatedAction', () => ({
     default: () => ({ gate: async () => ({ prompted: false }) }),
 }));

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     ExternalLink,
     ShieldAlert,
@@ -56,7 +56,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     onReviewUpdate,
 }) => {
     const { newModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [showPreviewMenu, setShowPreviewMenu] = useState(false);
 
     const getLaunchTypeLabel = (lt: string): string => {
@@ -147,10 +147,10 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
     const handlePreviewPage = () => {
         setShowPreviewMenu(false);
-        history.push({
-            pathname: `/app/${listing.listing_id}`,
-            state: { listing, isPreview: true },
-        });
+        navigate(
+            { pathname: `/app/${listing.listing_id}` },
+            { state: { listing, isPreview: true } }
+        );
     };
 
     const handlePreviewDeveloper = () => {

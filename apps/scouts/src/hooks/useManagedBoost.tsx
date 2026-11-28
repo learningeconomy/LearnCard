@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import useBoostMenu, { BoostMenuType } from '../components/boost/hooks/useBoostMenu';
 import useShortBoost from '../components/boost/hooks/useShortBoost';
@@ -53,7 +53,7 @@ export const useManagedBoost = (
         refetchQuery?: () => void;
     }
 ) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const currentUser = useCurrentUser();
 
     const { newModal, closeModal } = useModal({
@@ -142,7 +142,7 @@ export const useManagedBoost = (
     };
 
     const { handlePresentShortBoostModal } = useShortBoost(
-        history,
+        navigate,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boostVC as any,
         boost?.uri,
@@ -161,7 +161,7 @@ export const useManagedBoost = (
             presentBoostCMSModal();
         } else {
             closeModal();
-            history.push(`${link}${linkQueryParams}`);
+            navigate(`${link}${linkQueryParams}`);
         }
     };
 
@@ -184,7 +184,7 @@ export const useManagedBoost = (
 
     const handleIssueOnClick = () => {
         closeModal();
-        history.push(`${link}${linkQueryParams}&issue=true`);
+        navigate(`${link}${linkQueryParams}&issue=true`);
     };
 
     const presentManagedBoostPreview = () => {

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import queryString from 'query-string';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
@@ -54,7 +54,7 @@ const ViewSharedBoost: React.FC<{
     showEndorsementRequest?: boolean;
     showDraftSuccess?: boolean;
 }> = ({ showEndorsementRequest, showDraftSuccess }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const { uri: _uri, seed: _seed, pin: _pin } = queryString.parse(location.search);
@@ -232,7 +232,7 @@ const ViewSharedBoost: React.FC<{
         }
     };
 
-    const redirectHome = () => history.push('/');
+    const redirectHome = () => navigate('/');
 
     // Revoked/suspended visual treatment for the shared card. Mirrors the shared
     // getLifecycleTreatment helper (kept inline here to avoid a cross-package import

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Rocket, ArrowLeft, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 import * as m from '../../../../paraglide/messages.js';
@@ -27,7 +27,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
     title,
     description,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { presentToast } = useToast();
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
@@ -67,7 +67,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
             // Brief delay to show success state before redirect
             setTimeout(() => {
-                history.push(`/app-store/developer/integrations/${integration.id}`);
+                navigate(`/app-store/developer/integrations/${integration.id}`);
             }, 1500);
         } catch (error) {
             log.error('Failed to activate integration:', error);

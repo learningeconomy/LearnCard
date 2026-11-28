@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Boost, VC } from '@learncard/types';
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 
 const mocks = vi.hoisted(() => ({ credential: {} as VC }));
-vi.mock('react-router-dom', () => ({ useHistory: () => ({}) }));
 vi.mock('../hooks/useBoost', () => ({ default: () => ({}) }));
 vi.mock('apps/learn-card-app/src/hooks/useManagedBoost', () => ({
     default: () => ({
@@ -59,6 +59,14 @@ const categories = [
     'ID',
 ] as const;
 
+const renderCard = (ui: React.ReactElement) => {
+    const history = createTestHistory();
+    const wrapper: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+        <TestRouter history={history}>{children}</TestRouter>
+    );
+    return render(ui, { wrapper });
+};
+
 beforeEach(() => {
     mocks.credential = {
         type: ['VerifiableCredential'],
@@ -73,7 +81,7 @@ describe('managed list titles', () => {
             defaultImg: '',
             categoryType: category,
         };
-        const { rerender } = render(<BoostManagedCard {...props} />);
+        const { rerender } = renderCard(<BoostManagedCard {...props} />);
         expect(screen.getByRole('heading').textContent).toBe('Animated Short');
         rerender(<BoostManagedCard {...props} boostPageViewMode="list" />);
         expect(screen.getByRole('heading').textContent).toBe('Animated Short');
@@ -81,7 +89,7 @@ describe('managed list titles', () => {
     });
 
     it('preserves the achievement-name fallback without a boost name', () => {
-        render(
+        renderCard(
             <BoostManagedCard
                 boost={{} as Boost}
                 defaultImg=""
@@ -111,7 +119,7 @@ describe('managed list titles', () => {
                 ],
             },
         } as VC;
-        render(
+        renderCard(
             <BoostManagedCard
                 boost={{ name: 'School Academic Record' } as Boost}
                 defaultImg=""

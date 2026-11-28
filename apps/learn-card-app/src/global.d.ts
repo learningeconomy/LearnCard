@@ -4,6 +4,8 @@ declare var __APP_VERSION__: string;
 declare var __BUILD_SHA__: string;
 declare var __BUILD_DATE__: string;
 declare var __CAPGO_DEFAULT_CHANNEL__: string;
+/** Tenant title strings for the document head; see src/config/documentBranding.ts. */
+declare var __LC_DOCUMENT_BRANDING__: { title: string; appleTitle: string };
 
 declare module '*.png' {
     const src: string;

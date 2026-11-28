@@ -1,6 +1,6 @@
 import { enterSharePrivacy } from '../share-links/sharePrivacy';
 import React, { useEffect, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
@@ -34,7 +34,7 @@ export const resetRoutedClassLinkLaunchUrls = (): void => {
 };
 
 export const AppUrlListener: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const parserConfig = useMemo<ParseClaimInputConfig>(() => resolveTenantParseConfig(), []);
 
@@ -58,7 +58,7 @@ export const AppUrlListener: React.FC = () => {
                 return true;
             }
             routedClassLinkLaunchUrls.add(url);
-            history.replace(toClassLinkCallbackPath(url));
+            navigate(toClassLinkCallbackPath(url), { replace: true });
             return true;
         };
 
@@ -68,26 +68,26 @@ export const AppUrlListener: React.FC = () => {
                 const isOnTenantHttpsDomain = isTenantHttpsUrl(event.url, parserConfig);
                 const incoming = new URL(event.url);
                 if (isOnTenantHttpsDomain && /^\/m\/[^/]+\/?$/.test(incoming.pathname)) {
-                    history.push(encodeURI(incoming.pathname));
+                    navigate(incoming.pathname);
                     return;
                 }
                 if (isOnTenantHttpsDomain && /^\/s(?:\/|$)/.test(incoming.pathname)) {
                     enterSharePrivacy();
-                    history.push(incoming.pathname + incoming.hash);
+                    navigate(incoming.pathname + incoming.hash);
                     return;
                 }
                 const parsed = parseClaimInput(event.url, parserConfig);
 
                 switch (parsed.kind) {
                     case 'oid4vci':
-                        history.push(`/oid4vci?offer=${encodeURIComponent(parsed.offerUrl)}`);
+                        navigate(`/oid4vci?offer=${encodeURIComponent(parsed.offerUrl)}`);
                         return;
                     case 'oid4vp':
-                        history.push(`/oid4vp?request=${encodeURIComponent(parsed.requestUrl)}`);
+                        navigate(`/oid4vp?request=${encodeURIComponent(parsed.requestUrl)}`);
                         return;
                     case 'vc-api-custom-scheme':
                     case 'lcw-https':
-                        history.push(parsed.path);
+                        navigate(parsed.path);
                         return;
                     case 'boost-claim':
                     case 'interaction-url':
@@ -105,7 +105,7 @@ export const AppUrlListener: React.FC = () => {
                         if (isOnTenantHttpsDomain) {
                             try {
                                 const url = new URL(event.url);
-                                history.push(url.pathname + url.search + url.hash);
+                                navigate(url.pathname + url.search + url.hash);
                             } catch {
                                 // unreachable: we already know event.url parses
                             }
@@ -144,7 +144,7 @@ export const AppUrlListener: React.FC = () => {
                 listener.remove();
             }
         };
-    }, [history, parserConfig]);
+    }, [navigate, parserConfig]);
 
     return null;
 };

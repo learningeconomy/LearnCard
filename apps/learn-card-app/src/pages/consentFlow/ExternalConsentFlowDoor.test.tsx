@@ -60,8 +60,8 @@ vi.mock('./ConsentFlowError', () => ({
 }));
 
 // Mock all the heavy dependencies
-vi.mock('react-router-dom', () => ({
-    useHistory: vi.fn(),
+vi.mock('react-router', () => ({
+    useNavigate: vi.fn(),
     useLocation: vi.fn(),
 }));
 
@@ -259,11 +259,12 @@ vi.mock('../../theme/hooks/useTheme', () => ({
 }));
 
 // Import after mocks
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
+import { navigateFromHistory } from 'learn-card-base/test-utils/navigateFromHistory';
 import queryString from 'query-string';
 import ExternalConsentFlowDoor from './ExternalConsentFlowDoor';
 
-const mockUseHistory = useHistory as Mock;
+const mockUseNavigate = useNavigate as Mock;
 const mockUseLocation = useLocation as Mock;
 
 describe('ExternalConsentFlowDoor', () => {
@@ -288,7 +289,7 @@ describe('ExternalConsentFlowDoor', () => {
         });
         mockFns.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
 
-        mockUseHistory.mockReturnValue({ push: mockPush });
+        mockUseNavigate.mockReturnValue(navigateFromHistory({ push: mockPush }));
         mockUseLocation.mockReturnValue({
             search: `?uri=${encodeURIComponent(contractUri)}&returnTo=${encodeURIComponent(
                 returnTo

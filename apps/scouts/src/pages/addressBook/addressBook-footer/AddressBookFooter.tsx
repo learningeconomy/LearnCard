@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 
 import User from '../../../components/svgs/User';
@@ -25,11 +25,11 @@ export const AddressBookFooter: React.FC<{
     showSearch?: boolean;
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const bottomBarRef = useRef<HTMLDivElement>(null);
 
     const { handlePresentBoostModal } = useBoostModal(
-        history,
+        navigate,
         BoostCategoryOptionsEnum.socialBadge
     );
 
@@ -71,7 +71,7 @@ export const AddressBookFooter: React.FC<{
                 handleCloseModal={() => closeBoostOptionsModal()}
                 showCloseButton={!isSheet}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
-                history={history as any}
+                history={navigate as any}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 boostCredential={{} as any}
                 boostUri=""

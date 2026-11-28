@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 
 import { AppSplitPane } from 'learn-card-base/ui/app-shell/AppSplitPane';
@@ -153,7 +153,7 @@ const AppRouter: React.FC = () => {
         return () => clearTimeout(t);
     }, []);
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const isLoggedIn = useIsLoggedIn();
     const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
@@ -258,7 +258,7 @@ const AppRouter: React.FC = () => {
         assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
         if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
         assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
-        history.replace(intent.returnTo);
+        navigate(intent.returnTo, { replace: true });
         if (intent.action === 'account-recovery') {
             newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
         } else if (intent.action === 'secure-account') {
@@ -298,7 +298,7 @@ const AppRouter: React.FC = () => {
     useEffect(() => {
         if (params.myNewDataOpen) {
             const { myNewDataOpen: _unused, ...allOtherSearchParams } = params;
-            history.replace({ search: queryString.stringify(allOtherSearchParams) });
+            navigate({ search: queryString.stringify(allOtherSearchParams) }, { replace: true });
             newModal(
                 <NewMyData />,
                 { sectionClassName: 'max-w-[350px]!' },
@@ -310,7 +310,7 @@ const AppRouter: React.FC = () => {
     useEffect(() => {
         if (params.summaryUri && isMobile) {
             const { summaryUri, ...allOtherSearchParams } = params;
-            history.replace({ search: queryString.stringify(allOtherSearchParams) });
+            navigate({ search: queryString.stringify(allOtherSearchParams) }, { replace: true });
             newModal(
                 <AiSessionAssessmentPreviewContainer summaryUri={summaryUri as string} />,
                 {},
@@ -324,7 +324,7 @@ const AppRouter: React.FC = () => {
             const email = params.email as string;
             redirectStore.set.email(email);
 
-            history.replace(`/login?verifyCode=true`);
+            navigate(`/login?verifyCode=true`, { replace: true });
         }
     }, []);
 
@@ -488,7 +488,7 @@ const AppRouter: React.FC = () => {
 
             if (params.get('verifyCode') === 'true' && isNative) {
                 redirectStore.set.email(params.get('email') as string);
-                history.replace('/login?verifyCode=true');
+                navigate('/login?verifyCode=true', { replace: true });
             } else if (!isEndorsementLink) {
                 // Only run auth verification for non-endorsement links
                 if (authLink) {

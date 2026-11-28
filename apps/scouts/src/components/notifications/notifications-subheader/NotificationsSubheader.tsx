@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@capawesome/capacitor-badge';
 import { Capacitor } from '@capacitor/core';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import * as m from '../../../paraglide/messages.js';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
@@ -35,7 +35,7 @@ export const NotificationsSubHeader: React.FC<{
         DEFAULT_ACTIVE_FILTER
     );
     const numberArchived = data?.pages[0]?.notifications?.length;
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const {
         mutate: markAllNotificationsRead,
@@ -104,7 +104,7 @@ export const NotificationsSubHeader: React.FC<{
                     <button
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
-                            history.goBack();
+                            navigate(-1);
                         }}
                         aria-label={m['notifications.backButton']()}
                     >

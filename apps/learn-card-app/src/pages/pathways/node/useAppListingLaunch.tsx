@@ -29,7 +29,7 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { useModal, ModalTypes } from 'learn-card-base';
 
@@ -126,7 +126,7 @@ export const useAppListingLaunch = (
     listing: AnyAppListing | null | undefined,
     isInstalled = false
 ): UseAppListingLaunchResult => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal } = useModal();
 
     const launchConfig = useMemo(
@@ -221,13 +221,13 @@ export const useAppListingLaunch = (
 
                 case 'fallback':
                 default: {
-                    history.push(`/app/${encodeURIComponent(listing.listing_id)}`);
+                    navigate(`/app/${encodeURIComponent(listing.listing_id)}`);
 
                     return;
                 }
             }
         },
-        [listing, launchConfig, inlineKind, newModal, history]
+        [listing, launchConfig, inlineKind, newModal, navigate]
     );
 
     return { launch, inlineKind, launchConfig };

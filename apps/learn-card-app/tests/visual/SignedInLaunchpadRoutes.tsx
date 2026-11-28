@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route } from 'react-router-dom';
+import { Route } from 'react-router';
 import MyAppsLanding from '../../src/pages/myApps/MyAppsLanding';
 
 // Keep the real Ionic tabs/outlet, while excluding unrelated authenticated routes.

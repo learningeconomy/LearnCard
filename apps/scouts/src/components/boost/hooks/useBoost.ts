@@ -1,6 +1,6 @@
 // oxlint-disable-next-line no-unused-vars
 import React, { useState } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import { LCNProfile } from '@learncard/types';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ import * as m from '../../../paraglide/messages.js';
 const log = getLogger('use-boost');
 
 // oxlint-disable-next-line no-unused-vars
-const useBoost = (history: RouteComponentProps['history']) => {
+const useBoost = (history: NavigateFunction) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();

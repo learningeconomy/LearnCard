@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
@@ -57,7 +57,7 @@ type TopicGroup = {
 };
 
 const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const { getThemedCategoryColors } = useTheme();
     const { isDesktop } = useDeviceTypeByWidth();
@@ -343,9 +343,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                 // can't hydrate the topic-detail view from
                                                 // a stale query string.
                                                 if (location.pathname !== '/ai/topics') {
-                                                    history.replace('/ai/topics');
+                                                    navigate('/ai/topics', { replace: true });
                                                 } else if (location.search) {
-                                                    history.replace('/ai/topics');
+                                                    navigate('/ai/topics', { replace: true });
                                                 }
                                             }}
                                         >
@@ -496,13 +496,13 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                             setView('topicDetail');
                                                             resetFilters();
                                                             if (nextTopicUri) {
-                                                                history.push(
+                                                                navigate(
                                                                     `/ai/sessions?topicBoostUri=${encodeURIComponent(
                                                                         nextTopicUri
                                                                     )}`
                                                                 );
                                                             } else {
-                                                                history.push('/ai/sessions');
+                                                                navigate('/ai/sessions');
                                                             }
                                                         }}
                                                     />

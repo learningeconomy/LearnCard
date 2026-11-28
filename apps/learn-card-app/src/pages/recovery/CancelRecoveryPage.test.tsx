@@ -12,12 +12,16 @@ const VALID_SEARCH =
     '?holdId=00000000-0000-4000-8000-000000000000&token=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const mockLocation = vi.hoisted(() => ({ search: '' }));
 const mockPush = vi.fn();
-vi.mock('react-router-dom', () => ({
-    useLocation: () => mockLocation,
-    useHistory: () => ({
-        push: mockPush,
-    }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useLocation: () => mockLocation,
+        useNavigate: () =>
+            navigateFromHistory({
+                push: mockPush,
+            }),
+    };
+});
 
 vi.mock('learn-card-base', () => ({
     networkStore: {

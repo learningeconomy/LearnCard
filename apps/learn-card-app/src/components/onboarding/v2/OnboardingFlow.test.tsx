@@ -108,7 +108,10 @@ vi.mock('../../../providers/AuthCoordinatorProvider', () => ({
 }));
 vi.mock('@learncard/sss-key-manager', () => ({ generateEd25519PrivateKey: vi.fn() }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ resetQueries: vi.fn() }) }));
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: vi.fn() }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ replace: vi.fn() }) };
+});
 vi.mock('../../../i18n', async importOriginal => ({
     ...(await importOriginal<typeof import('../../../i18n')>()),
     useLocale: () => 'en',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import {
@@ -30,7 +30,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
     contractDetails,
     isPreview,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const currentUser = useCurrentUser()!;
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { newModal, closeModal } = useModal();
@@ -138,7 +138,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                                 contentClassName="disable-scrollbars"
                                 footerClassName="z-9999"
                                 footerProps={{
-                                    handleClose: isPreview ? closeModal : () => history.push('/'),
+                                    handleClose: isPreview ? closeModal : () => navigate('/'),
                                     handleDetails: isFront ? () => setIsFront(false) : undefined,
                                     handleBack: isFront ? undefined : () => setIsFront(true),
                                     handleClaim: handleAcceptClick,

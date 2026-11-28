@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../paraglide/messages.js';
 
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import Vector from '../../components/svgs/Vector';
 import { AiInsightsIcon } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 

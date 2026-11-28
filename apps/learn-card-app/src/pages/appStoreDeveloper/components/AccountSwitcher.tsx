@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { ChevronDown, X } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -20,14 +20,14 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({ onAccountSwitc
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { newModal, closeModal } = useModal();
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const handleAccountSwitch = (account: AccountProfile) => {
         // If current route contains an integration ID, redirect to a safe route
         // This prevents issues when the new account doesn't have that integration
         if (INTEGRATION_ID_REGEX.test(location.pathname)) {
             // Redirect to the developer home page
-            history.push('/app-store/developer');
+            navigate('/app-store/developer');
         }
 
         onAccountSwitch?.(account);

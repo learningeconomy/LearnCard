@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 const replace = vi.fn();
 const auth = vi.hoisted(() => ({ openSecureAccount: vi.fn(), isReady: true }));
 
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ replace }) };
+});
 vi.mock('../../providers/AuthCoordinatorProvider', () => ({ useAppAuth: () => auth }));
 
 import SecureAccountPage from './SecureAccountPage';

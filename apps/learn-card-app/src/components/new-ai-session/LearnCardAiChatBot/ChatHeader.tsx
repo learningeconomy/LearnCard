@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,7 +46,7 @@ interface ChatHeaderProps {
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopic, onClose }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
@@ -129,7 +129,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
             await closeInsightsSession();
             chatBotStore.set.resetStore();
             resetChatStores();
-            history.push('/ai/insights');
+            navigate('/ai/insights');
             return;
         }
 
@@ -143,7 +143,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
             resetChatStores();
             chatBotStore.set.resetStore();
             closeAllModals();
-            history.push('/ai/topics');
+            navigate('/ai/topics');
             return;
         }
 
@@ -157,7 +157,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
             resetChatStores();
             chatBotStore.set.resetStore();
             closeAllModals();
-            history.push('/ai/topics');
+            navigate('/ai/topics');
             return;
         }
 

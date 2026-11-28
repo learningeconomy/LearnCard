@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { z } from 'zod';
 import Plus from 'learn-card-base/svgs/Plus';
 import {
@@ -39,7 +39,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
     overrideCustomize,
     returnToParentAfterSave = false,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
@@ -95,7 +95,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
             );
         } else {
             handleCloseModal?.();
-            history.push(`/boost?${queryParams}`);
+            navigate(`/boost?${queryParams}`);
         }
 
         setCustomType('');

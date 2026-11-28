@@ -1,12 +1,12 @@
 import React from 'react';
 import { BoostCategoryOptionsEnum, ModalTypes } from 'learn-card-base';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import BoostVCTypeOptions from '../boost-options/boostVCTypeOptions/BoostVCTypeOptions';
 import { closeAll } from '../../../helpers/uiHelpers';
 import { useModal } from 'learn-card-base';
 
 const useBoostModal = (
-    history: RouteComponentProps['history'],
+    history: NavigateFunction,
     boostCategoryType?: BoostCategoryOptionsEnum,
     hideBackButton: boolean = true,
     showCloseButton = true,

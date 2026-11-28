@@ -1,6 +1,6 @@
 import React from 'react';
 import queryString from 'query-string';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import useShareCredentials, { VcType, VC_TYPE } from 'learn-card-base/hooks/useShareCredentials';
 
 import GenericCardWrapper from 'learn-card-base/components/GenericCardWrapper/GenericCardWrapper';

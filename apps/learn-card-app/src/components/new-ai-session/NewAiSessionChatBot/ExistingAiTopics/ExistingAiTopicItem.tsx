@@ -8,7 +8,7 @@ import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
 import { Boost, VC } from '@learncard/types';
 import { getAiTopicTitle } from '../../newAiSession.helpers';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal } from 'learn-card-base';
 
 export const ExistingAiTopicItem: React.FC<{
@@ -32,7 +32,7 @@ export const ExistingAiTopicItem: React.FC<{
     currentQuestionIndex,
     contractUri,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const app = getAiPassportAppByContractUri(contractUri);
     const topicTitle = getAiTopicTitle(topicVc) ?? '';
     const { closeAllModals } = useModal();
@@ -46,12 +46,12 @@ export const ExistingAiTopicItem: React.FC<{
                 if (!sessions || sessions.length === 0) {
                     if (topicBoost?.uri) {
                         if (app?.type === AiPassportAppsEnum.learncardapp) {
-                            history.push(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
+                            navigate(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
                             closeAllModals();
                         } else if (app?.url) {
                             window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`;
                         } else {
-                            history.push(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
+                            navigate(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
                             closeAllModals();
                         }
                         return;

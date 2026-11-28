@@ -1,7 +1,7 @@
 import React from 'react';
 import queryString from 'query-string';
 
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { ToastTypeEnum, useModal, useToast, useWallet } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -25,7 +25,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
     const { closeModal, closeAllModals } = useModal();
     const { presentToast } = useToast();
     const brandingConfig = useBrandingConfig();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     const { initWallet } = useWallet();
@@ -60,7 +60,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
                         returnTo,
                         wallet,
                     });
-                } else history.push(returnTo);
+                } else navigate(returnTo);
             }
         } catch {
             presentToast('Unable to complete sign in. Please try again.', {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ModalTypes, redirectStore, useAuthStatus, useGetProfile, useModal } from 'learn-card-base';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 
@@ -13,7 +13,7 @@ export type InboxClaimProfileGateProps = {
 
 /** Require a confirmed account before the app participates in an inbox claim. */
 export const InboxClaimProfileGate: React.FC<InboxClaimProfileGateProps> = ({ vc_request_url }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const authStatus = useAuthStatus();
     const profileState = deriveInboxClaimProfileState(authStatus);
     const { refetch } = useGetProfile();
@@ -94,7 +94,7 @@ export const InboxClaimProfileGate: React.FC<InboxClaimProfileGateProps> = ({ vc
                 )}
                 <button
                     type="button"
-                    onClick={() => history.push('/')}
+                    onClick={() => navigate('/')}
                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
                     {m['common.cancel']()}

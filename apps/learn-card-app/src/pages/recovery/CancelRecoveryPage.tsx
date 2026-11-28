@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
@@ -8,7 +8,7 @@ import * as m from '../../paraglide/messages.js';
 
 const CancelRecoveryPage: React.FC = () => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
     const params = queryString.parse(location.search);
     const holdId = params.holdId as string;
     const token = params.token as string;
@@ -112,7 +112,7 @@ const CancelRecoveryPage: React.FC = () => {
                                 {m['recovery.cancel.invalidLink.body']()}
                             </p>
                         </div>
-                        <button className={buttonClass} onClick={() => history.push('/login')}>
+                        <button className={buttonClass} onClick={() => navigate('/login')}>
                             {m['recovery.cancel.invalidLink.signIn']()}
                         </button>
                     </div>
@@ -129,7 +129,7 @@ const CancelRecoveryPage: React.FC = () => {
                                 {m['recovery.cancel.success.body']()}
                             </p>
                         </div>
-                        <button className={buttonClass} onClick={() => history.push('/')}>
+                        <button className={buttonClass} onClick={() => navigate('/')}>
                             {m['recovery.cancel.success.doneBtn']()}
                         </button>
                     </div>
@@ -143,7 +143,7 @@ const CancelRecoveryPage: React.FC = () => {
                                 {m['recovery.cancel.expired.body']()}
                             </p>
                         </div>
-                        <button className={buttonClass} onClick={() => history.push('/login')}>
+                        <button className={buttonClass} onClick={() => navigate('/login')}>
                             {m['recovery.cancel.expired.signInBtn']()}
                         </button>
                     </div>
@@ -171,7 +171,7 @@ const CancelRecoveryPage: React.FC = () => {
                             </button>
                             <button
                                 className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                                onClick={() => history.push('/')}
+                                onClick={() => navigate('/')}
                                 disabled={status === 'loading'}
                             >
                                 {m['recovery.cancel.confirm.notNowBtn']()}

@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
-import { Router, useHistory } from 'react-router-dom';
-import type { History, Location } from 'history';
+import React, { useCallback, useLayoutEffect } from 'react';
+import { useLocation, useNavigate, useNavigationType } from 'react-router';
+import type { Location, NavigationType } from 'react-router';
 
 type EntryInfo = {
     /** Pathname of the in-app entry that pushed this one (Ionic `pushedByRoute`). */
@@ -10,101 +10,99 @@ type EntryInfo = {
     lastPathname?: string;
 };
 
-type InAppHistory = {
-    /**
-     * Ionic `NavManager.goBack(defaultHref)` semantics: go back if the current entry was pushed
-     * in-app by the previous one, return to the pusher if the user arrived some other way, and
-     * otherwise replace the current entry with `defaultHref`.
-     */
-    goBack: (defaultHref: string) => void;
+type Tracker = {
+    entries: Map<string, EntryInfo>;
+    current?: Location;
 };
+
+/** One tracker per page: the app renders one router at a time. */
+const tracker: Tracker = { entries: new Map() };
 
 const keyOf = (location: Location): string => location.key ?? '';
 
-const trackers = new WeakMap<History, InAppHistory>();
+/** Records one committed navigation, as IonReactRouter's history listener did. */
+export const recordInAppNavigation = (location: Location, action: NavigationType): void => {
+    const { entries } = tracker;
+    const previous = tracker.current;
+    if (!previous) {
+        tracker.current = location;
+        if (!entries.has(keyOf(location))) entries.set(keyOf(location), {});
+        return;
+    }
+    if (keyOf(previous) === keyOf(location)) return;
+    const previousInfo = entries.get(keyOf(previous)) ?? {};
+    tracker.current = location;
 
-const createInAppHistory = (history: History): InAppHistory => {
-    const entries = new Map<string, EntryInfo>();
-    let current = history.location;
-    entries.set(keyOf(current), {});
+    // Ionic ignored a navigation whose pathname equals the current URL (pathname + search),
+    // e.g. the hamburger tab's push of the current pathname.
+    if (previous.pathname + previous.search === location.pathname) {
+        entries.set(keyOf(location), previousInfo);
+        return;
+    }
 
-    history.listen((location, action) => {
-        const previous = current;
-        const previousInfo = entries.get(keyOf(previous)) ?? {};
-        current = location;
-
-        // Ionic ignored a navigation whose pathname equals the current URL (pathname + search),
-        // e.g. the hamburger tab's push of the current pathname.
-        if (previous.pathname + previous.search === location.pathname) {
-            entries.set(keyOf(location), previousInfo);
-            return;
-        }
-
-        if (action === 'PUSH') {
-            entries.set(keyOf(location), {
-                pushedByRoute: previous.pathname,
-                pushedBySearch: previous.search,
-                lastPathname: previous.pathname,
-            });
-        } else if (action === 'REPLACE') {
-            const pushedByRoute =
-                previousInfo.pushedByRoute !== location.pathname
-                    ? previousInfo.pushedByRoute
-                    : undefined;
-            entries.set(keyOf(location), {
-                pushedByRoute,
-                pushedBySearch: pushedByRoute ? previousInfo.pushedBySearch : undefined,
-                lastPathname: previous.pathname,
-            });
-        } else {
-            const known = entries.get(keyOf(location)) ?? {};
-            entries.set(keyOf(location), { ...known, lastPathname: previous.pathname });
-        }
-    });
-
-    return {
-        goBack: defaultHref => {
-            const info = entries.get(keyOf(current)) ?? {};
-            if (!info.pushedByRoute) {
-                history.replace(defaultHref);
-            } else if (info.lastPathname === info.pushedByRoute) {
-                history.goBack();
-            } else {
-                history.replace(info.pushedByRoute + (info.pushedBySearch ?? ''));
-            }
-        },
-    };
+    if (action === 'PUSH') {
+        entries.set(keyOf(location), {
+            pushedByRoute: previous.pathname,
+            pushedBySearch: previous.search,
+            lastPathname: previous.pathname,
+        });
+    } else if (action === 'REPLACE') {
+        const pushedByRoute =
+            previousInfo.pushedByRoute !== location.pathname
+                ? previousInfo.pushedByRoute
+                : undefined;
+        entries.set(keyOf(location), {
+            pushedByRoute,
+            pushedBySearch: pushedByRoute ? previousInfo.pushedBySearch : undefined,
+            lastPathname: previous.pathname,
+        });
+    } else {
+        const known = entries.get(keyOf(location)) ?? {};
+        entries.set(keyOf(location), { ...known, lastPathname: previous.pathname });
+    }
 };
 
-/** Starts (once per history object) the in-app history tracking `useAppGoBack` relies on. */
-export const getInAppHistory = (history: History): InAppHistory => {
-    let tracker = trackers.get(history);
-    if (!tracker) {
-        tracker = createInAppHistory(history);
-        trackers.set(history, tracker);
-    }
-    return tracker;
+/** Test-only: forget every recorded entry (each test renders a fresh router). */
+export const resetInAppHistory = (): void => {
+    tracker.entries.clear();
+    tracker.current = undefined;
 };
 
 export type AppShellRouterProps = {
-    history: History;
     children?: React.ReactNode;
 };
 
 /**
- * Replacement for `IonReactRouter history={history}`: the plain React Router 5 `<Router>`, plus
- * the in-app history tracking IonReactRouter did for back buttons. Tracking starts on first
- * render, as IonReactRouter's did in its constructor.
+ * Replacement for IonReactRouter's in-app history tracking, which back buttons rely on. Render it
+ * inside the app's router (React Router framework mode in the app, a data router in Scouts).
+ * Tracking records each committed location before children's effects run.
  */
-export const AppShellRouter: React.FC<AppShellRouterProps> = ({ history, children }) => {
-    getInAppHistory(history);
-    return <Router history={history}>{children}</Router>;
+export const AppShellRouter: React.FC<AppShellRouterProps> = ({ children }) => {
+    const location = useLocation();
+    const action = useNavigationType();
+    useLayoutEffect(() => {
+        recordInAppNavigation(location, action);
+    }, [location, action]);
+    return <>{children}</>;
 };
 
 /** Back action with IonReactRouter's `IonBackButton defaultHref` semantics (AppBackButton). */
 export const useAppGoBack = (defaultHref: string): (() => void) => {
-    const history = useHistory();
-    return useCallback(() => getInAppHistory(history).goBack(defaultHref), [history, defaultHref]);
+    const navigate = useNavigate();
+    return useCallback(() => {
+        const current = tracker.current;
+        const info = (current && tracker.entries.get(keyOf(current))) ?? {};
+        // Ionic `NavManager.goBack(defaultHref)` semantics: go back if the current entry was
+        // pushed in-app by the previous one, return to the pusher if the user arrived some other
+        // way, and otherwise replace the current entry with `defaultHref`.
+        if (!info.pushedByRoute) {
+            navigate(defaultHref, { replace: true });
+        } else if (info.lastPathname === info.pushedByRoute) {
+            navigate(-1);
+        } else {
+            navigate(info.pushedByRoute + (info.pushedBySearch ?? ''), { replace: true });
+        }
+    }, [navigate, defaultHref]);
 };
 
 export default AppShellRouter;

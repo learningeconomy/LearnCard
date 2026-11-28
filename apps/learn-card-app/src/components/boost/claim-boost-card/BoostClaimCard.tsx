@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
@@ -94,7 +94,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     hideEndorsementRequestCard,
     lifecycleStatus,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
@@ -384,8 +384,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 await successCallback?.();
 
                                 if (category === CredentialCategoryEnum.family) {
-                                    history.replace(
-                                        `/families?boostUri=${credentialUri}&showPreview=true`
+                                    navigate(
+                                        `/families?boostUri=${credentialUri}&showPreview=true`,
+                                        { replace: true }
                                     );
                                 }
 

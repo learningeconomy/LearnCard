@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import queryString from 'query-string';
-import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
+import { useLocation, Link, useParams, useNavigate } from 'react-router';
 import { BrandingEnum, ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import * as m from '../../paraglide/messages.js';
@@ -30,10 +30,10 @@ type CapacitorBundle = {
 };
 
 const LaunchPad: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const { connectTo, challenge } = queryString.parse(search);
-    const { frameworkId, skillId } = useParams<{ frameworkId?: string; skillId?: string }>();
+    const { frameworkId, skillId } = useParams() as { frameworkId?: string; skillId?: string };
 
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,

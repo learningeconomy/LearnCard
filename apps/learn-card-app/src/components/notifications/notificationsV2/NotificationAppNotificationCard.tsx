@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import moment from 'moment';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ErrorBoundary } from '@sentry/react';
 import { Bell, ExternalLink } from 'lucide-react';
 import * as m from '../../../paraglide/messages.js';
@@ -32,7 +32,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
     onArchive,
     className,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
     const [isRead, setIsRead] = useState<boolean>(notification?.read ?? false);
     const [iconFailed, setIconFailed] = useState(false);
@@ -83,7 +83,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             // Fallback: navigate to the app listing page
             if (listingId) {
                 closeAllModals();
-                history.push(`/app/${listingId}`);
+                navigate(`/app/${listingId}`);
             }
             return;
         }
@@ -106,11 +106,13 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             const appSlug = (listing as Record<string, unknown>).slug as string | undefined;
 
             closeAllModals();
-            history.push(`/apps/${appSlug || listingId}`, {
-                embedUrl,
-                appName: listing.display_name,
-                launchConfig,
-                isInstalled: true, // User received a notification, so they have the app
+            navigate(`/apps/${appSlug || listingId}`, {
+                state: {
+                    embedUrl,
+                    appName: listing.display_name,
+                    launchConfig,
+                    isInstalled: true, // User received a notification, so they have the app
+                },
             });
 
             return;
@@ -118,7 +120,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
 
         // Not embeddable — open the listing page
         closeAllModals();
-        history.push(`/app/${listingId}`);
+        navigate(`/app/${listingId}`);
     };
 
     const isHighPriority = priority === 'high';

@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 

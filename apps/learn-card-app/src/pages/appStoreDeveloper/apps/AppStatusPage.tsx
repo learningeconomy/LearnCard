@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useParams, useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,9 +17,9 @@ import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('app-status-page');
 
 const AppStatusPage: React.FC = () => {
-    const history = useHistory();
-    const location = useLocation<{ celebrate?: boolean } | undefined>();
-    const { listingId } = useParams<{ listingId: string }>();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { listingId } = useParams() as { listingId: string };
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const [isWorking, setIsWorking] = useState(false);
@@ -65,7 +65,7 @@ const AppStatusPage: React.FC = () => {
                         </p>
                         <button
                             type="button"
-                            onClick={() => history.push('/app-store/developer')}
+                            onClick={() => navigate('/app-store/developer')}
                             className="mt-6 py-3 px-6 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
                             Back to Your Apps
@@ -82,8 +82,8 @@ const AppStatusPage: React.FC = () => {
         ? `/app-store/developer/integrations/${integrationId}/apps/${listingId}/listing`
         : null;
 
-    if (mode === 'draft' && editPath) return <Redirect to={editPath} />;
-    if (mode === 'draft') return <Redirect to="/app-store/developer" />;
+    if (mode === 'draft' && editPath) return <Navigate replace to={editPath} />;
+    if (mode === 'draft') return <Navigate replace to="/app-store/developer" />;
 
     const makeChanges = async () => {
         setIsWorking(true);
@@ -97,7 +97,7 @@ const AppStatusPage: React.FC = () => {
             }
             await queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
             await queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
-            if (editPath) history.push(editPath);
+            if (editPath) navigate(editPath);
         } catch (e) {
             log.error('listing.withdraw.failed', e, { listingId });
             setError('Something went wrong. Please try again.');
@@ -108,13 +108,13 @@ const AppStatusPage: React.FC = () => {
 
     const viewInStore = () => {
         if (mode === 'live') {
-            history.push(`/app/${listingId}`);
+            navigate(`/app/${listingId}`);
             return;
         }
-        history.push({
-            pathname: `/app/${listingId}`,
-            state: { listing: withPendingChanges(listing), isPreview: true },
-        });
+        navigate(
+            { pathname: `/app/${listingId}` },
+            { state: { listing: withPendingChanges(listing), isPreview: true } }
+        );
     };
 
     return (
@@ -126,7 +126,7 @@ const AppStatusPage: React.FC = () => {
                         <div className="flex items-center justify-between gap-2">
                             <button
                                 type="button"
-                                onClick={() => history.push('/app-store/developer')}
+                                onClick={() => navigate('/app-store/developer')}
                                 className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
                                 <AppIcon icon={arrowBackOutline} />
@@ -137,7 +137,7 @@ const AppStatusPage: React.FC = () => {
                                 integrationId={integrationId}
                                 displayName={listing.display_name}
                                 mode={mode}
-                                onDeleted={() => history.push('/app-store/developer')}
+                                onDeleted={() => navigate('/app-store/developer')}
                             />
                         </div>
                         {error && (
@@ -160,11 +160,11 @@ const AppStatusPage: React.FC = () => {
                         isWorking={isWorking}
                         shareUrl={`${window.location.origin}${getAppStatusPath(listingId)}`}
                         onMakeChanges={makeChanges}
-                        onEdit={() => editPath && history.push(editPath)}
+                        onEdit={() => editPath && navigate(editPath)}
                         onViewInStore={viewInStore}
                         onOpenDashboard={() =>
                             integrationId &&
-                            history.push(`/app-store/developer/integrations/${integrationId}`)
+                            navigate(`/app-store/developer/integrations/${integrationId}`)
                         }
                     />
                 </div>

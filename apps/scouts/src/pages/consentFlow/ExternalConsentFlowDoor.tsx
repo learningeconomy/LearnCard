@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import queryString from 'query-string';
 import { Capacitor } from '@capacitor/core';
 
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
@@ -40,7 +40,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
     const adapter = useSignInAdapter();
     const currentUser = useCurrentUser();
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
@@ -81,7 +81,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
     const redirectToLogin = () => {
         const redirectPath = location.pathname + location.search;
         redirectStore.set.authRedirect(redirectPath);
-        history.push(`/login?redirectTo=${redirectPath}`);
+        navigate(`/login?redirectTo=${redirectPath}`);
     };
 
     if (isPending) {

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { X } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
@@ -57,7 +57,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     launchFeaturesInNewTab = false,
 }) => {
     const { closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -128,11 +128,13 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         closeModal();
 
         // Navigate to the full-screen route with state
-        history.push(`/apps/${appId || 'preview'}`, {
-            embedUrl,
-            appName,
-            launchConfig,
-            isInstalled,
+        navigate(`/apps/${appId || 'preview'}`, {
+            state: {
+                embedUrl,
+                appName,
+                launchConfig,
+                isInstalled,
+            },
         });
     };
 

@@ -17,7 +17,7 @@ import TroopID from './TroopID';
 import ShortBoostSomeoneScreen from '../../components/boost/boost-options/boostUserOptions/ShortBoostSomeoneScreen';
 import useBoost from '../../components/boost/hooks/useBoost';
 import { BoostCMSIssueTo, ShortBoostState } from '../../components/boost/boost';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 import { BoostIssuanceLoading } from '../../components/boost/boostLoader/BoostLoader';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
@@ -81,7 +81,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const _boostUriForClaimLink = boostUriForClaimLink || credential?.boostId;
 
@@ -99,7 +99,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
     const { data: recipients } = useGetBoostRecipients(_boostUriForClaimLink);
     const { data: boost } = useResolveBoost(_boostUriForClaimLink);
     const { data: myProfile } = useGetProfile();
-    const { handleSubmitExistingBoostOther } = useBoost(history);
+    const { handleSubmitExistingBoostOther } = useBoost(navigate);
 
     const handleBoostOther = async (localState: typeof INITIAL_STATE) => {
         if (!myProfile?.profileId) return;
@@ -330,7 +330,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                                 <ShortBoostSomeoneScreen
                                     boostUri={_boostUriForClaimLink}
                                     profileId={myProfile?.profileId}
-                                    history={history}
+                                    history={navigate}
                                     issuedTo={state.issueTo}
                                     handleCloseModal={closeModal}
                                     handleBoostSomeone={handleBoostOther}

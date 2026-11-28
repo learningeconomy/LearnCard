@@ -1,4 +1,4 @@
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { FC } from 'react';
 
 import { useModal } from 'learn-card-base';
@@ -7,12 +7,12 @@ import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOpt
 import type { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
 
 const AdminToolsLearnerContextTestOption: FC<{ option: AdminToolOption }> = ({ option }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
 
     const handleOpen = () => {
         closeAllModals();
-        history.push('/admin-tools/learner-context-test');
+        navigate('/admin-tools/learner-context-test');
     };
 
     return (

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
 import * as m from '../../paraglide/messages.js';
@@ -61,12 +61,12 @@ interface LocationState {
  *   - /app-store/developer/integrations/:integrationId/apps/:listingId (edit)
  */
 const SubmissionForm: React.FC = () => {
-    const history = useHistory();
-    const location = useLocation<LocationState>();
-    const { integrationId: routeIntegrationId, listingId } = useParams<{
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { integrationId: routeIntegrationId, listingId } = useParams() as {
         integrationId?: string;
         listingId?: string;
-    }>();
+    };
     const [createdIntegrationId, setCreatedIntegrationId] = useState<string | null>(null);
     const creatingIntegrationRef = useRef<Promise<string> | null>(null);
     const integrationId = routeIntegrationId ?? createdIntegrationId ?? undefined;
@@ -249,7 +249,7 @@ const SubmissionForm: React.FC = () => {
     };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
     const navigateToDashboard = () =>
-        history.push(
+        navigate(
             routeIntegrationId
                 ? `/app-store/developer/integrations/${routeIntegrationId}`
                 : '/app-store/developer'
@@ -438,9 +438,9 @@ const SubmissionForm: React.FC = () => {
             const savedId = await saveDraft(false);
             if (!savedId) return;
             currentListingId = savedId;
-            history.replace(
+            navigate(
                 `/app-store/developer/integrations/${await ensureIntegrationId()}/apps/${savedId}`,
-                location.state
+                { replace: true, state: location.state }
             );
         }
 
@@ -517,10 +517,10 @@ const SubmissionForm: React.FC = () => {
             await submitMutation.mutateAsync(newListingId);
             setIsSubmitting(false);
             if (!routeIntegrationId) {
-                history.push({
-                    pathname: getAppStatusPath(newListingId),
-                    state: { celebrate: true },
-                });
+                navigate(
+                    { pathname: getAppStatusPath(newListingId) },
+                    { state: { celebrate: true } }
+                );
                 return;
             }
             setIsSubmitted(true);

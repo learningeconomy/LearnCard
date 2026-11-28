@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 import * as m from '../../../paraglide/messages.js';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -39,7 +39,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     defaultImg,
     title,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     /*
         * start **
@@ -84,7 +84,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
-    const handleNewBoost = () => history.push('/issue');
+    const handleNewBoost = () => navigate('/issue');
 
     const credentialsBackgroundFetching = managedBoostsFetching && !managedBoostsLoading;
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useDeveloperPortal } from './useDeveloperPortal';
@@ -33,7 +33,7 @@ interface DeveloperPortalProviderProps {
 }
 
 export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = ({ children }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     // Extract IDs from URL - this is the source of truth
@@ -64,52 +64,50 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
 
             if (integration?.status === 'active') {
                 // Active integrations go to their dashboard
-                history.push(`/app-store/developer/integrations/${id}`);
+                navigate(`/app-store/developer/integrations/${id}`);
             } else if (integration?.guideType) {
                 // If integration has a guide type, go directly to that guide
-                history.push(
-                    `/app-store/developer/integrations/${id}/guides/${integration.guideType}`
-                );
+                navigate(`/app-store/developer/integrations/${id}/guides/${integration.guideType}`);
             } else {
                 // Otherwise go to the hub to choose a guide
-                history.push(`/app-store/developer/integrations/${id}/guides`);
+                navigate(`/app-store/developer/integrations/${id}/guides`);
             }
         },
-        [history, integrations]
+        [navigate, integrations]
     );
 
     const selectGuide = useCallback(
         (guideType: UseCaseId) => {
             if (!currentIntegrationId) return;
 
-            history.push(
+            navigate(
                 `/app-store/developer/integrations/${currentIntegrationId}/guides/${guideType}`
             );
         },
-        [history, currentIntegrationId]
+        [navigate, currentIntegrationId]
     );
 
     const goToIntegrationHub = useCallback(() => {
         if (currentIntegration?.status === 'active') {
             // Active integrations go to their dashboard
-            history.push(`/app-store/developer/integrations/${currentIntegration.id}`);
+            navigate(`/app-store/developer/integrations/${currentIntegration.id}`);
         } else if (currentIntegration?.guideType) {
             // Setup integrations with a guide type go to that guide
-            history.push(
+            navigate(
                 `/app-store/developer/integrations/${currentIntegration.id}/guides/${currentIntegration.guideType}`
             );
         } else if (currentIntegrationId) {
             // Setup integrations without a guide type go to guide selection
-            history.push(`/app-store/developer/integrations/${currentIntegrationId}/guides`);
+            navigate(`/app-store/developer/integrations/${currentIntegrationId}/guides`);
         } else {
             // No integration selected - start from the guides
-            history.push('/app-store/developer/build');
+            navigate('/app-store/developer/build');
         }
-    }, [history, currentIntegration, currentIntegrationId]);
+    }, [navigate, currentIntegration, currentIntegrationId]);
 
     const goToApps = useCallback(() => {
-        history.push('/app-store/developer');
-    }, [history]);
+        navigate('/app-store/developer');
+    }, [navigate]);
 
     // Create integration action
     const createIntegration = useCallback(
@@ -117,11 +115,11 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
             const id = await createIntegrationMutation.mutateAsync(name);
 
             // Navigate to the new integration's hub
-            history.push(`/app-store/developer/integrations/${id}/guides`);
+            navigate(`/app-store/developer/integrations/${id}/guides`);
 
             return id;
         },
-        [createIntegrationMutation, history]
+        [createIntegrationMutation, navigate]
     );
 
     const value = useMemo<DeveloperPortalContextValue>(

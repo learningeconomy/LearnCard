@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowForwardOutline,
@@ -317,7 +317,7 @@ const PublishStep: React.FC<{ onDone: () => void }> = ({ onDone }) => (
 );
 
 const EmbedAppQuickGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const guide = useGuideState('embed-app', STEPS.length, selectedIntegration);
     const legacy = isLegacyProgress(guide.currentStep, guide.state.completedSteps);
     const current = legacy ? 0 : guide.currentStep;
@@ -354,7 +354,7 @@ const EmbedAppQuickGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
                 />
             )}
             {current === 1 && <TryStep />}
-            {current === 2 && <PublishStep onDone={() => history.push('/app-store/developer')} />}
+            {current === 2 && <PublishStep onDone={() => navigate('/app-store/developer')} />}
 
             {current < STEPS.length - 1 && (
                 <div className="mt-10 flex items-center justify-between">

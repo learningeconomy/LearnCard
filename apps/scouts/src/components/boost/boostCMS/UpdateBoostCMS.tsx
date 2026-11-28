@@ -1,7 +1,7 @@
 import * as m from '../../../paraglide/messages.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
-import { useHistory, useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
@@ -117,7 +117,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     const presetLocalization = useRef(
         getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
     ).current;
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const query = usePathQuery();
 
@@ -395,8 +395,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             },
         });
         if (!isModal) {
-            history.replace(
-                `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${categoryType}&boostSubCategoryType=${achievementType}`
+            navigate(
+                `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${categoryType}&boostSubCategoryType=${achievementType}`,
+                { replace: true }
             );
         }
     };
@@ -434,8 +435,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             setCurrentStep(BoostCMSStepsEnum.create);
         } else if (currentStep === BoostCMSStepsEnum.issueTo) {
             if (issueMode) {
-                history.replace(
-                    `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
+                navigate(
+                    `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`,
+                    { replace: true }
                 );
             }
             handleConfirmationModal();
@@ -510,7 +512,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (goBack) {
                     if (!isModal) {
-                        history.goBack();
+                        navigate(-1);
                     }
                     handleCloseModal?.();
                 } else {
@@ -521,7 +523,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                                 state?.basicInfo
                                     ?.type as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
                             ];
-                        history.replace(`/${walletRoute}?managed=true`);
+                        navigate(`/${walletRoute}?managed=true`, { replace: true });
                     }
                 }
             }
@@ -644,7 +646,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                                 state?.basicInfo
                                     ?.type as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
                             ];
-                        history.replace(`/${walletRoute}?managed=true`);
+                        navigate(`/${walletRoute}?managed=true`, { replace: true });
                     }
                 }
             }

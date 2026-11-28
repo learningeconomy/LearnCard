@@ -6,7 +6,7 @@ import RevisitIcon from 'learn-card-base/svgs/RevisitIcon';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     useDeviceTypeByWidth,
     useModal,
@@ -22,7 +22,7 @@ export const AiSessionTypeSelector: React.FC<{
     selectedApp?: LaunchPadAppListItem;
 }> = ({ setActiveStep, shortCircuitStepDesktop, selectedApp }) => {
     const { closeAllModals } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { isDesktop } = useDeviceTypeByWidth();
 
     const { colors } = useTheme();
@@ -48,7 +48,7 @@ export const AiSessionTypeSelector: React.FC<{
                 onClick={() => {
                     if (isDesktop && shortCircuitStepDesktop) {
                         closeAllModals();
-                        history.push(
+                        navigate(
                             `/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.newTopic}&selectedAppId=${selectedAppId}`
                         );
                         return;
@@ -67,7 +67,7 @@ export const AiSessionTypeSelector: React.FC<{
                 onClick={() => {
                     if (isDesktop && shortCircuitStepDesktop) {
                         closeAllModals();
-                        history.push(
+                        navigate(
                             `/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.revisitTopic}&selectedAppId=${selectedAppId}`
                         );
                         return;

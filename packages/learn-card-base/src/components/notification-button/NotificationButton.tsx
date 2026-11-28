@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import NotificationIcon from 'learn-card-base/svgs/NotificationIcon';
 import NotificationIcon2 from 'learn-card-base/svgs/NotificationIcon2';
@@ -32,7 +32,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     iconVariant = 'bell',
     onOpen,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const { data, isLoading: notificationsLoading, refetch } = useGetUnreadUserNotifications();
     const color = colorOverride ?? getNotificationButtonColor(location.pathname);
@@ -45,7 +45,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     return (
         <button
             className={`${color} main-header-notifications-btn relative`}
-            onClick={() => (onOpen ? onOpen() : history.push('/notifications'))}
+            onClick={() => (onOpen ? onOpen() : navigate('/notifications'))}
         >
             {unreadCount && <div className={`alert-indicator-dot ${color}`}>{unreadCount}</div>}
             <Icon className={`${color}`} />

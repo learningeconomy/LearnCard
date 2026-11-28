@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-framework-modal');
 
@@ -43,6 +44,7 @@ type CreateFrameworkModalProps = {
 
 // oxlint-disable-next-line no-empty-pattern
 const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, frameworkInfo }) => {
+    const navigate = useNavigate();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -152,7 +154,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 cssClass="boost-search-modal mt-[var(--ion-safe-area-top,0px)]"
                 state={selectedAdmins}
                 setState={setSelectedAdmins}
-                history={history}
+                history={navigate}
                 preserveStateIssueTo={false}
                 ignoreBoostSearchRestriction
             />,

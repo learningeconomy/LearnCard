@@ -23,7 +23,7 @@ import React from 'react';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { arrowForwardOutline, openOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { mcpRegistryStore } from '../../../stores/pathways';
@@ -59,7 +59,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
     const primaryReason = scored.reasons[0];
     const policy = node.stage.policy;
     const policyKind = policy.kind;
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
 
     // Look up the MCP server's human-readable label for `external`
@@ -251,7 +251,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                             onClick={() => {
                                 track(href);
                                 onOpen();
-                                history.push(href);
+                                navigate(href);
                             }}
                             whileTap={{ scale: 0.97 }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -273,7 +273,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                             onClick={() => {
                                 track(href);
                                 onOpen();
-                                history.push(href);
+                                navigate(href);
                             }}
                             whileTap={{ scale: 0.97 }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
