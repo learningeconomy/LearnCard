@@ -2,13 +2,14 @@ import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { resolve, dirname, relative } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
-const [workspace, build, output] = process.argv.slice(2);
+// `page` is the HTML file whose startup closure to measure (default: the SPA fallback).
+const [workspace, build, output, page = 'index.html'] = process.argv.slice(2);
 const { init, parse } = await import(
     pathToFileURL(resolve(workspace, 'node_modules/es-module-lexer/dist/lexer.js'))
 );
 await init;
 const root = resolve(build);
-const html = await readFile(resolve(root, 'index.html'), 'utf8');
+const html = await readFile(resolve(root, page), 'utf8');
 // Plain Vite pages load one `<script type="module" src>`. React Router pages load the route
 // modules and the client entry from an inline module script (`import ...` / `import("...")`).
 const scriptEntries = [...html.matchAll(/<script\b(?=[^>]*type="module")[^>]*src="([^"]+)"/g)].map(
@@ -28,7 +29,7 @@ const find = prefix => {
     return resolve(root, 'assets', matches[0]);
 };
 const mains = [...new Set(entries)].map(entry => resolve(root, entry.replace(/^\//, '')));
-const allRoots = [...mains, find('FullApp'), find('Routes'), find('AiPathways')];
+const allRoots = [...mains, find('FullApp'), find('AiPathways')];
 const measure = async roots => {
     const seen = new Set();
     let rawBytes = 0;

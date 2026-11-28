@@ -36,7 +36,6 @@ vi.mock('learn-card-base/ui/app-shell/AppMenuToggle', () => ({
 
 vi.mock('learn-card-base', () => ({
     getNavBarColor: () => '',
-    lazyWithRetry: () => () => null,
     showNavBar: () => true,
     useIsLoggedIn: () => true,
     walletStore: {
@@ -80,6 +79,10 @@ vi.mock('./mobileNavBarI18n', () => ({
 
 vi.mock('../generic/GenericErrorBoundary', () => ({
     default: ({ children }: React.PropsWithChildren) => <>{children}</>,
+}));
+
+vi.mock('./RoutesOutlet', () => ({
+    RoutesOutlet: () => null,
 }));
 
 vi.mock('../svgs/CustomSpinner', () => ({

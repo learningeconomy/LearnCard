@@ -47,7 +47,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
-import { ROUTE_PRELOAD } from '../../Routes';
+import { ROUTE_PRELOAD } from '../../routing/routePreload';
 
 import ExchangePresentationRequest from './ExchangePresentationRequest';
 import ExchangeRedirect from './ExchangeRedirect';

@@ -11,7 +11,7 @@ import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
-import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
+import { prefetchRoutes, ROUTE_PRELOAD } from './routing/routePreload';
 import { afterFirstScreen } from 'learn-card-base/helpers/firstScreen';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -412,8 +412,7 @@ const AppRouter: React.FC = () => {
         afterFirstScreen()
             .then(() => {
                 if (cancelled) return;
-                // Lazy-import to avoid a circular import on the Routes module graph.
-                return import('./Routes').then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }));
+                prefetchRoutes({ aiEnabled: isAiEnabled });
             })
             .catch(() => undefined);
         return () => {
@@ -439,15 +438,9 @@ const AppRouter: React.FC = () => {
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
         observeDashboardLongTasks();
-        // Lets the shell mount Routes without suspending once the wallet is ready.
-        preloadRoutes().catch(() => undefined);
-        import('./Routes')
-            .then(m => {
-                void m.ROUTE_PRELOAD['/dashboard']?.();
-                void m.ROUTE_PRELOAD['/wallet']?.();
-                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
-            })
-            .catch(() => undefined);
+        void ROUTE_PRELOAD['/dashboard']?.();
+        void ROUTE_PRELOAD['/wallet']?.();
+        void ROUTE_PRELOAD[initialPathRef.current]?.();
     }, []);
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();

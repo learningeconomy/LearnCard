@@ -1,6 +1,7 @@
 import React from 'react';
-import { Route } from 'react-router';
+import { useLocation } from 'react-router';
 import MyAppsLanding from '../../src/pages/myApps/MyAppsLanding';
 
-// Keep the real Ionic tabs/outlet, while excluding unrelated authenticated routes.
-export const Routes: React.FC = () => <Route exact path="/launchpad" component={MyAppsLanding} />;
+// Stands in for the app's RoutesOutlet: the real shell around just the launchpad page.
+export const RoutesOutlet: React.FC = () =>
+    useLocation().pathname === '/launchpad' ? <MyAppsLanding /> : null;

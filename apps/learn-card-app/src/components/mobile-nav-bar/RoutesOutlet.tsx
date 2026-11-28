@@ -1,46 +1,47 @@
-import React, { useState } from 'react';
+import React, { Suspense } from 'react';
+import { Outlet, useRoutes } from 'react-router';
+import * as Sentry from '@sentry/react';
+import { ChunkBoundary } from 'learn-card-base';
 
-import { lazyWithRetry } from 'learn-card-base';
+import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import DelayedFallback from '../generic/DelayedFallback';
+import RouteTransitionLoader from '../generic/RouteTransitionLoader';
+import {
+    FallbackMarker,
+    markDashboardPath,
+    useDashboardPathMark,
+} from '../../helpers/dashboardPathMarks';
+import { ROUTE_TABLE } from '../../routing/routeTable';
 
-import { markDashboardPath } from '../../helpers/dashboardPathMarks';
+const markRoutesFallbackTimer = () => markDashboardPath('routes_fallback_timer', true);
 
-type RoutesComponent = (typeof import('../../Routes'))['Routes'];
+// Sentry's React Router integration names pageload and navigation transactions after the matched
+// pattern (https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/).
+// It learns the patterns from a wrapped useRoutes; these element-less routes render nothing.
+const useSentryRoutes = Sentry.wrapUseRoutes(useRoutes);
+const SENTRY_ROUTES = ROUTE_TABLE.map(({ path }) => ({ path }));
+const SentryRouteNames: React.FC = () => useSentryRoutes(SENTRY_ROUTES);
 
-let loadedRoutes: RoutesComponent | null = null;
-
-const importRoutes = (): Promise<RoutesComponent> =>
-    import('../../Routes').then(module => {
-        markDashboardPath('routes_module');
-        loadedRoutes = module.Routes;
-        return module.Routes;
-    });
-
-/**
- * Starts loading the Routes module (AppRouter calls this on mount, while the boot loader is still up).
- * Safe to call repeatedly; failures are left to the lazy path below, which retries.
- */
-export const preloadRoutes = (): Promise<void> => importRoutes().then(() => undefined);
-
-const LazyRoutes = lazyWithRetry(() => {
-    markDashboardPath('routes_lazy_read');
-    return importRoutes().then(Routes => ({ default: Routes }));
-});
-
-/**
- * Renders the app's Routes.
- *
- * React.lazy suspends on its first render even when the module has already loaded, and the nearest
- * Suspense boundary above MobileNavBar is FullApp's root one. So on cold start the app shell's first
- * commit (right after walletReady) swapped the whole app for the root fallback and waited for a retry
- * render before the `/` redirect could run (LC-2415). When the module is already loaded, render it
- * directly instead. The choice is fixed per mount, so the element type never flips under a mounted
- * tree; before the module loads, this is exactly the old lazy behavior.
- */
+/** The page for the current URL (src/routes.ts), where the app shell puts its content. */
 export const RoutesOutlet: React.FC = () => {
-    const [Loaded] = useState(() => loadedRoutes);
-    if (Loaded) {
-        markDashboardPath('routes_direct');
-        return <Loaded />;
-    }
-    return <LazyRoutes />;
+    markDashboardPath('routes_render');
+    useDashboardPathMark('routes_commit');
+    return (
+        <ChunkBoundary>
+            <Suspense
+                fallback={
+                    <FallbackMarker boundary="routes">
+                        <DelayedFallback delayMs={200} onShow={markRoutesFallbackTimer}>
+                            <RouteTransitionLoader />
+                        </DelayedFallback>
+                    </FallbackMarker>
+                }
+            >
+                <GenericErrorBoundary>
+                    <SentryRouteNames />
+                    <Outlet />
+                </GenericErrorBoundary>
+            </Suspense>
+        </ChunkBoundary>
+    );
 };
