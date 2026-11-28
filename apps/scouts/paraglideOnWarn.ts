@@ -16,16 +16,15 @@
  * through untouched.
  */
 type BundlerWarning = { code?: string; message?: string };
-type WarnHandler = (warning: BundlerWarning) => void;
 
 // eslint-disable-next-line no-control-regex -- strip ANSI colors Rolldown puts in warning messages
 const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
 const PARAGLIDE_MISSING_EXPORT =
     /(?:is not exported by|no matching export in)\s+[^\n]*paraglide[^\n]*messages/;
 
-export const paraglideMissingKeyOnWarn = (
-    warning: BundlerWarning,
-    defaultHandler: WarnHandler
+export const paraglideMissingKeyOnWarn = <T extends BundlerWarning>(
+    warning: T,
+    defaultHandler: (warning: T) => void
 ): void => {
     const message = (warning.message ?? '').replace(ANSI_ESCAPE, '');
 
