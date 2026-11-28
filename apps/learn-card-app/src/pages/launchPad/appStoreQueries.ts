@@ -1,6 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getAnonymousClient } from '@learncard/network-brain-client';
-import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { getAnonymousNetworkClient } from 'learn-card-base/helpers/anonymousNetworkClient';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import type {
     AppStoreListing,
@@ -18,14 +17,7 @@ import type {
  * doesn't wait on wallet start-up.
  */
 
-let anonymous: { url: string; client: ReturnType<typeof getAnonymousClient> } | undefined;
-
-/** The public app store routes on the current network (tenants and dev tools can switch it). */
-const publicAppStore = () => {
-    const url = networkStore.get.networkUrl();
-    if (anonymous?.url !== url) anonymous = { url, client: getAnonymousClient(url) };
-    return anonymous.client.appStore;
-};
+const publicAppStore = () => getAnonymousNetworkClient().appStore;
 
 type BrowseOptions = {
     category?: string;

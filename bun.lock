@@ -626,6 +626,7 @@
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
+        "@learncard/network-brain-client": "workspace:*",
         "@learncard/render-method-plugin": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@learncard/types": "workspace:*",
