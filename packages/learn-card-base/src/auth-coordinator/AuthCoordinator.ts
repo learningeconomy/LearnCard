@@ -29,7 +29,7 @@ import {
 } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
-import { RecoveryInProgressError, SameEscrowPinError } from './errors';
+import { LegacyKeyUnassignedError, RecoveryInProgressError, SameEscrowPinError } from './errors';
 import type { MigrationIdentityVerdict, MigrationKeySource } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
@@ -55,7 +55,7 @@ import type {
     SssActivationState,
     UnifiedAuthState,
 } from './types';
-import type { RevokeOtherDevicesResult } from '@learncard/types';
+import type { ArchivedKeyLookup, RevokeOtherDevicesResult } from '@learncard/types';
 
 /** True for recovery inputs that consume a single-use escrow hold (delay or PIN release). */
 const isEscrowRecoveryMethod = (input: unknown): boolean =>
@@ -1444,7 +1444,11 @@ export class AuthCoordinator {
                     const accountAgeMs = Date.now() - authUser.createdAt.getTime();
 
                     if (accountAgeMs > threshold) {
-                        this.setState({ status: 'needs_migration', authUser });
+                        this.setState({
+                            status: 'needs_migration',
+                            authUser,
+                            migrationData: { noExistingKeyRecord: !hasLocalKey },
+                        });
                         return this.state;
                     }
                 }
@@ -1687,6 +1691,41 @@ export class AuthCoordinator {
         this.setState({
             ...this.state,
             migrationData: { ...this.state.migrationData, ...data },
+        });
+    }
+
+    /**
+     * Resolve a failed legacy lookup without replacing an established identity.
+     * `archivedKey` is the archive lookup that preceded legacy derivation: fresh
+     * setup needs the archive service's confirmed `absent`, because a `failed`
+     * lookup cannot rule out an archived identity.
+     */
+    handleMigrationKeyError(error: unknown, archivedKey: ArchivedKeyLookup['status']): void {
+        if (this.state.status !== 'needs_migration') return;
+
+        const { authUser, migrationData } = this.state;
+        if (
+            error instanceof LegacyKeyUnassignedError &&
+            archivedKey === 'absent' &&
+            migrationData?.noExistingKeyRecord === true &&
+            !migrationData.expectedDid &&
+            !migrationData.web3AuthKey &&
+            !migrationData.provisionalRederive
+        ) {
+            this.setState({ status: 'needs_setup', authUser });
+            return;
+        }
+
+        if (migrationData?.provisionalRederive) {
+            this.fallBackToRecovery();
+            return;
+        }
+
+        this.setState({
+            status: 'error',
+            error: 'We couldn’t finish signing you in. Please try again.',
+            canRetry: true,
+            previousState: this.state,
         });
     }
 

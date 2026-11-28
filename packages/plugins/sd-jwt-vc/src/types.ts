@@ -57,6 +57,7 @@ export interface VerifySdJwtVcOptions {
     nonce?: string;
     expectedVct?: string;
     now?: () => Date;
+    /** Legacy option: suppresses the status warning, not Token Status List verification. */
     skipStatusCheck?: boolean;
 }
 

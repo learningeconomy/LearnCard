@@ -79,8 +79,21 @@ const AccessibleCodeInput: React.FC<AccessibleCodeInputProps> = ({
     };
 
     const handleChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.value === '') {
+            if (!digits[index]) return;
+
+            const next = digits.slice();
+            next[index] = '';
+            commit(next);
+
+            const inputType = (event.nativeEvent as InputEvent | undefined)?.inputType;
+            if (inputType === 'deleteContentBackward' && index > 0) focusBox(index - 1);
+            return;
+        }
+
         const raw = sanitize(event.target.value, type);
         if (!raw) return;
+
         // Typing into a box that already holds a character yields old + new (or new + old,
         // depending on the caret); keep only the new one. Anything longer is a paste/autofill.
         const previous = digits[index];
@@ -88,6 +101,7 @@ const AccessibleCodeInput: React.FC<AccessibleCodeInputProps> = ({
             fillFrom(index, raw.startsWith(previous) ? raw.slice(1) : raw.slice(0, 1));
             return;
         }
+
         fillFrom(index, raw);
     };
 
@@ -101,9 +115,26 @@ const AccessibleCodeInput: React.FC<AccessibleCodeInputProps> = ({
             case 'Backspace': {
                 event.preventDefault();
                 const next = digits.slice();
+
+                if (next[index]) {
+                    next[index] = '';
+                    commit(next);
+                    if (index > 0) focusBox(index - 1);
+                } else if (index > 0) {
+                    next[index - 1] = '';
+                    commit(next);
+                    focusBox(index - 1);
+                }
+
+                break;
+            }
+            case 'Delete': {
+                event.preventDefault();
+                if (!digits[index]) break;
+
+                const next = digits.slice();
                 next[index] = '';
                 commit(next);
-                if (index > 0) focusBox(index - 1);
                 break;
             }
             case 'ArrowLeft':

@@ -32,7 +32,7 @@ import { clearClassLinkDisplayName } from '../auth/classlink/classlinkDisplayNam
 import type { LCNProfile } from '@learncard/types';
 import { getLocale } from '../paraglide/runtime.js';
 
-import { resolveMigrationKey } from './resolveMigrationKey';
+import { MigrationKeyDerivationError, resolveMigrationKey } from './resolveMigrationKey';
 import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
@@ -997,7 +997,9 @@ const AuthSessionManager: React.FC<{
                 emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
                 const resolved = await resolveMigrationKey({
                     fetchArchivedKey: async () => {
-                        if (!coordinator.keyDerivation.fetchArchivedKey) return null;
+                        if (!coordinator.keyDerivation.fetchArchivedKey) {
+                            return { status: 'failed' };
+                        }
                         const token = await authProvider.getIdToken(true);
                         return coordinator.keyDerivation.fetchArchivedKey(
                             token,
@@ -1039,11 +1041,20 @@ const AuthSessionManager: React.FC<{
                     web3AuthKey: resolved.privateKey,
                     source: 'derived',
                 });
-            } catch {
+            } catch (error) {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
                 emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
-                fallBack();
+                if (isCurrentAttempt()) {
+                    if (error instanceof MigrationKeyDerivationError) {
+                        migrationCoordinatorRef.current.handleMigrationKeyError(
+                            error.derivationError,
+                            error.archivedKey
+                        );
+                    } else {
+                        migrationCoordinatorRef.current.handleMigrationKeyError(error, 'failed');
+                    }
+                }
             }
         };
 

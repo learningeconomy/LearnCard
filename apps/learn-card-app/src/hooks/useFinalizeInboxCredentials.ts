@@ -8,6 +8,8 @@ import {
     WalletSyncState,
     useIsCurrentUserLCNUser,
     connectionPromptKeys,
+    invalidateCredentialIndexQueries,
+    switchedProfileStore,
 } from 'learn-card-base';
 import type { LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
@@ -113,6 +115,12 @@ export const useFinalizeInboxCredentials = () => {
                     }
                 };
                 const refreshCredentials = async (): Promise<void> => {
+                    // Index aggregates (skills walk, IDs) refresh in the background so the
+                    // sync can complete without waiting on them; list and counts stay awaited.
+                    void invalidateCredentialIndexQueries(
+                        queryClient,
+                        switchedProfileStore.get.switchedDid()
+                    ).catch(captureException);
                     await Promise.all([
                         queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
                         queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),

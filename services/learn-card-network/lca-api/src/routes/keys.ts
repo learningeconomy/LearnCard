@@ -1648,6 +1648,9 @@ export const keysRouter = t.router({
                 available: z.boolean(),
                 privateKey: z.string().optional(),
                 did: z.string().optional(),
+                // Set only when storage confirms no archive exists for this login, the one
+                // answer that lets a client start fresh setup. Older clients ignore it.
+                reason: z.literal('not_archived').optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -1677,8 +1680,10 @@ export const keysRouter = t.router({
             ) {
                 return { available: false };
             }
-            const released = await releaseArchivedKey(authProvider.id, userKey?.primaryDid);
-            if (!released) return { available: false };
+            const release = await releaseArchivedKey(authProvider.id, userKey?.primaryDid);
+            if (release.status === 'missing') return { available: false, reason: 'not_archived' };
+            if (release.status !== 'released') return { available: false };
+            const released = { privateKey: release.privateKey, did: release.did };
 
             // A removed login must not regain an upgraded identity through the no-record fallback.
             const identity = await findUserKeyByDid(released.did);

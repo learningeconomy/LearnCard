@@ -64,11 +64,11 @@ beforeEach(() => {
 describe('archived legacy key release', () => {
     it('does not access AWS when disabled', async () => {
         mocks.environment.LEGACY_KEY_ARCHIVE_ENABLED = false;
-        expect(await releaseArchivedKey(uid)).toBeNull();
+        expect(await releaseArchivedKey(uid)).toEqual({ status: 'unusable' });
         expect(mocks.s3).not.toHaveBeenCalled();
     });
     it('binds decryption to the verified identity, checks the seed and clears buffers', async () => {
-        expect(await releaseArchivedKey(uid, did)).toEqual({ privateKey, did });
+        expect(await releaseArchivedKey(uid, did)).toEqual({ status: 'released', privateKey, did });
         expect(mocks.card).toHaveBeenCalledWith(privateKey);
         expect(mocks.kms.mock.calls[0]?.[0].input).toMatchObject({
             KeyId: mocks.environment.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN,
@@ -84,9 +84,9 @@ describe('archived legacy key release', () => {
             mocks.kms.mock.calls[0]?.[0].input.CiphertextBlob.every((byte: number) => byte === 0)
         ).toBe(true);
     });
-    it('returns unavailable for a missing object', async () => {
+    it('reports only a missing object as missing', async () => {
         mocks.s3.mockRejectedValueOnce({ name: 'NoSuchKey' });
-        expect(await releaseArchivedKey(uid)).toBeNull();
+        expect(await releaseArchivedKey(uid)).toEqual({ status: 'missing' });
         expect(mocks.kms).not.toHaveBeenCalled();
     });
     it.each([
@@ -107,7 +107,7 @@ describe('archived legacy key release', () => {
         'rejects invalid records %j',
         async patch => {
             Object.assign(record, patch);
-            expect(await releaseArchivedKey(uid)).toBeNull();
+            expect(await releaseArchivedKey(uid)).toEqual({ status: 'unusable' });
             expect(mocks.kms).not.toHaveBeenCalled();
             expect(console.warn).toHaveBeenCalledWith({
                 event: 'archived_key_invalid_record',
@@ -117,23 +117,23 @@ describe('archived legacy key release', () => {
     );
     it('rejects a DID that does not match the derived DID', async () => {
         record.did = 'did:key:zOther';
-        expect(await releaseArchivedKey(uid)).toBeNull();
+        expect(await releaseArchivedKey(uid)).toEqual({ status: 'unusable' });
         expect(plaintext.every(byte => byte === 0)).toBe(true);
     });
     it('rejects a primary DID mismatch', async () => {
-        expect(await releaseArchivedKey(uid, 'did:key:zOther')).toBeNull();
+        expect(await releaseArchivedKey(uid, 'did:key:zOther')).toEqual({ status: 'unusable' });
     });
     it('treats an empty recorded primary DID as unknown', async () => {
-        expect(await releaseArchivedKey(uid, '')).toEqual({ privateKey, did });
+        expect(await releaseArchivedKey(uid, '')).toEqual({ status: 'released', privateKey, did });
     });
     it('rejects a different KMS key', async () => {
         mocks.kms.mockResolvedValueOnce({ KeyId: 'wrong', Plaintext: plaintext });
-        expect(await releaseArchivedKey(uid)).toBeNull();
+        expect(await releaseArchivedKey(uid)).toEqual({ status: 'unusable' });
         expect(plaintext.every(byte => byte === 0)).toBe(true);
     });
     it('rejects a malformed private key', async () => {
         plaintext.fill(120);
-        expect(await releaseArchivedKey(uid)).toBeNull();
+        expect(await releaseArchivedKey(uid)).toEqual({ status: 'unusable' });
         expect(mocks.card).not.toHaveBeenCalled();
     });
     it('tags a released key best-effort', async () => {

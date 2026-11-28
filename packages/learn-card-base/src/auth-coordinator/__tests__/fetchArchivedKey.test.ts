@@ -17,7 +17,11 @@ describe('fetchArchivedKey', () => {
     it('returns validated material with the same request conventions as auth-share', async () => {
         const fetchMock = vi.fn().mockResolvedValue(Response.json(archived));
         vi.stubGlobal('fetch', fetchMock);
-        expect(await lookup()).toEqual({ privateKey: archived.privateKey, did: archived.did });
+        expect(await lookup()).toEqual({
+            status: 'found',
+            privateKey: archived.privateKey,
+            did: archived.did,
+        });
         expect(fetchMock).toHaveBeenCalledWith('https://example.com/api/keys/archived-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': 'test-tenant' },
@@ -26,8 +30,18 @@ describe('fetchArchivedKey', () => {
         });
     });
 
+    it('reports absent only for an explicit not-archived answer', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(Response.json({ available: false, reason: 'not_archived' }))
+        );
+        expect(await lookup()).toEqual({ status: 'absent' });
+    });
+
     it.each([
         { available: false },
+        { available: false, reason: 'disabled' },
+        { reason: 'not_archived' },
         { ...archived, available: 'true' },
         { ...archived, privateKey: 'a'.repeat(63) },
         { ...archived, privateKey: 'g'.repeat(64) },
@@ -38,9 +52,9 @@ describe('fetchArchivedKey', () => {
         { ...archived, did: undefined },
         null,
         [],
-    ])('returns null for unavailable or malformed material %#', async body => {
+    ])('fails for unavailable or malformed material %#', async body => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(body)));
-        expect(await lookup()).toBeNull();
+        expect(await lookup()).toEqual({ status: 'failed' });
     });
 
     it('accepts uppercase hex', async () => {
@@ -51,19 +65,19 @@ describe('fetchArchivedKey', () => {
         expect(await lookup()).toMatchObject({ privateKey: 'A'.repeat(64) });
     });
 
-    it.each([404, 500])('returns null on HTTP %s', async status => {
+    it.each([404, 429, 500])('fails on HTTP %s', async status => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status })));
-        expect(await lookup()).toBeNull();
+        expect(await lookup()).toEqual({ status: 'failed' });
     });
 
-    it('returns null on malformed JSON', async () => {
+    it('fails on malformed JSON', async () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{')));
-        expect(await lookup()).toBeNull();
+        expect(await lookup()).toEqual({ status: 'failed' });
     });
 
-    it('returns null on network failure', async () => {
+    it('fails on network failure', async () => {
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('request failed')));
-        expect(await lookup()).toBeNull();
+        expect(await lookup()).toEqual({ status: 'failed' });
     });
 
     it('aborts after eight seconds and clears the timer', async () => {
@@ -83,7 +97,7 @@ describe('fetchArchivedKey', () => {
         expect(signal?.aborted).toBe(false);
         await vi.advanceTimersByTimeAsync(1);
         expect(signal?.aborted).toBe(true);
-        expect(await result).toBeNull();
+        expect(await result).toEqual({ status: 'failed' });
         expect(vi.getTimerCount()).toBe(0);
     });
 });
