@@ -2,7 +2,6 @@ import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { readFileSync } from 'fs';
 
-import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
 import type { UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -11,7 +10,6 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
@@ -42,12 +40,6 @@ const i18nImportGuard = () => ({
         }
     },
 });
-
-// The polyfill package ships against a different esbuild type instance than Vite.
-const globalPolyfillPlugin = GlobalPolyfill({
-    process: true,
-    buffer: true,
-}) as unknown as EsbuildPlugin;
 
 // App version read directly from this app's package.json.
 // Deliberately NOT `process.env.npm_package_version` — that reflects the package.json
@@ -120,10 +112,13 @@ export default defineConfig(({ mode, command }) => {
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
-            esbuildOptions: {
-                target: 'esnext',
-                define: { global: 'globalThis' },
-                plugins: [globalPolyfillPlugin],
+            // Vite 8 pre-bundles with Rolldown, which can't run esbuild plugins. Oxc's inject and
+            // define do what NodeGlobalsPolyfillPlugin did: provide `process`, `Buffer` and `global`.
+            rolldownOptions: {
+                transform: {
+                    define: { global: 'globalThis' },
+                    inject: { process: 'process', Buffer: ['buffer', 'Buffer'] },
+                },
             },
         },
         define: {

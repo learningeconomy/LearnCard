@@ -9,7 +9,7 @@ export const useDIDAuthPresentation = <T>(
     domain: string | undefined,
     issuePresentation: (challenge: string, domain?: string) => Promise<T>
 ): T | undefined => {
-    const request = useRef<{ challenge: string; domain?: string; promise: Promise<T> }>();
+    const request = useRef<{ challenge: string; domain?: string; promise: Promise<T> }>(undefined);
     const [result, setResult] = useState<{ challenge: string; domain?: string; vp: T }>();
 
     useEffect(() => {

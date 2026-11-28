@@ -1132,7 +1132,7 @@ const SubmitManifest: React.FC = () => {
     }, [listingData]);
 
     const focusField = (field: ListingField) => {
-        const refs: Record<ListingField, React.RefObject<HTMLElement>> = {
+        const refs: Record<ListingField, React.RefObject<HTMLElement | null>> = {
             icon: iconFieldRef,
             name: nameInputRef,
             productionUrl: prodUrlInputRef,

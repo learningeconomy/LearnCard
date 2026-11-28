@@ -16,7 +16,7 @@ const BoostCMSSkillCategoryTypeSwiper: React.FC<{
     setActiveCategoryType: React.Dispatch<React.SetStateAction<BoostCMSSKillsCategoryEnum>>;
 }> = ({ activeCategoryType, setActiveCategoryType }) => {
     const width = useScreenWidth(true);
-    const swiperRef = useRef();
+    const swiperRef = useRef(undefined);
 
     const initialSlideIndex = boostCMSSKillCategories.findIndex(
         category => category.type === BoostCMSSKillsCategoryEnum.Durable
@@ -24,6 +24,7 @@ const BoostCMSSkillCategoryTypeSwiper: React.FC<{
 
     const [prevEl] = useState<HTMLElement | null>(null);
     const [nextEl] = useState<HTMLElement | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
     const [activeIndex, setActiveIndex] = useState<any>(null);
 
     const [hidePrevButton, setHidePrevButton] = useState<boolean>(initialSlideIndex === 0);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
-import { within, userEvent, expect, waitFor } from '@storybook/test';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { within, userEvent, expect, waitFor } from 'storybook/test';
 
 import { DynamicFieldsSection, type VariableScope } from './DynamicFieldsSection';
 import type { Recipient, RecipientMode } from './recipientTypes';

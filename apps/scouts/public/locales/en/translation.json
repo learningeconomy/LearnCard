@@ -379,6 +379,7 @@
         "usernamePlaceholder": "Username",
         "sendLoginCode": "Send Login Code",
         "sendCode": "Send Code",
+        "verificationCode": "Verification code",
         "youreAllSetTitle": "You're all set!",
         "signInWithAccess": "Sign in with <0>{{name}}</0> to access your account.",
         "signInBelowAccess": "Now just sign in below to access your account.",

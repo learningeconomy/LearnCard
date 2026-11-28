@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -137,7 +137,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             {
                 onSuccess: async () => {
                     await queryClient.cancelQueries({ queryKey: ['getSearchProfiles', search] });
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     queryClient.setQueryData(['getSearchProfiles', search], (prev: any) =>
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
@@ -153,6 +155,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         hasDismissButton: true,
                     });
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 onError: (error: any) => {
                     presentToast(
                         error?.message || m['addressBook.toasts.unableToSendConnectionRequest'](),
@@ -176,7 +179,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             {
                 onSuccess: async () => {
                     await queryClient.cancelQueries({ queryKey: ['getSearchProfiles', search] });
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     queryClient.setQueryData(['getSearchProfiles', search], (prev: any) =>
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
@@ -188,6 +193,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         )
                     );
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 onError: (error: any) => {
                     presentToast(
                         error?.message || m['addressBook.toasts.unableToCancelRequest'](),
@@ -211,7 +217,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             {
                 onSuccess: async () => {
                     await queryClient.cancelQueries({ queryKey: ['getSearchProfiles', search] });
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     queryClient.setQueryData(['getSearchProfiles', search], (prev: any) =>
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
@@ -223,12 +231,15 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         )
                     );
                     await queryClient.cancelQueries({ queryKey: ['getConnectionRequests'] });
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     queryClient.setQueryData(['getConnectionRequests'], (prev: any) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                         const updated = prev?.filter((req: any) => req.profileId !== profileId);
                         setConnectionCount(updated?.length);
                         return updated;
                     });
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 onError: (error: any) => {
                     presentToast(
                         error?.message || m['addressBook.toasts.unableToAcceptRequest'](),
@@ -249,14 +260,17 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             {
                 onSuccess: async () => {
                     await queryClient.cancelQueries({ queryKey: ['getBlockedProfiles'] });
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     queryClient.setQueryData(['getBlockedProfiles'], (prev: any) => {
                         const updated = prev?.filter(
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                             (profile: any) => profile.profileId !== profileId
                         );
                         setConnectionCount(updated?.length);
                         return updated;
                     });
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 onError: (error: any) => {
                     presentToast(error?.message || m['addressBook.toasts.unableToUnblockUser'](), {
                         type: ToastTypeEnum.Error,

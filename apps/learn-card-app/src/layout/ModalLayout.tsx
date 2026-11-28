@@ -10,7 +10,7 @@ const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?
     handleOnClick,
     buttonText = 'Close',
 }) => {
-    const buttonRef = useRef<HTMLDivElement>();
+    const buttonRef = useRef<HTMLIonRowElement>(null);
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && buttonRef.current) {

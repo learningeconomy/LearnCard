@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
-import ReactCodeInput from 'react-code-input';
+import AccessibleCodeInput from '../login/forms/AccessibleCodeInput';
 import { useParams } from 'react-router-dom';
 
 import { initLearnCard } from '@learncard/init';
@@ -313,8 +313,9 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                         <p className="text-white/80 text-sm mb-2">
                                             Enter the 6-digit code we sent to your email.
                                         </p>
-                                        <ReactCodeInput
+                                        <AccessibleCodeInput
                                             name="guardianOtp"
+                                            label="Verification code"
                                             inputMode="numeric"
                                             fields={6}
                                             type="text"

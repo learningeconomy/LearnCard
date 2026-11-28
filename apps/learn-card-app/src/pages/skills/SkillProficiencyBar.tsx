@@ -229,7 +229,9 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
                             className={`flex-1 relative ${
                                 isDisplayMode ? displayStyles : sliderStyles
                             }`}
-                            ref={el => (segmentRefs.current[index] = el)}
+                            ref={el => {
+                                segmentRefs.current[index] = el;
+                            }}
                         >
                             <div
                                 className={`h-[7px]

@@ -18,7 +18,7 @@ export const AddressBookFooter: React.FC<{
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
     const history = useHistory();
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();

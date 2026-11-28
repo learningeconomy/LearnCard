@@ -24,7 +24,7 @@ const BoostVCTypeSwiper: React.FC<{
 }> = ({ boostUserType, activeCategoryType, setActiveCategoryType }) => {
     const flags = useFlags();
     const width = useScreenWidth(true);
-    const swiperRef = useRef();
+    const swiperRef = useRef(undefined);
 
     let _boostVCTypeOptions = boostVCTypeOptions?.[boostUserType] ?? [];
     if (flags?.disableCmsCustomization) {
@@ -42,6 +42,7 @@ const BoostVCTypeSwiper: React.FC<{
 
     const [prevEl] = useState<HTMLElement | null>(null);
     const [nextEl] = useState<HTMLElement | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
     const [activeIndex, setActiveIndex] = useState<any>(null);
 
     const [hidePrevButton, setHidePrevButton] = useState<boolean>(initialSlideIndex === 0);
@@ -102,7 +103,7 @@ const BoostVCTypeSwiper: React.FC<{
             )}
 
             {_boostVCTypeOptions?.map(({ title, IconComponent, type, iconCircleClass }, index) => {
-                let bgColor = type === activeCategoryType ? `bg-${subColor}` : 'bg-white';
+                const bgColor = type === activeCategoryType ? `bg-${subColor}` : 'bg-white';
 
                 return (
                     <SwiperSlide key={index}>

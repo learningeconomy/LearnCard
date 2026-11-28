@@ -34,7 +34,7 @@ const BoostVCTypeSwiper: React.FC<{
 
     const width = useScreenWidth(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-    const swiperRef = useRef<any>();
+    const swiperRef = useRef<any>(undefined);
 
     const [prevEl] = useState<HTMLElement | null>(null);
     const [nextEl] = useState<HTMLElement | null>(null);

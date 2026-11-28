@@ -58,12 +58,12 @@ export const CredentialReceivePage = () => {
     const key = account.current.generation;
     const currentKey = useRef(key);
     currentKey.current = key;
-    const requestPromise = useRef<{ key: string; promise: Promise<Request> }>();
-    const eventRef = useRef<CredentialStoreEvent>();
+    const requestPromise = useRef<{ key: string; promise: Promise<Request> }>(undefined);
+    const eventRef = useRef<CredentialStoreEvent>(undefined);
     const [eventAvailable, setEventAvailable] = useState(false);
     const invalidated = useRef(false);
     const dismissedRef = useRef(false);
-    const exchangeController = useRef<AbortController>();
+    const exchangeController = useRef<AbortController>(undefined);
     const mounted = useRef(true);
     const responded = useRef(false);
     const savingRef = useRef(false);

@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { useObservabilityConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 interface Props {
-    buttonRef?: RefObject<HTMLButtonElement> | RefObject<HTMLAnchorElement>;
+    buttonRef?: RefObject<HTMLButtonElement | null> | RefObject<HTMLAnchorElement | null>;
     messagePlaceholder?: string;
 }
 

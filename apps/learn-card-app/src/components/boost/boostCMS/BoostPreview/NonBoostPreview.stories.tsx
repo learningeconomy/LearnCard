@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
-import { expect, within } from '@storybook/test';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, within } from 'storybook/test';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import type { VC } from '@learncard/types';
 import NonBoostPreview from './NonBoostPreview';

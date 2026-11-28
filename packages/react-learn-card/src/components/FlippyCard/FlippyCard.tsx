@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type FlippyCardProps = {
-    children: React.ReactChild[];
+    children: (React.ReactElement | number | string)[];
     flipState?: 'front' | 'back' | string;
 };
 

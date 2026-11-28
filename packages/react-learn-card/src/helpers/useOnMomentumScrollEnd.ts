@@ -9,11 +9,11 @@ export const useOnMomentumScrollEnd = ({
     onMomentumScrollEnd: React.UIEventHandler;
     debounceTime?: number;
 }) => {
-    const momentumScrollEndTimer = useRef<NodeJS.Timeout>();
+    const momentumScrollEndTimer = useRef<NodeJS.Timeout>(undefined);
 
     useEffect(() => () => clearTimeout(momentumScrollEndTimer.current), []);
 
-    const onScroll: React.UIEventHandler = (e) => {
+    const onScroll: React.UIEventHandler = e => {
         _onScroll?.(e);
 
         clearTimeout(momentumScrollEndTimer.current);

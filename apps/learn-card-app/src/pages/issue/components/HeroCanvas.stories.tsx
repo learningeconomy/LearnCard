@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { HeroCanvas } from './HeroCanvas';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';

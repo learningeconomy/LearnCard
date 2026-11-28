@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Preview } from '@storybook/react';
+import type { Preview } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { IonApp, setupIonicReact } from '@ionic/react';
@@ -66,13 +66,13 @@ const preview: Preview = {
             diffIncludeAntiAliasing: false,
         },
         backgrounds: {
-            default: 'app',
-            values: [
-                { name: 'app', value: '#EFF0F5' },
-                { name: 'white', value: '#FFFFFF' },
-            ],
+            options: {
+                app: { name: 'app', value: '#EFF0F5' },
+                white: { name: 'white', value: '#FFFFFF' },
+            },
         },
     },
+
     decorators: [
         Story => (
             <IonApp>
@@ -95,6 +95,12 @@ const preview: Preview = {
             </IonApp>
         ),
     ],
+
+    initialGlobals: {
+        backgrounds: {
+            value: 'app',
+        },
+    },
 };
 
 export default preview;

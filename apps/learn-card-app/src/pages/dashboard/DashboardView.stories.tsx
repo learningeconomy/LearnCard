@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { resolvedCredentialQueryKey } from 'learn-card-base/react-query/queries/credentialResolution';

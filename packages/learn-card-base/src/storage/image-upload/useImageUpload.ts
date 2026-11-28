@@ -49,7 +49,7 @@ export const useImageUpload: UseImageUpload = ({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<unknown>(null);
 
-    const fileSelectorRef = useRef<HTMLInputElement>();
+    const fileSelectorRef = useRef<HTMLInputElement>(undefined);
 
     // The web file input's onchange handler is bound once (mount-time effect
     // below) and async uploads resolve later, so callbacks must be read from refs

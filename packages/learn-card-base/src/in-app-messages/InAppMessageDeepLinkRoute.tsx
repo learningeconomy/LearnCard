@@ -10,7 +10,7 @@ export const InAppMessageDeepLinkRoute = (): null => {
     const { messageId } = useParams<{ messageId: string }>();
     const history = useHistory();
     const branding = useBrandingConfig();
-    const handled = useRef<string>();
+    const handled = useRef<string>(undefined);
     useEffect(() => {
         if (handled.current === messageId) return;
         handled.current = messageId;

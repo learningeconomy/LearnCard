@@ -74,7 +74,7 @@ export const useSpreadsheetDialog = (
     presentation: 'workspace' | 'compact' = 'workspace'
 ): (() => void) => {
     const { newModalWithToken, forceCloseModalByToken } = useModal();
-    const token = useRef<ReturnType<typeof newModalWithToken>>();
+    const token = useRef<ReturnType<typeof newModalWithToken>>(undefined);
     const close = useCallback(() => {
         if (token.current) forceCloseModalByToken(token.current);
         token.current = undefined;

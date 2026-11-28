@@ -28,7 +28,7 @@ interface LaunchSettingsSectionProps {
     error?: string | null;
     /** Moves an unpublishable address (localhost, a builder preview) into this device's test address. */
     onKeepForTesting?: (address: string) => void;
-    sectionRef?: React.RefObject<HTMLDivElement>;
+    sectionRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({

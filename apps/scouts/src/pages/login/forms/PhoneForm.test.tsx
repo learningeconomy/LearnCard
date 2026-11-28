@@ -59,7 +59,7 @@ vi.mock('react-phone-number-input', () => ({
         <input aria-label="Phone" value={value} onChange={event => onChange(event.target.value)} />
     ),
 }));
-vi.mock('react-code-input', () => ({ default: () => <div>Code entry</div> }));
+vi.mock('./AccessibleCodeInput', () => ({ default: () => <div>Code entry</div> }));
 vi.mock('../../../i18n/TransP', () => ({ TransP: () => <span>Enter code</span> }));
 vi.mock('../../../paraglide/messages.js', () => ({
     'common.sendingCode': () => 'Sending',
@@ -72,6 +72,7 @@ vi.mock('../../../paraglide/messages.js', () => ({
     'login.phonePlaceholder': () => 'Phone',
     'login.verificationSentToast': () => 'Sent',
     'common.enterVerificationCode': () => 'Enter code',
+    'login.verificationCode': () => 'Verification code',
 }));
 
 import PhoneForm from './PhoneForm';

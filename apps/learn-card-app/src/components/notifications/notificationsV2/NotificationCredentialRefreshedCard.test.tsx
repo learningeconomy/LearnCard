@@ -164,10 +164,10 @@ const tapCard = async () => {
 };
 
 /** The React element handed to the modal host, once the credential detail opens */
-const openedModalElement = (): React.ReactElement => {
+const openedModalElement = (): React.ReactElement<Record<string, unknown>> => {
     expect(modalHost.newModal).toHaveBeenCalledTimes(1);
 
-    return modalHost.newModal.mock.calls[0][0] as React.ReactElement;
+    return modalHost.newModal.mock.calls[0][0] as React.ReactElement<Record<string, unknown>>;
 };
 
 describe('NotificationCredentialRefreshedCard', () => {

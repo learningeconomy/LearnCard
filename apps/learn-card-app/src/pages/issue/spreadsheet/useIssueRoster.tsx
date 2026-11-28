@@ -122,13 +122,13 @@ export const useIssueRoster = (options: RosterOptions) => {
     const [busy, setBusy] = useState(false);
     const [checking, setChecking] = useState(false);
     const executing = useRef(false);
-    const draftSaveTimer = useRef<ReturnType<typeof setTimeout>>();
+    const draftSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const pendingDraftSaves = useRef(new Set<Promise<void>>());
     const [error, setError] = useState('');
     const [pastedText, setPastedText] = useState('');
     const [previewIndex, setPreviewIndex] = useState(0);
     const mounted = useRef(true);
-    const abort = useRef<AbortController>();
+    const abort = useRef<AbortController>(undefined);
     useEffect(() => {
         mounted.current = true;
         return () => {

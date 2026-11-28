@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
@@ -14,6 +13,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('phone-form');
 
 import * as m from '../../../paraglide/messages.js';
+import AccessibleCodeInput from './AccessibleCodeInput';
 import { TransP } from '../../../i18n/TransP';
 
 import 'react-phone-number-input/style.css';
@@ -282,8 +282,10 @@ const PhoneForm: React.FC = () => {
         );
         activeStep = (
             <IonCol size="12" className="w-full flex flex-col items-center justify-center">
-                <ReactCodeInput
+                <AccessibleCodeInput
                     name="phoneVerification"
+                    label={m['login.verificationCode']()}
+                    isValid={!(errors.code || codeError)}
                     inputMode="numeric"
                     fields={6}
                     type="text"

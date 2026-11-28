@@ -379,6 +379,7 @@
         "usernamePlaceholder": "اسم المستخدم",
         "sendLoginCode": "إرسال رمز تسجيل الدخول",
         "sendCode": "إرسال الرمز",
+        "verificationCode": "رمز التحقق",
         "youreAllSetTitle": "كل شيء جاهز!",
         "signInWithAccess": "تسجيل الدخول باستخدام <0>{{name}}</0> للوصول إلى حسابك.",
         "signInBelowAccess": "الآن فقط سجل الدخول أدناه للوصول إلى حسابك.",

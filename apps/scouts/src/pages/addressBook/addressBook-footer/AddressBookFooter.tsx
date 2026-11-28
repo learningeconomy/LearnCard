@@ -26,7 +26,7 @@ export const AddressBookFooter: React.FC<{
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
     const history = useHistory();
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
 
     const { handlePresentBoostModal } = useBoostModal(
         history,
@@ -70,7 +70,9 @@ export const AddressBookFooter: React.FC<{
             <BoostSelectMenu
                 handleCloseModal={() => closeBoostOptionsModal()}
                 showCloseButton={!isSheet}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 history={history as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 boostCredential={{} as any}
                 boostUri=""
                 profileId=""
@@ -79,7 +81,7 @@ export const AddressBookFooter: React.FC<{
     };
 
     return (
-        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef as any}>
+        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
             <IonToolbar className="ion-no-border" color="light">
                 <IonGrid className="bg-white">
                     <IonRow className="w-full mt-4 flex items-center justify-center">
