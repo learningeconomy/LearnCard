@@ -77,6 +77,7 @@ test.each([
     'initialize',
     'recover',
     'snapshot',
+    'credentialOffers',
     'credentialStatus',
     'more',
     'claim',

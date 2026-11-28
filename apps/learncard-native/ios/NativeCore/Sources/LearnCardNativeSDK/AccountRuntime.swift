@@ -102,6 +102,10 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         guard ready else { throw AccountError.unavailable }
         return try await command(more ? "more" : "snapshot")
     }
+    public func credentialOffers(cachedIDs: [String]) async throws -> CredentialOfferPage {
+        guard ready else { throw AccountError.unavailable }
+        return try await command("credentialOffers", input: ["cachedIDs": cachedIDs])
+    }
     public func credentialStatus(_ id: String) async throws -> CredentialStatusCheck {
         try await command("credentialStatus", input: ["uri": id])
     }
@@ -200,10 +204,13 @@ public struct AccountRecipient: Decodable, Sendable, Identifiable, Hashable {
 }
 
 @MainActor
-public final class LiveCredentialService: CredentialService {
+public final class LiveCredentialService: CredentialOfferService {
     private let runtime: AccountRuntime
     public init(runtime: AccountRuntime) { self.runtime = runtime }
     public func snapshot() async throws -> CollectionSnapshot { try await runtime.snapshot() }
+    public func credentialOffers(cachedIDs: [String]) async throws -> CredentialOfferPage {
+        try await runtime.credentialOffers(cachedIDs: cachedIDs)
+    }
     public func credentialStatus(credentialID: String) async throws -> CredentialStatusCheck { try await runtime.credentialStatus(credentialID) }
     public func loadMore() async throws -> CollectionSnapshot { try await runtime.snapshot(more: true) }
     public func claim(offerID: String) async throws -> CollectionSnapshot { try await runtime.claim(offerID) }

@@ -5,8 +5,11 @@ import LearnCardNativeSDK
 
 struct RootView: View {
     @Environment(\.locale) private var nativeLocale
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var store: AppStore
     var account: AccountController? = nil
+    var credentialOfferCheckInterval: Duration = .seconds(30)
     @State private var demoClaims = NativeClaimStore(isDemo: true, journal: MemoryClaimJournal())
     private var claims: NativeClaimStore { account?.claims ?? demoClaims }
     @State private var showCreate = false
@@ -75,6 +78,22 @@ struct RootView: View {
                 NativeTabTray(selection: $selectedTab, inboxCount: inboxCount)
             }
         }
+        .overlay(alignment: .top) {
+            ZStack {
+                if let arrival = visibleCredentialArrival {
+                    CredentialArrivalToast(credential: arrival, openInbox: {
+                        selectedTab = 1
+                        dismissCredentialArrival(id: arrival.id)
+                    }, dismiss: {
+                        dismissCredentialArrival(id: arrival.id)
+                    })
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: visibleCredentialArrival?.id)
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
             // Remove the tray before keyboard avoidance lifts the bottom of this stack.
             if keyboardCoversBottom(in: notification) == true { dockedKeyboardVisible = true }
@@ -84,7 +103,17 @@ struct RootView: View {
             if let coversBottom = keyboardCoversBottom(in: notification) { dockedKeyboardVisible = coversBottom }
         }
         .onChange(of: store.openInboxRequested) { _, value in if value { selectedTab = 1; store.openInboxRequested = false } }
+        .onChange(of: selectedTab) { _, tab in
+            if tab == 1 { store.dismissCredentialArrival() }
+        }
         .task { if store.snapshot == nil { await store.refresh() }; if !store.inbox.loaded { await store.inbox.load() } }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else {
+                store.dismissCredentialArrival()
+                return
+            }
+            await store.observeCredentialArrivals(every: credentialOfferCheckInterval)
+        }
         .modifier(ClaimPresentation(flow: demoClaims, store: store, enabled: account == nil))
         .task { if account == nil { demoClaims.connect(service: store.demoClaimService, accountID: "demo") } }
         .sheet(isPresented: $showActions, onDismiss: performRequestedAction) {
@@ -155,10 +184,23 @@ struct RootView: View {
         // An explicit All credentials/View Passport action returns to the full list.
         passportEntry += 1; compactBrands[0] = false; selectedTab = 0
     }
+
+    private var hasPresentedSheetOrAlert: Bool {
+        claims.isPresented || showWelcome || showCreate || showAccount || showActions || showExisting
+            || showShare || showFamilyReview || offer != nil || store.notice != nil || store.error != nil
+    }
+
     private var availablePrompt: InboxItem? {
-        guard !claims.isPresented, !showWelcome, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,
-              offer == nil, store.notice == nil, store.error == nil else { return nil }
-        return store.inbox.postClaimPrompts.first
+        hasPresentedSheetOrAlert ? nil : store.inbox.postClaimPrompts.first
+    }
+
+    private var visibleCredentialArrival: Credential? {
+        guard scenePhase == .active, !hasPresentedSheetOrAlert, availablePrompt == nil else { return nil }
+        return store.latestCredentialArrival
+    }
+
+    private func dismissCredentialArrival(id: String) {
+        if store.latestCredentialArrival?.id == id { store.dismissCredentialArrival() }
     }
 
     @ToolbarContentBuilder private func header(tab: Int) -> some ToolbarContent {
@@ -208,4 +250,73 @@ struct RootView: View {
         }
     }
 
+}
+
+private struct CredentialArrivalToast: View {
+    @Environment(\.locale) private var nativeLocale
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    let credential: Credential
+    let openInbox: () -> Void
+    let dismiss: () -> Void
+
+    private var heading: String { NativeText.text("learner.incoming") }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 4) {
+            Button(action: openInbox) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image("InboxTabActive").resizable().scaledToFit().padding(8)
+                        .frame(width: 44, height: 44)
+                        .background(Palette.pinkCard, in: RoundedRectangle(cornerRadius: 14))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(heading).font(.headline).foregroundStyle(Palette.ink)
+                        Text(credential.title).font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Palette.ink).lineLimit(2)
+                        if !credential.issuer.isEmpty {
+                            Text(NativeText.format("credential.issuedBy", credential.issuer))
+                                .font(.subheadline).foregroundStyle(Palette.secondary).lineLimit(2)
+                        }
+                        Text(NativeText.text("browser.inbox")).font(.footnote.weight(.semibold))
+                            .foregroundStyle(Palette.selection).padding(.top, 2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+                .multilineTextAlignment(.leading)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("credential-arrival-open-inbox")
+            Button(action: dismiss) {
+                Image(systemName: "xmark")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Palette.secondary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(NativeText.text("inbox.dismiss"))
+            .accessibilityIdentifier("credential-arrival-dismiss")
+        }
+        .padding(.leading, 12)
+        .padding(.vertical, 6)
+        .frame(maxWidth: 520)
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22).strokeBorder(Palette.line.opacity(0.7), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.12), radius: 14, y: 5)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("credential-arrival-toast")
+        .task(id: credential.id) {
+            if voiceOver {
+                UIAccessibility.post(notification: .announcement, argument: "\(heading). \(credential.title)")
+                return
+            }
+            do { try await Task.sleep(for: .seconds(6)) } catch { return }
+            if !Task.isCancelled { dismiss() }
+        }
+    }
 }

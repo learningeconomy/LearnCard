@@ -17,6 +17,21 @@ public extension CredentialService {
     func credentialStatus(credentialID: String) async throws -> CredentialStatusCheck { CredentialStatusCheck(state: .unavailable) }
     func loadMore() async throws -> CollectionSnapshot { try await snapshot() } }
 
+/// Reconciles the current offer order without reloading Passport or rehydrating known offers.
+public protocol CredentialOfferService: CredentialService {
+    func credentialOffers(cachedIDs: [String]) async throws -> CredentialOfferPage
+}
+
+public struct CredentialOfferPage: Codable, Sendable {
+    public let ids: [String]
+    public let credentials: [Credential]
+
+    public init(ids: [String], credentials: [Credential]) {
+        self.ids = ids
+        self.credentials = credentials
+    }
+}
+
 /// In-memory, unsigned samples. Restarting the app resets the experiment.
 public actor DemoCredentialService: CredentialService {
     private var credentials: [Credential]

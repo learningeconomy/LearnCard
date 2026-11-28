@@ -479,6 +479,23 @@ const display = async (
     };
 };
 
+const readCredentialOffers = async (cachedIDs: string[] = []) => {
+    const current = wallet;
+    if (!current) throw new Error('Sign in first');
+    const cached = new Set(cachedIDs.slice(0, 30));
+    const ids = new Set<string>();
+    const credentials = [];
+    const incoming = await current.invoke.getIncomingCredentials();
+    for (const record of incoming.slice(0, 30)) {
+        const id = string(record.uri);
+        if (!id || ids.has(id)) continue;
+        ids.add(id);
+        if (!cached.has(id)) credentials.push(await display({ ...record, title: '' }));
+    }
+    if (wallet !== current) throw new Error('Account changed');
+    return { ids: [...ids], credentials };
+};
+
 const snapshot = async (more = false) => {
     if (!wallet) throw new Error('Sign in first');
     if (!more) {
@@ -498,10 +515,7 @@ const snapshot = async (more = false) => {
     cursor = page.cursor;
     if (page.hasMore && page.cursor) visitedCollectionCursors.add(page.cursor);
     hasMore = page.hasMore;
-    const incoming = await wallet.invoke.getIncomingCredentials();
-    const offers = [];
-    for (const record of incoming.slice(0, 30))
-        offers.push(await display({ ...record, title: '' }));
+    const { credentials: offers } = await readCredentialOffers();
     return { credentials: collection, offers, activity, hasMore };
 };
 
@@ -663,6 +677,8 @@ const commands = {
         return stateDTO(await coordinator.recover(input));
     },
     snapshot: async () => snapshot(),
+    credentialOffers: async (input: { cachedIDs?: string[] }) =>
+        readCredentialOffers(Array.isArray(input?.cachedIDs) ? input.cachedIDs : []),
     more: async () => snapshot(true),
     credentialStatus: async (input: { uri: string }) => {
         const current = wallet;

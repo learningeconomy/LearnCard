@@ -7,6 +7,10 @@ public final class NativeAppStore {
     public enum CredentialActivity: Equatable, Sendable { case refreshing, receiving, loadingMore }
     private let service: any CredentialService
     public var snapshot: CollectionSnapshot?
+    public private(set) var latestCredentialArrival: Credential?
+    @ObservationIgnored private var seenOfferIDs: Set<String> = []
+    @ObservationIgnored private var snapshotRevision = 0
+    @ObservationIgnored private var checkingCredentialOffers = false
     public var isBusy = false
     public var error: String?
     /// Dismissing the transient alert does not establish an empty Passport.
@@ -50,6 +54,38 @@ public final class NativeAppStore {
         inbox.updates(excluding: Set((snapshot?.offers ?? []).map(\.id))).filter { !$0.read }.count
     }
     public var inboxCount: Int { (snapshot?.offers.count ?? 0) + unreadInboxUpdateCount }
+
+    public func dismissCredentialArrival() {
+        latestCredentialArrival = nil
+    }
+
+    /// Called by the foreground scene. The initial Passport snapshot is the quiet baseline.
+    public func observeCredentialArrivals(every interval: Duration = .seconds(30)) async {
+        guard service is any CredentialOfferService else { return }
+        while !Task.isCancelled {
+            do { try await Task.sleep(for: interval) } catch { return }
+            await refreshCredentialOffers()
+        }
+    }
+
+    public func refreshCredentialOffers() async {
+        guard let offerService = service as? any CredentialOfferService,
+              let current = snapshot, !isBusy, !checkingCredentialOffers, !Task.isCancelled else { return }
+        checkingCredentialOffers = true
+        defer { checkingCredentialOffers = false }
+        let revision = snapshotRevision
+        let cachedIDs = current.offers.map(\.id)
+        // A delayed offer read must not overwrite a claim, a full refresh, or a new account.
+        guard let page = try? await offerService.credentialOffers(cachedIDs: cachedIDs),
+              !Task.isCancelled, !isBusy, revision == snapshotRevision, page.ids != cachedIDs,
+              Set(page.ids).count == page.ids.count else { return }
+        let byID = Dictionary((current.offers + page.credentials).map { ($0.id, $0) },
+                              uniquingKeysWith: { _, fresh in fresh })
+        let offers = page.ids.compactMap { byID[$0] }
+        guard offers.count == page.ids.count else { return }
+        applySnapshot(CollectionSnapshot(credentials: current.credentials, offers: offers,
+                                         activity: current.activity, hasMore: current.hasMore))
+    }
 
     public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil, intakeService: (any IntakeService)? = nil, learnerService: (any LearnerService)? = nil, careerService: (any CareerService)? = nil) {
         self.service = service
@@ -147,7 +183,7 @@ public final class NativeAppStore {
         error = nil
         defer { isBusy = false; credentialActivity = nil }
         do {
-            snapshot = try await operation()
+            applySnapshot(try await operation())
             snapshotReadFailed = false
             return true
         } catch is CancellationError {
@@ -159,5 +195,20 @@ public final class NativeAppStore {
             if activity == .refreshing { refreshError = message }
         }
         return false
+    }
+
+    private func applySnapshot(_ updated: CollectionSnapshot) {
+        let ids = Set(updated.offers.map(\.id))
+        if let current = snapshot {
+            seenOfferIDs.formUnion(current.offers.map(\.id))
+            if let arrival = updated.offers.first(where: { !seenOfferIDs.contains($0.id) }) {
+                latestCredentialArrival = arrival
+            } else if let arrival = latestCredentialArrival, !ids.contains(arrival.id) {
+                latestCredentialArrival = nil
+            }
+        }
+        seenOfferIDs.formUnion(ids)
+        snapshotRevision += 1
+        snapshot = updated
     }
 }

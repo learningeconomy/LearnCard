@@ -16,6 +16,8 @@ The staging LCA API is independent of the brain network client. `runtime.ts` cre
 
 Notifications load 30 at a time, in reverse chronological order with `archived: false`. More updates uses the server-issued opaque cursor. Arrival notifications whose credential URIs match a pending offer are suppressed from the update list and badge. The badge counts loaded unread updates plus credential offers; it is not a total count across unloaded notification pages. Relationship pagination validates requests against the current account's full bounded membership query, and fails rather than accepting an incomplete view when a cursor is missing/repeated.
 
+While the app is active, a signed-in account checks the existing pending-offers endpoint every 30 seconds. Initial offers establish a baseline. Newly discovered offers update the Inbox and its badge together and trigger a SwiftUI toast once per account session. The toast opens Inbox. The check reuses known offers and preserves Passport's loaded records and pagination. Transient check failures leave the current Inbox in place. The check stops when the app leaves the foreground.
+
 Dismiss matches the web notification action: archive/read metadata only. It does not reject, cancel or disconnect a relationship. Relationship queries do not synthesize new Inbox notices from pending requests, which would recreate previously archived notifications on refresh.
 
 ## Server-driven suggestions
