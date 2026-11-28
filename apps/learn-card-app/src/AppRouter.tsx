@@ -74,7 +74,6 @@ import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials
 import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
-import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
 
 const log = getLogger('app-router');
@@ -601,7 +600,6 @@ const AppRouter: React.FC = () => {
                 </div>
             </GenericErrorBoundary>
             <Modals />
-            <ReducedMotionManager />
         </SharedI18nProvider>
     );
 };

@@ -15,11 +15,6 @@ vi.mock('react-router-dom', () => ({
     useHistory: () => ({ push: mocks.push }),
     useLocation: () => ({ pathname: mocks.pathname }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonMenu: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('learn-card-base/stores/currentUserStore', () => ({ useIsLoggedIn: () => true }));
 vi.mock('learn-card-base/hooks/useDeviceTypeByWidth', () => ({
     useDeviceTypeByWidth: () => ({ isMobile: false }),

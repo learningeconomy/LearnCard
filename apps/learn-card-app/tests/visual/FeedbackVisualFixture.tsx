@@ -2,7 +2,6 @@ import React from 'react';
 import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import * as m from '../../src/paraglide/messages.js';
-import ReducedMotionManager from '../../src/components/accessibility/ReducedMotionManager';
 import MediaLoader from '../../src/components/boost/boostCMS/BoostPreview/helpers/MediaLoader';
 import AdminToolsOptionItemLoader from '../../src/pages/adminToolsPage/AdminToolsModal/helpers/AdminToolsOptionItemLoader';
 import { ResumeBuilderLoader } from '../../src/components/resume-builder/ResumeBuilderLoader';
@@ -13,11 +12,10 @@ import { ResumeBuilderLoader } from '../../src/components/resume-builder/ResumeB
  * `text-*` contexts used. It also includes representative excerpts copied from the cited source lines.
  * Standalone loaders render the real component.
  *
- * Deterministic frames: the capture emulates `prefers-reduced-motion: reduce`. The production
- * ReducedMotionManager is mounted here, as in AppRouter, so every spinner is paused on its first
- * frame (t=0, which includes the per-element negative animation delays). This fixture root is not
- * inside `#app-router`, so index.scss's reduced-motion `animation: none` does not apply here.
- * Ionic's animations run inside shadow roots, which a light-DOM `*` freeze rule could not reach.
+ * Deterministic frames: the capture emulates `prefers-reduced-motion: reduce`. `AppSpinner` pauses
+ * itself on its first frame (t=0, which includes the per-element negative animation delays) via
+ * `usePrefersReducedMotion` and `feedback.css`. This fixture root is not inside `#app-router`, so
+ * index.scss's reduced-motion `animation: none` does not apply here.
  */
 
 const Block: React.FC<{ testId: string; title: string; children: React.ReactNode }> = ({
@@ -54,8 +52,6 @@ const Row: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 export const FeedbackVisualFixture: React.FC = () => (
     <main className="flex flex-col items-center gap-6 p-4">
-        <ReducedMotionManager />
-
         <Block testId="f1-names" title="IonSpinner names (default = circular md / lines ios)">
             <Row>
                 <Cell label="(default)">

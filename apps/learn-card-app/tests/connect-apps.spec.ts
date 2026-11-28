@@ -143,7 +143,7 @@ test.describe('Connect Apps', () => {
         const selectAllToggle = page
             .locator('div')
             .filter({ hasText: 'Share all credentials' })
-            .locator('ion-toggle')
+            .locator('.app-toggle')
             .first();
         await selectAllToggle.click();
         await expect(checkButton).toHaveClass(/.* unchecked/);
@@ -190,7 +190,8 @@ test.describe('Connect Apps', () => {
         // should say how many credentials you're sharing
         await expect(
             page.getByText(
-                `You are sharing ${sharedCreds.length} credential${sharedCreds.length !== 1 ? 's' : ''
+                `You are sharing ${sharedCreds.length} credential${
+                    sharedCreds.length !== 1 ? 's' : ''
                 } with this application`
             )
         ).toBeVisible();

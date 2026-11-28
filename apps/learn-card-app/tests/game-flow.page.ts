@@ -282,7 +282,7 @@ export class GameFlowPage {
 
     async demoEmailLogin() {
         await this.page
-            .locator('ion-input input[placeholder="Email address"]')
+            .locator('.app-input input[placeholder="Email address"]')
             .fill('demo@learningeconomy.io');
         await this.page.getByRole('button', { name: 'Continue' }).click();
     }

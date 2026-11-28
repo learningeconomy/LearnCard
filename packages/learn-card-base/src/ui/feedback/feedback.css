@@ -120,6 +120,14 @@
     animation-play-state: paused;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .app-spinner,
+    .app-spinner > svg.app-spinner-svg,
+    .app-spinner > svg.app-spinner-svg > circle {
+        animation-play-state: paused;
+    }
+}
+
 @keyframes app-spinner-fade-out {
     0% {
         opacity: 1;

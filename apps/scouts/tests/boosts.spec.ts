@@ -9,7 +9,7 @@ test.describe('Social Boosts', () => {
         await page.getByTestId('wallet-btn-socialBadge').click();
         await page.getByRole('button', { name: 'plus-button' }).click();
         await page
-            .locator('ion-col')
+            .locator('.app-col')
             .filter({ hasText: /^Adventurer$/ })
             .getByRole('button')
             .click();

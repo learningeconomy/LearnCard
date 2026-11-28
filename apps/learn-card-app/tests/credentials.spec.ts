@@ -10,7 +10,7 @@ test.describe.skip('credentials', () => {
         await page.getByText('Boost', { exact: true }).click();
         await page.getByRole('button', { name: 'New Boost' }).click();
         await page.getByRole('button', { name: 'Achievement' }).click();
-        await page.locator('#ion-input-0').fill('Test');
+        await page.locator('.app-input input').first().fill('Test');
         await page.getByRole('button', { name: 'Certification' }).click();
         await page.getByLabel('/100').fill('__Test Credential__');
         // AppTextarea ids are generated; these were #ion-textarea-1 and -2 (the title is the first).

@@ -83,7 +83,6 @@ type ReducedMotionResult = {
     probeAnimationName: string;
     probeTransform: string;
     probeTransitionProperty: string;
-    spinnerPaused: boolean;
     spinnerAnimationPlayStates: string[];
 };
 
@@ -405,7 +404,7 @@ const activateWithKeyboard = async (
 };
 
 /**
- * Exercise the app's reduced-motion CSS and Ionic spinner handling directly.
+ * Exercise the app's reduced-motion CSS and AppSpinner handling directly.
  * The probe verifies that opacity may remain, while transform and rotation do
  * not continue under a user preference for reduced motion.
  */
@@ -430,22 +429,27 @@ const assertTransformMotionIsDisabled = async (page: Page): Promise<void> => {
 
         const probeStyle = getComputedStyle(probe);
 
-        const spinner = document.createElement('ion-spinner') as HTMLElement & {
-            paused: boolean;
-        };
-        root.append(spinner);
-        await customElements.whenDefined('ion-spinner');
-        await new Promise(resolve => window.setTimeout(resolve, 50));
+        // Mount outside #app-router (like AppLoading in AppOverlayManager) so
+        // feedback.css's reduced-motion rule is verified directly rather than
+        // masked by #app-router * { animation: none !important }.
+        const spinner = document.createElement('span');
+        spinner.className = 'app-spinner spinner-circular';
+        spinner.setAttribute('aria-hidden', 'true');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'app-spinner-svg');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        svg.append(circle);
+        spinner.append(svg);
+        document.body.append(spinner);
 
         const spinnerAnimationPlayStates = Array.from(
-            spinner.shadowRoot?.querySelectorAll<SVGElement>('svg, circle') ?? []
+            spinner.querySelectorAll<SVGElement>('svg, circle')
         ).map(element => getComputedStyle(element).animationPlayState);
         const probeResult = {
             activeAnimationNames,
             probeAnimationName: probeStyle.animationName,
             probeTransform: probeStyle.transform,
             probeTransitionProperty: probeStyle.transitionProperty,
-            spinnerPaused: spinner.paused,
             spinnerAnimationPlayStates,
         };
 
@@ -463,7 +467,6 @@ const assertTransformMotionIsDisabled = async (page: Page): Promise<void> => {
     expect(result.probeTransitionProperty).not.toMatch(
         /(^|,\s*)(all|transform|rotate|scale|translate)(,|$)/
     );
-    expect(result.spinnerPaused).toBe(true);
     expect(result.spinnerAnimationPlayStates.length).toBeGreaterThan(0);
     expect(result.spinnerAnimationPlayStates.every(state => state === 'paused')).toBe(true);
 

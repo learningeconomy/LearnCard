@@ -180,8 +180,8 @@ for (const state of [
             await page.addStyleTag({
                 content: `
                 [data-testid="fixture"] > .ion-page { position: relative; inset: auto; height: auto; min-height: 100vh; contain: none; overflow: visible; }
-                [data-testid="fixture"] ion-content { height: auto; min-height: calc(100vh - 64px); flex: none; contain: none; --overflow: visible; }
-                [data-testid="fixture"] ion-content::part(scroll) { position: relative; inset: auto; overflow: visible; }
+                [data-testid="fixture"] .app-content { height: auto; min-height: calc(100vh - 64px); flex: none; contain: none; --overflow: visible; }
+                [data-testid="fixture"] .app-content > .app-content-scroll { position: relative; inset: auto; overflow: visible; }
             `,
             });
         }

@@ -50,7 +50,7 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
         const loginElements = page.locator(
             'input[type="email"], input[placeholder*="email" i], input[name="email"], ' +
                 'button:has-text("Sign"), button:has-text("Log in"), ' +
-                'ion-button:has-text("Sign"), ion-button:has-text("Log")'
+                '.app-button:has-text("Sign"), .app-button:has-text("Log")'
         );
         await expect(loginElements.first()).toBeVisible({ timeout: 15_000 });
     });

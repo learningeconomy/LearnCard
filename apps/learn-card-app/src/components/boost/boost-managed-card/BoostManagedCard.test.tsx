@@ -14,9 +14,6 @@ vi.mock('apps/learn-card-app/src/hooks/useManagedBoost', () => ({
         showSkeleton: false,
     }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('@learncard/react', () => ({
     BoostSmallCard: ({ title }: { title: string }) => <h3>{title}</h3>,
 }));
