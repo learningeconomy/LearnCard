@@ -97,7 +97,7 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Creative Learning Studio"].exists)
         let optional = app.switches["consent-permission-Learning"]
         XCTAssertEqual(optional.value as? String, "0")
-        XCTAssertTrue(app.staticTexts["No credentials selected"].exists)
+        XCTAssertFalse(app.buttons["consent-choice-design"].exists, "Choices stay hidden until the category is enabled")
         XCTAssertFalse(app.switches["consent-permission-Achievement"].exists)
         capture(app, "Rendered access optional off before agreement")
         optional.tap()
