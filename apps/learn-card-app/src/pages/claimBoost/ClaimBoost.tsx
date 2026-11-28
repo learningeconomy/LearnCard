@@ -76,6 +76,8 @@ import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreview
 import * as m from '../../paraglide/messages.js';
 import { AppPage } from 'learn-card-base/ui/chrome';
 import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
+import { useAuthSettled } from '../../providers/useAuthSettled';
 
 class ClaimContextChangedError extends Error {
     constructor() {
@@ -87,7 +89,8 @@ class ClaimContextChangedError extends Error {
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
     vc?: VC;
-}> = ({ boostVC, vc }) => {
+    authSettled: boolean;
+}> = ({ boostVC, vc, authSettled }) => {
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
@@ -96,6 +99,26 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
     let issueDate = moment(boostVC?.issuanceDate).format('MMM DD, YYYY');
     if (vc) {
         issueDate = moment(vc?.issuanceDate).format('MMM DD, YYYY');
+    }
+
+    const issueDetails = (
+        <div className="vc-issue-details mt-[10px] flex flex-col justify-center items-center text-center font-montserrat text-[14px] leading-[20px]">
+            <span className="created-at text-grayscale-700">{issueDate}</span>
+            <span className="issued-by text-grayscale-900 font-medium">
+                {m['claim.by']()} <strong className="font-bold capitalize">{issuerName}</strong>
+            </span>
+        </div>
+    );
+
+    // Until sign-in settles we don't know whether to show the recipient (signed in) or the issuer
+    // (signed out) here, so hold that spot instead of guessing and swapping it.
+    if (!authSettled) {
+        return (
+            <>
+                <AppSkeletonText animated className="h-[60px] w-[60px] rounded-full" />
+                {issueDetails}
+            </>
+        );
     }
 
     if (isLoggedIn) {
@@ -147,12 +170,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                     {issuerProfileImageElement}
                 </div>
             </div>
-            <div className="vc-issue-details mt-[10px] flex flex-col justify-center items-center text-center font-montserrat text-[14px] leading-[20px]">
-                <span className="created-at text-grayscale-700">{issueDate}</span>
-                <span className="issued-by text-grayscale-900 font-medium">
-                    {m['claim.by']()} <strong className="font-bold capitalize">{issuerName}</strong>
-                </span>
-            </div>
+            {issueDetails}
         </>
     );
 };
@@ -167,6 +185,9 @@ const ClaimBoost: React.FC<{
     const queryClient = useQueryClient();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
+    // This page renders before sign-in settles (routing/authGate). The boost loads without a wallet;
+    // claiming, verifying and the recipient's details wait for this.
+    const authSettled = useAuthSettled();
     const { initWallet, addVCtoWallet, syncCredentialToContracts } = useWallet();
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
@@ -238,7 +259,7 @@ const ClaimBoost: React.FC<{
         }
     }, [claimProgress]);
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
+    const { credentialWithEdits } = useGetCredentialWithEdits(authSettled ? boost : null);
 
     const handleRedirectTo = () => {
         const redirectTo = `/claim/boost?boostUri=${encodeURIComponent(
@@ -272,7 +293,6 @@ const ClaimBoost: React.FC<{
             const boostVC: VC = await result.json();
 
             setBoost(boostVC);
-            verify(boostVC);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             log.error(error);
@@ -706,6 +726,12 @@ const ClaimBoost: React.FC<{
         getBoost();
     }, []);
 
+    useEffect(() => {
+        // Verifying uses the signed-in wallet, so wait for it rather than racing its start-up.
+        if (!boost || !authSettled || !isLoggedIn) return;
+        verify(boost).catch(error => log.error(error));
+    }, [boost, authSettled, isLoggedIn]);
+
     const _boost = credentialWithEdits ?? boost;
 
     const handleClaimBoostAction = async () => {
@@ -728,7 +754,9 @@ const ClaimBoost: React.FC<{
         }
     };
 
-    const credentialBodyOverride = <ClaimBoostBodyPreviewOverride boostVC={_boost} vc={vc} />;
+    const credentialBodyOverride = (
+        <ClaimBoostBodyPreviewOverride boostVC={_boost} vc={vc} authSettled={authSettled} />
+    );
 
     let category = null;
     if (boost) category = getDefaultCategoryForCredential(boost);
@@ -899,6 +927,7 @@ const ClaimBoost: React.FC<{
                     handleClaim: vc ? handleClaimRawCredential : handleClaimBoostAction,
                     claimBtnText: actionButtonText,
                     disableClaimButton:
+                        !authSettled ||
                         loading ||
                         isClaimLoading ||
                         isCheckingDuplicate ||

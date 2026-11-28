@@ -8,6 +8,7 @@ import { createHash, randomBytes } from 'crypto';
 import ClaimBoost from './ClaimBoost';
 
 const mocks = vi.hoisted(() => ({
+    authSettled: true,
     did: 'did:key:learner',
     networkUrl: 'http://network.example.test/trpc',
     cloudUrl: 'http://cloud.example.test/trpc',
@@ -34,6 +35,7 @@ vi.mock('react-router', async () => {
         useNavigate: () => navigateFromHistory({ push: mocks.push, replace: mocks.replace }),
     };
 });
+vi.mock('../../providers/useAuthSettled', () => ({ useAuthSettled: () => mocks.authSettled }));
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
@@ -267,6 +269,7 @@ describe('ClaimBoost recovery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.authSettled = true;
         mocks.did = 'did:key:learner';
         mocks.networkUrl = 'http://network.example.test/trpc';
         mocks.cloudUrl = 'http://cloud.example.test/trpc';
@@ -303,6 +306,15 @@ describe('ClaimBoost recovery', () => {
             },
         });
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, json: async () => boost }));
+    });
+
+    it('shows the boost before sign-in settles but holds claiming and verifying until it does', async () => {
+        mocks.authSettled = false;
+        await renderClaim();
+
+        expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
+        expect(mocks.initWallet).not.toHaveBeenCalled();
+        expect(mocks.verifyCredential).not.toHaveBeenCalled();
     });
 
     it('does not turn unused count cache entries into a failed claim', async () => {

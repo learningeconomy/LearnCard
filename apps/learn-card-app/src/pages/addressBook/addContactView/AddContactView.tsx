@@ -18,9 +18,10 @@ import {
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { AddressBookContact } from '../addressBookHelpers';
+import type { NetworkContact } from '../addressBookHelpers';
 import ArrowRight from 'learn-card-base/svgs/ArrowRight';
 import ExpiredInviteLink from './ExpiredInviteLink';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
@@ -40,7 +41,7 @@ export enum AddContactViewMode {
 export const AddContactView: React.FC<{
     mode?: AddContactViewMode;
     handleCancel?: () => void;
-    user: AddressBookContact | null | undefined;
+    user: NetworkContact | null | undefined;
     closeModal?: boolean;
     customContainerClass?: string;
     profileId?: string;
@@ -51,6 +52,8 @@ export const AddContactView: React.FC<{
     ) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     updateCacheOnSuccessCallback?: any;
+    /** Sign-in hasn't settled yet: hold the action spot instead of showing signed-out actions. */
+    actionsPending?: boolean;
 }> = ({
     mode = AddContactViewMode?.requestConnection,
     handleCancel = () => {},
@@ -59,6 +62,7 @@ export const AddContactView: React.FC<{
     customContainerClass,
     challenge,
     updateCacheOnSuccessCallback,
+    actionsPending = false,
 }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -330,7 +334,9 @@ export const AddContactView: React.FC<{
         }
 
         if (!isLoggedIn) {
-            const redirectTo = `/connect?did=${user?.did}`;
+            const redirectTo = user?.did
+                ? `/connect?did=${user.did}`
+                : `/connect/${user?.profileId}`;
             actionButton = (
                 <button
                     className="w-[90%] flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
@@ -439,7 +445,7 @@ export const AddContactView: React.FC<{
                                 : ''
                         }`}
                     >
-                        {isLoggedIn && !isIssuingBoost && (
+                        {isLoggedIn && !isIssuingBoost && !actionsPending && (
                             <>
                                 <UserProfilePicture
                                     customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden text-white font-medium text-4xl"
@@ -450,7 +456,7 @@ export const AddContactView: React.FC<{
                             </>
                         )}
 
-                        {isLoggedIn && !isIssuingBoost && (
+                        {isLoggedIn && !isIssuingBoost && !actionsPending && (
                             <ArrowRight className="w-[30px] h-[30px] mx-3" />
                         )}
 
@@ -468,13 +474,27 @@ export const AddContactView: React.FC<{
                     </AppCol>
                 </AppRow>
                 <AppRow className="flex items-center justify-center w-full mt-8">
-                    {actionButton}
+                    {actionsPending ? (
+                        <div
+                            role="status"
+                            aria-busy="true"
+                            className="w-[90%] flex flex-col items-center gap-[12px] mb-4"
+                        >
+                            <span className="sr-only">{m['common.loading']()}</span>
+                            <AppSkeletonText animated className="h-[44px] w-full rounded-full" />
+                            <AppSkeletonText animated className="h-[17px] w-[40%]" />
+                        </div>
+                    ) : (
+                        actionButton
+                    )}
                 </AppRow>
-                <div onClick={handleCancel} className="w-full flex items-center justify-center">
-                    <button className="text-grayscale-900 text-center text-sm">
-                        {isLoggedIn ? m['common.cancel']() : m['contacts.returnHome']()}
-                    </button>
-                </div>
+                {!actionsPending && (
+                    <div onClick={handleCancel} className="w-full flex items-center justify-center">
+                        <button className="text-grayscale-900 text-center text-sm">
+                            {isLoggedIn ? m['common.cancel']() : m['contacts.returnHome']()}
+                        </button>
+                    </div>
+                )}
             </AppRow>
         </AppGrid>
     );

@@ -1,0 +1,22 @@
+{
+    "@context": ["https://www.w3.org/2018/credentials/v1"],
+    "type": ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
+    "id": "urn:uuid:4f1b6a1c-perf-claim-boost",
+    "name": "Galactic Peacekeeper",
+    "issuer": {
+        "id": "did:key:z6MkwKoFgbacSSJseV9syL2r2RdwdV1FtV5SBQM1KmNz8Lja",
+        "name": "LearnFleet Academy"
+    },
+    "issuanceDate": "2025-01-17T21:30:54Z",
+    "credentialSubject": {
+        "id": "did:example:recipient",
+        "type": ["AchievementSubject"],
+        "achievement": {
+            "type": ["Achievement"],
+            "name": "Galactic Peacekeeper",
+            "description": "Honors cadets who have successfully mediated a simulated diplomatic crisis.",
+            "achievementType": "Award",
+            "criteria": { "narrative": "Resolve a simulated diplomatic crisis." }
+        }
+    }
+}

@@ -236,6 +236,9 @@ vi.mock('../../providers/AuthCoordinatorProvider', () => ({
     }),
 }));
 
+const authGate = vi.hoisted(() => ({ settled: true }));
+vi.mock('../../providers/useAuthSettled', () => ({ useAuthSettled: () => authGate.settled }));
+
 vi.mock('../../config/bootstrapTenantConfig', () => ({
     getLoginRedirectUrl: () => 'https://example.com/login',
 }));
@@ -281,6 +284,7 @@ describe('ExternalConsentFlowDoor', () => {
         });
     beforeEach(() => {
         vi.clearAllMocks();
+        authGate.settled = true;
         queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         mockFns.switchedDid = undefined;
         mockFns.getAvailableProfiles.mockResolvedValue({ records: [], hasMore: false });
@@ -318,6 +322,25 @@ describe('ExternalConsentFlowDoor', () => {
     });
 
     afterEach(() => queryClient.clear());
+
+    it('shows the contract but holds the actions until sign-in settles', () => {
+        authGate.settled = false;
+        mockFns.useCurrentUser.mockReturnValue(null);
+
+        const { rerender } = renderDoor();
+
+        expect(screen.getByRole('heading', { name: 'Test Contract' })).toBeTruthy();
+        expect(screen.getByRole('status')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: /Sign up/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: /Continue/ })).toBeNull();
+
+        authGate.settled = true;
+        mockFns.useCurrentUser.mockReturnValue({ name: 'Test User', uid: 'test-uid' });
+        rerender(<ExternalConsentFlowDoor login={true} />);
+
+        expect(screen.getByRole('button', { name: /Continue/ })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: /Sign up/ })).toBeNull();
+    });
     it('shows the selected organization identity after wallet restoration', () => {
         mockFns.useCurrentUser.mockReturnValue({ name: '', profileImage: '', uid: 'test-uid' });
         mockFns.useGetCurrentLCNUser.mockReturnValue({
