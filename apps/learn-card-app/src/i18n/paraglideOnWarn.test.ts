@@ -78,7 +78,7 @@ describe('paraglideMissingKeyOnWarn', () => {
                         },
                         load(id) {
                             if (id === '/virtual/src/entry.js')
-                                return 'import * as m from "./paraglide/messages.js"; console.log(m["no.such.key"]());';
+                                return 'import * as msgs from "./paraglide/messages.js"; console.log(msgs["no.such.key"]());';
                             if (id === '/virtual/src/paraglide/messages.js')
                                 return 'export * from "./messages/_index.js";';
                             if (id === '/virtual/src/paraglide/messages/_index.js')
