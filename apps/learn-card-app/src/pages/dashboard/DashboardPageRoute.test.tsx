@@ -2,10 +2,6 @@ import React, { Suspense } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('learn-card-base', async () => {
-    const { lazyWithRetry } = await import('learn-card-base/helpers/lazyWithRetry');
-    return { lazyWithRetry };
-});
 const marks = vi.hoisted(() => ({ steps: [] as string[] }));
 vi.mock('../../helpers/dashboardPathMarks', () => ({
     markDashboardPath: (step: string) => marks.steps.push(step),

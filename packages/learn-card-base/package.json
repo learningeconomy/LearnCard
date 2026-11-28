@@ -23,6 +23,7 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/network-brain-client": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/render-method-plugin": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",

@@ -45,7 +45,7 @@ import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInC
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
-import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
+import { prefetchRoutes, ROUTE_PRELOAD } from '../../routing/routePreload';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 

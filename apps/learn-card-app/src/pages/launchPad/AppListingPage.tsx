@@ -25,6 +25,7 @@ import redirectStore from 'learn-card-base/stores/redirectStore';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
+import { useAuthSettled } from '../../providers/useAuthSettled';
 import useAppStore from './useAppStore';
 import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
 import { EmbedIframeModal } from './EmbedIframeModal';
@@ -99,6 +100,8 @@ const AppListingPage: React.FC = () => {
     const initialPath = launchQuery.get('path') ?? undefined;
     const launchedRef = useRef<string | null>(null);
     const isLoggedIn = useIsLoggedIn();
+    // This page renders before sign-in settles (routing/authGate), so the install button waits.
+    const authSettled = useAuthSettled();
     const { newModal, closeModal, replaceModal } = useModal();
     const { presentToast } = useToast();
     const confirm = useConfirmation();
@@ -766,7 +769,7 @@ const AppListingPage: React.FC = () => {
 
                                 {/* Action Buttons */}
                                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                                    {isLoggedIn && isCheckingInstalled ? (
+                                    {!authSettled || (isLoggedIn && isCheckingInstalled) ? (
                                         <button
                                             disabled
                                             className="flex-1 sm:flex-none px-8 py-3 rounded-full bg-gray-100 text-gray-400 font-semibold"

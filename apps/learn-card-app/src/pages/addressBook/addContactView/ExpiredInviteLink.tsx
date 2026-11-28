@@ -1,11 +1,11 @@
 import React from 'react';
-import { AddressBookContact } from '../addressBookHelpers';
+import type { NetworkContact } from '../addressBookHelpers';
 import { UserProfilePicture, useCurrentUser, useModal } from 'learn-card-base';
 import BrokenLink from 'apps/learn-card-app/src/components/svgs/BrokenLink';
 import ExpiredInviteLinkFooter from './ExpiredInviteLinkFooter';
 
 export const ExpiredInviteLink: React.FC<{
-    user: AddressBookContact | null | undefined;
+    user: NetworkContact | null | undefined;
     handleConnectionRequest: (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
         profileId: string

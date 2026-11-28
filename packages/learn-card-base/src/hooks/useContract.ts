@@ -1,6 +1,6 @@
 import type { LearnCardNetworkPluginMethods } from '@learncard/network-plugin';
 import { useQuery } from '@tanstack/react-query';
-import { CredentialCategoryEnum, useIsLoggedIn, useWallet } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 import {
     ConsentFlowContractRequestForProfile,
     ConsentFlowContractDetails,
@@ -8,31 +8,30 @@ import {
     PaginatedConsentFlowDataForDid,
 } from '@learncard/types';
 
+import { getAnonymousNetworkClient } from '../helpers/anonymousNetworkClient';
 import { getLogger } from '../logging/logger';
+import { walletStore } from '../stores/walletStore';
 const log = getLogger('use-contract');
 
-export const useContract = (uri: string | undefined, enabled = true) => {
-    const isLoggedIn = useIsLoggedIn();
-    const { initWallet } = useWallet();
-
-    return useQuery<ConsentFlowContractDetails | undefined>({
+/**
+ * Contract details are a public network route that returns the same thing for everyone. A started
+ * wallet reads them through its own client; anyone else (signed out, or signed in but still
+ * starting up) uses the no-auth client, so this never builds a throwaway wallet or races wallet
+ * start-up.
+ */
+export const useContract = (uri: string | undefined, enabled = true) =>
+    useQuery<ConsentFlowContractDetails | undefined>({
         queryKey: ['useContract', uri!],
         queryFn: async () => {
             if (!uri) return;
 
-            try {
-                const wallet = isLoggedIn ? await initWallet() : await initWallet('a'.repeat(64));
+            const wallet = walletStore.get.wallet();
+            if (wallet) return wallet.invoke.getContract(uri);
 
-                const deets = await wallet.invoke.getContract(uri);
-
-                return deets;
-            } catch (error) {
-                return Promise.reject(error);
-            }
+            return getAnonymousNetworkClient().contracts.getConsentFlowContract.query({ uri });
         },
         enabled: enabled && Boolean(uri),
     });
-};
 
 export const useContractSentRequests = (uri: string | undefined, enabled = true) => {
     const { initWallet } = useWallet();

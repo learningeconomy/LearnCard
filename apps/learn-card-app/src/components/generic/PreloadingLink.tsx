@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, LinkProps, useNavigate } from 'react-router';
 
-import { ROUTE_PRELOAD } from '../../Routes';
+import { ROUTE_PRELOAD } from '../../routing/routePreload';
 
 /**
  * Drop-in replacement for react-router's `<Link>` that awaits the destination

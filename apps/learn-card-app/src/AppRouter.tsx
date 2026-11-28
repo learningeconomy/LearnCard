@@ -11,7 +11,7 @@ import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
-import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
+import { prefetchRoutes, ROUTE_PRELOAD } from './routing/routePreload';
 import { afterFirstScreen } from 'learn-card-base/helpers/firstScreen';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -46,6 +46,8 @@ import {
     redirectStore,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
+import { isAuthSettled } from './providers/useAuthSettled';
+import { rendersBeforeAuth } from './routing/authGate';
 import { useAuthStatus } from 'learn-card-base';
 import { OfflineBootGate } from './components/network-listener/OfflineBootGate';
 import { connectivityStore } from 'learn-card-base';
@@ -113,15 +115,10 @@ const AppRouter: React.FC = () => {
         !walletReady &&
         (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
 
-    const initLoading =
-        !isShareViewer &&
-        !(
-            walletReady ||
-            coordinatorState.status === 'idle' ||
-            coordinatorState.status === 'needs_setup' ||
-            coordinatorState.status === 'needs_recovery' ||
-            coordinatorState.status === 'error'
-        );
+    const authSettled = isAuthSettled(coordinatorState.status, walletReady);
+    // Share viewers and the public pages in rendersBeforeAuth don't depend on who is signed in
+    // (or wait for useAuthSettled where they do), so they skip the gate.
+    const initLoading = !isShareViewer && !rendersBeforeAuth(location.pathname) && !authSettled;
     useDashboardPathMark('shell_commit', !showOfflineBootGate && !initLoading);
 
     // Native splash bridge. The Capacitor splash is configured with
@@ -131,16 +128,10 @@ const AppRouter: React.FC = () => {
     // smooth fade from native splash → final screen, not a stack of JS loaders.
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
-        const ready =
-            walletReady ||
-            coordinatorState.status === 'idle' ||
-            coordinatorState.status === 'needs_setup' ||
-            coordinatorState.status === 'needs_recovery' ||
-            coordinatorState.status === 'error';
-        if (ready) {
+        if (authSettled) {
             SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
         }
-    }, [walletReady, coordinatorState.status]);
+    }, [authSettled]);
 
     // Safety net: never let the native splash stay up longer than 8s even if
     // auth initialization hangs. After this, the user sees whatever the app
@@ -412,8 +403,7 @@ const AppRouter: React.FC = () => {
         afterFirstScreen()
             .then(() => {
                 if (cancelled) return;
-                // Lazy-import to avoid a circular import on the Routes module graph.
-                return import('./Routes').then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }));
+                prefetchRoutes({ aiEnabled: isAiEnabled });
             })
             .catch(() => undefined);
         return () => {
@@ -439,15 +429,9 @@ const AppRouter: React.FC = () => {
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
         observeDashboardLongTasks();
-        // Lets the shell mount Routes without suspending once the wallet is ready.
-        preloadRoutes().catch(() => undefined);
-        import('./Routes')
-            .then(m => {
-                void m.ROUTE_PRELOAD['/dashboard']?.();
-                void m.ROUTE_PRELOAD['/wallet']?.();
-                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
-            })
-            .catch(() => undefined);
+        void ROUTE_PRELOAD['/dashboard']?.();
+        void ROUTE_PRELOAD['/wallet']?.();
+        void ROUTE_PRELOAD[initialPathRef.current]?.();
     }, []);
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();

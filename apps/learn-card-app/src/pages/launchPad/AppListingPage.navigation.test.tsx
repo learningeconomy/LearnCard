@@ -20,6 +20,7 @@ const state = vi.hoisted(() => ({
         launch_config_json: JSON.stringify({ url: 'https://partner.test/app' }),
     },
 }));
+vi.mock('../../providers/useAuthSettled', () => ({ useAuthSettled: () => true }));
 vi.mock('./useAppStore', () => ({
     default: () => ({
         usePublicListing: () => ({ data: state.listing, isLoading: false }),

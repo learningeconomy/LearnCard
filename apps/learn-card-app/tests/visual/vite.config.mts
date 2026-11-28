@@ -40,7 +40,7 @@ export default defineConfig(async environment => {
                     }
                     if (
                         importer.endsWith('/components/mobile-nav-bar/MobileNavBar.tsx') &&
-                        resolved === path.resolve('src/Routes')
+                        resolved === path.resolve('src/components/mobile-nav-bar/RoutesOutlet')
                     ) {
                         return path.resolve(import.meta.dirname, 'SignedInLaunchpadRoutes.tsx');
                     }

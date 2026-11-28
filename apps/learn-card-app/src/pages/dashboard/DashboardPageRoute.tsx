@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { lazyWithRetry } from 'learn-card-base';
+import { lazyWithRetry } from 'learn-card-base/helpers/lazyWithRetry';
 
 import { markDashboardPath } from '../../helpers/dashboardPathMarks';
 
@@ -19,7 +19,7 @@ const importDashboardPage = () => {
 
 const LazyDashboardPage = lazyWithRetry(importDashboardPage);
 
-/** Starts loading the dashboard chunk (ROUTE_PRELOAD['/dashboard']); the lazy path retries failures. */
+/** Starts loading the dashboard chunk (PAGES.dashboard); the lazy path retries failures. */
 export const preloadDashboardPage = (): Promise<void> => LazyDashboardPage.preload();
 
 /**

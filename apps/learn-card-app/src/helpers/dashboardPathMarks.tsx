@@ -11,11 +11,8 @@ import { isDebugEnvironmentEnabled } from '../config/environment';
  */
 export type DashboardPathStep =
     | 'shell_commit' // AppRouter swapped the boot loader for the app shell
-    | 'routes_lazy_read' // React first asked MobileNavBar's lazy Routes for its module
-    | 'routes_module' // that module promise resolved
-    | 'routes_direct' // Routes mounted without suspending (module already loaded)
-    | 'routes_render' // Routes rendered (may still suspend below)
-    | 'routes_commit' // Routes committed
+    | 'routes_render' // RoutesOutlet rendered (may still suspend below)
+    | 'routes_commit' // RoutesOutlet committed
     | 'root_redirect' // `/` rendered its logged-in redirect
     | 'root_redirect_login' // `/` rendered its logged-out redirect
     | 'page_chunk_start' // DashboardPage's chunk was first requested (preload or lazy render)

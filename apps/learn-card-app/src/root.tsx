@@ -8,6 +8,7 @@ import { CHUNK_PREFETCH_ELEMENT_ID, devChunkPrefetchList } from './buildPlugins/
 import { environment } from './config/environment';
 import { ACCESSIBILITY_WIDGET_SCRIPT } from './document/accessibilityWidgetScript';
 import { getRegisteredApp } from './routing/appRegistry';
+import { markAppStarted } from './routing/pageLoader';
 
 // The first screen (login) renders Poppins 400/500/700 latin; fetch them with the CSS.
 const FIRST_SCREEN_FONTS = [poppins400, poppins500, poppins700];
@@ -91,11 +92,13 @@ export function HydrateFallback() {
 }
 
 /**
- * The app, for every path. It renders here rather than in a child route so navigating never
- * remounts it; App.tsx routes with its own <Routes>.
+ * The app shell, for every path. Pages are child routes (src/routes.ts) and render in the shell's
+ * <Outlet /> (components/mobile-nav-bar/RoutesOutlet.tsx), so navigating never remounts the shell.
  */
 export default function Root() {
     const App = getRegisteredApp();
+    // From here on, route clientLoaders hold navigations until the next page's code is in.
+    useEffect(markAppStarted, []);
     return <App />;
 }
 

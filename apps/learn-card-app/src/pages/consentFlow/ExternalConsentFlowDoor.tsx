@@ -28,6 +28,7 @@ import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { m } from '../../paraglide/messages.js';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { useAuthSettled } from '../../providers/useAuthSettled';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowError from './ConsentFlowError';
@@ -55,6 +56,9 @@ enum Step {
 
 const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }) => {
     const currentUser = useCurrentUser();
+    // The page renders before sign-in settles (routing/authGate): the contract shows right away,
+    // while the actions, which differ for signed-in and signed-out visitors, wait for this.
+    const authSettled = useAuthSettled();
     const account = useConsentAccountIdentity();
     const brandingConfig = useBrandingConfig();
 
@@ -253,7 +257,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         return <ConsentFlowCredFrontDoor contractDetails={contractDetails} />;
     }
 
-    if (contractDetails?.needsGuardianConsent) {
+    if (contractDetails?.needsGuardianConsent && authSettled) {
         return <FullScreenGameFlow contractDetails={contractDetails} />;
     }
 
@@ -288,7 +292,19 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     )}
                 </div>
 
-                {currentUser && !error && (
+                {!authSettled && !error && (
+                    <div
+                        role="status"
+                        aria-busy="true"
+                        className="flex flex-col gap-[15px] items-center w-full"
+                    >
+                        <span className="sr-only">{m['common.loading']()}</span>
+                        <AppSkeletonText animated className="h-[48px] w-full rounded-[40px]" />
+                        <AppSkeletonText animated className="h-[17px] w-[60%]" />
+                    </div>
+                )}
+
+                {authSettled && currentUser && !error && (
                     <div className="flex flex-col gap-[20px] items-center w-full">
                         <UserProfilePicture
                             user={{
@@ -370,7 +386,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     </div>
                 )}
 
-                {!currentUser && !error && (
+                {authSettled && !currentUser && !error && (
                     <div className="flex flex-col gap-[15px] items-center w-full">
                         <button
                             type="button"
