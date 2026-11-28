@@ -186,7 +186,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                     </AppRow>
                 </div>
                 <div
-                    className="lc-content-owns-bottom lc-scroll-to-edge relative flex-1 min-h-0 w-full overflow-y-auto [&>ion-grid]:pt-0"
+                    className="lc-content-owns-bottom lc-scroll-to-edge relative flex-1 min-h-0 w-full overflow-y-auto [&>.app-grid]:pt-0"
                     role="region"
                     aria-label={title}
                     tabIndex={0}

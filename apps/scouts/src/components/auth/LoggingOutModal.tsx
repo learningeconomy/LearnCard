@@ -4,10 +4,10 @@ import * as m from '../../paraglide/messages.js';
 import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const LOGOUT_SPINNER_CSS = `
-    ion-spinner {
+    .app-spinner {
         --stroke-width: 2px !important;
     }
-    ion-spinner svg, ion-spinner circle {
+    .app-spinner svg, .app-spinner circle {
         stroke-width: 2px !important;
     }
 `;
