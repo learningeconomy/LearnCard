@@ -1,5 +1,88 @@
 import { expect, test } from 'bun:test';
 import { credentialDetailsForDisplay, signatureStateForDisplay } from './credential-details';
+import { clrStudentOfficialAcademicTranscript } from '../../../packages/credential-library/src/fixtures/clr/student-official-academic-transcript';
+
+test('projects the CLR corpus transcript into source-backed terms and records without changing the credential', () => {
+    const credential = clrStudentOfficialAcademicTranscript.credential;
+    const original = JSON.stringify(credential);
+    const transcript = credentialDetailsForDisplay(credential).transcript!;
+    expect(transcript.kind).toBe('academic');
+    const fall = transcript.groups.find(group => group.term === 'Fall 2021');
+    expect(fall?.kind).toBe('courses');
+    expect(fall?.records[0]).toMatchObject({
+        name: 'Introduction to Interactive Media',
+        code: 'IMD 101',
+        credits: { amount: 3, kind: 'earned' },
+        results: [{ label: 'Letter Grade', value: 'A' }],
+    });
+    expect(transcript.groups.some(group => group.kind === 'programs')).toBe(true);
+    expect(transcript.groups.some(group => group.kind === 'other')).toBe(true);
+    expect(JSON.stringify(credential)).toBe(original);
+});
+
+test('recognizes only an outer CLR and keeps explicit zero credits and missing values', () => {
+    const course = {
+        type: ['VerifiableCredential', 'AchievementCredential'],
+        credentialSubject: {
+            creditsEarned: 0,
+            term: 'Spring',
+            achievement: { name: 'Fieldwork', achievementType: 'Course', creditsAvailable: 3 },
+        },
+    };
+    const raw = {
+        type: ['VerifiableCredential', 'ClrCredential'],
+        name: 'Academic Transcript',
+        proof: { proofValue: 'unchanged' },
+        credentialSubject: { verifiableCredential: [course] },
+    };
+    const transcript = credentialDetailsForDisplay(raw).transcript!;
+    expect(transcript.groups[0]).toMatchObject({
+        kind: 'courses',
+        term: 'Spring',
+        records: [{ name: 'Fieldwork', credits: { amount: 0, kind: 'earned' }, results: [] }],
+    });
+    expect(credentialDetailsForDisplay(course).transcript).toBeUndefined();
+    expect(
+        credentialDetailsForDisplay({
+            type: ['CertifiedBoostCredential'],
+            boostCredential: raw,
+        }).transcript
+    ).toEqual(transcript);
+    expect(credentialDetailsForDisplay({ type: ['ClrCredential'] }).transcript?.groups).toEqual([]);
+});
+
+test('projects partial general records without inventing courses, credits or results', () => {
+    const transcript = credentialDetailsForDisplay({
+        type: ['VerifiableCredential', 'ClrCredential'],
+        name: 'Professional Record',
+        partial: true,
+        credentialSubject: {
+            id: 'did:example:learner',
+            identifier: [{ identityType: 'emailAddress', identifier: 'learner@example.invalid' }],
+            verifiableCredential: [
+                {
+                    type: ['VerifiableCredential', 'AchievementCredential'],
+                    credentialSubject: {
+                        achievement: {
+                            name: 'Project facilitation',
+                            achievementType: 'Competency',
+                        },
+                    },
+                },
+            ],
+        },
+    }).transcript!;
+    expect(transcript.kind).toBe('general');
+    expect(transcript.partial).toBe(true);
+    expect(transcript.learner).toBeUndefined();
+    expect(transcript.groups).toMatchObject([
+        {
+            kind: 'other',
+            records: [{ name: 'Project facilitation', results: [] }],
+        },
+    ]);
+    expect(transcript.groups[0].records[0].credits).toBeUndefined();
+});
 
 test('details preserve criteria, alignment references, evidence and issuer fields without modifying signed content', () => {
     const raw = {

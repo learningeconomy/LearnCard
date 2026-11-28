@@ -34,4 +34,22 @@ final class CredentialDetailTests: XCTestCase {
         XCTAssertEqual(decoded.details, details)
         XCTAssertEqual(decoded.signedPayload, credential.signedPayload)
     }
+    func testTranscriptWireProjectionPreservesSparseDetailsAndSignedPayload() throws {
+        let value: [String: Any] = ["id": "transcript", "title": "Transcript", "issuer": "School", "summary": "About",
+            "kind": "Learning", "date": "2026-06-01T00:00:00Z", "createdByMe": false, "isSample": false,
+            "signedPayload": "{\"proof\":\"unchanged\"}", "details": [
+                "criteria": [], "alignments": [], "evidence": [], "fields": [], "results": [],
+                "transcript": ["kind": "academic", "learner": "Maya Chen", "partial": true, "groups": [[
+                    "kind": "courses", "term": "Fall 2025", "records": [["name": "Biology",
+                        "credits": ["amount": 0, "kind": "earned"], "results": [["label": "Grade", "value": "A"]]]]]]]]]
+        let envelope = String(data: try JSONSerialization.data(withJSONObject: ["ok": true, "value": value]), encoding: .utf8)!
+        let credential: Credential = try AccountReply.decode(envelope, method: "snapshot")
+        let transcript = try XCTUnwrap(credential.details?.transcript)
+        XCTAssertEqual(transcript.learner, "Maya Chen"); XCTAssertEqual(transcript.partial, true)
+        XCTAssertEqual(transcript.groups.first?.records.first?.credits?.amount, 0)
+        XCTAssertNil(transcript.groups.first?.records.first?.credits?.unit)
+        XCTAssertEqual(transcript.groups.first?.records.first?.results.first?.value, "A")
+        XCTAssertEqual(credential.signedPayload, "{\"proof\":\"unchanged\"}")
+    }
+
 }

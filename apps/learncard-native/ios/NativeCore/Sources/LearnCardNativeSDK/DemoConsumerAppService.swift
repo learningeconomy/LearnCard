@@ -38,7 +38,23 @@ public actor DemoConsumerAppService: ConsumerAppService {
         if id == "native-sample-student" {
             let reviewID = UUID().uuidString; sampleReviews.insert(reviewID)
             return try Self.decode("""
-            {"id":"\(reviewID)","listingID":"native-sample-student","contractURI":"sample-student-contract","title":"Sample student","description":"Add twelve fictional learning records to explore your Passport.","recipients":[{"id":"sample-school","name":"Sample school"}],"readCredentials":[],"readPersonal":[],"writeCredentials":[{"id":"Achievement","required":false,"defaultEnabled":true,"choices":[]}],"writePersonal":[],"allowsAnonymous":false}
+            {
+              "id":"\(reviewID)",
+              "listingID":"native-sample-student",
+              "contractURI":"sample-student-contract",
+              "title":"\(DemoSchool.name)",
+              "description":"Choose what to share and what Westbridge can add to your Passport.",
+              "recipients":[{"id":"sample-school","name":"\(DemoSchool.name)"}],
+              "readCredentials":[
+                {"id":"Portfolio","required":false,"choices":[{"id":"design","title":"Design for people"}]},
+                {"id":"Achievements","required":false,"choices":[{"id":"community","title":"Community builder"}]},
+                {"id":"Membership","required":false,"choices":[{"id":"member","title":"A place to belong"}]}
+              ],
+              "readPersonal":[{"id":"Name","required":false,"choices":[]}],
+              "writeCredentials":[{"id":"Achievement","required":false,"defaultEnabled":true,"choices":[]}],
+              "writePersonal":[],
+              "allowsAnonymous":false
+            }
             """)
         }
         guard id == "sample-studio" else { return nil }
@@ -99,4 +115,14 @@ public actor DemoConsumerAppService: ConsumerAppService {
         let data = try encoder.encode(records)
         return try decode("{\"records\":\(String(decoding: data, as: UTF8.self)),\"hasMore\":false}")
     }
+}
+
+enum DemoSchool {
+    static let name = "Westbridge College"
+    static let credentialTitles = [
+        "Orientation Guide", "Community Research Showcase", "Digital Literacy Workshop",
+        "Campus Sustainability Project", "Public Speaking Lab", "Student Art Exhibition",
+        "Collaborative Leadership", "Accessible Design Workshop", "Open Studio Practicum",
+        "Community Innovation Challenge", "Peer Mentor Award", "Design Capstone",
+    ]
 }

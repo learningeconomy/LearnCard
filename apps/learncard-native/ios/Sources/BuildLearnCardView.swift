@@ -103,11 +103,15 @@ struct BuildLearnCardView: View {
 
     private var sampleCredentials: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(NativeText.text("build.samplesTitle")).font(.title2.bold()).headingFlair(Palette.flairBlue)
-            Text(NativeText.text("build.samplesBody")).font(.subheadline).foregroundStyle(Palette.secondary)
-            if (intake.samplesLoading && !intake.sampleBusy) || reviewingSample {
-                ProgressView(NativeText.text(intake.sampleBusy ? "build.samplesSyncing" : "build.samplesLoading"))
+            HStack(spacing: 10) {
+                Text(NativeText.text("build.samplesTitle")).font(.title2.bold()).headingFlair(Palette.flairBlue)
+                Spacer(minLength: 0)
+                if (intake.samplesLoading && !intake.sampleBusy) || reviewingSample {
+                    ProgressView().tint(Palette.brandGreen)
+                        .accessibilityLabel(NativeText.text("build.samplesLoading"))
+                }
             }
+            Text(NativeText.text("build.samplesBody")).font(.subheadline).foregroundStyle(Palette.secondary)
             ForEach(intake.samples) { bundle in
                 Button {
                     if bundle.connected {

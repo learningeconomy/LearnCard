@@ -158,23 +158,33 @@ public actor DemoIntakeService: IntakeService {
     private var failSampleOnce: Bool
     public init(service: any CredentialService = DemoCredentialService(), consumer: DemoConsumerAppService = DemoConsumerAppService(), sampleDelay: Duration = .zero, failSampleOnce: Bool = false) { self.service = service; self.consumer = consumer; self.sampleDelay = sampleDelay; self.failSampleOnce = failSampleOnce }
     public func samples() async -> [SampleCredentialBundle] {
-        [SampleCredentialBundle(id: "native-sample-student", title: "Sample student", expected: 12, connected: await consumer.sampleConsented)]
+        [SampleCredentialBundle(id: "native-sample-student", title: DemoSchool.name, expected: DemoSchool.credentialTitles.count, connected: await consumer.sampleConsented)]
     }
     public func syncSample(id: String) async throws -> IntakeResult { try await syncSample(id: id, progress: { _ in }) }
     public func syncSample(id: String, progress: @escaping @Sendable (SampleSyncProgress) async -> Void) async throws -> IntakeResult {
         guard id == "native-sample-student", await consumer.sampleConsented else { throw ConsumerAppError.decision }
         guard let demo = service as? DemoCredentialService else { throw ConsumerAppError.unavailable }
         var added = 0, existing = 0, failed = 0
-        await progress(SampleSyncProgress(processed: 0, total: 12))
-        for number in 1...12 {
+        let total = DemoSchool.credentialTitles.count
+        await progress(SampleSyncProgress(processed: 0, total: total))
+        for (index, title) in DemoSchool.credentialTitles.enumerated() {
             try Task.checkCancellation()
             if sampleDelay > .zero { try await Task.sleep(for: sampleDelay) }
-            if failSampleOnce && number == 12 { failSampleOnce = false; failed += 1; await progress(SampleSyncProgress(processed: number, total: 12)); continue }
-            let key = "sample-student-\(number)"
-            if saved.contains(key) { existing += 1; await progress(SampleSyncProgress(processed: number, total: 12)); continue }
-            await demo.importSample(id: key, title: "Sample learning \(number)", issuer: "Sample school")
-            saved.insert(key); added += 1
-            await progress(SampleSyncProgress(processed: number, total: 12))
+            let processed = index + 1
+            if failSampleOnce && processed == total {
+                failSampleOnce = false
+                failed += 1
+            } else {
+                let key = "sample-student-\(processed)"
+                if saved.contains(key) {
+                    existing += 1
+                } else {
+                    await demo.importSample(id: key, title: title, issuer: DemoSchool.name)
+                    saved.insert(key)
+                    added += 1
+                }
+            }
+            await progress(SampleSyncProgress(processed: processed, total: total))
         }
         return IntakeResult(added: added, existing: existing, failed: failed)
     }
