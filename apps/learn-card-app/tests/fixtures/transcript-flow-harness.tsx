@@ -1,3 +1,4 @@
+import 'virtual:react-router/inject-hmr-runtime';
 import React, { createContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';

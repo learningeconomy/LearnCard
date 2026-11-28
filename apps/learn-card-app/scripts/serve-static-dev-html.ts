@@ -28,10 +28,32 @@ export const staticDevHtmlFile = (root: string, pathname: string): string | unde
     return existsSync(file) ? file : undefined;
 };
 
+/**
+ * React Router wraps non-node_modules modules with a refresh runtime that throws unless
+ * `window.__vite_plugin_react_preamble_installed__` is set. `transformIndexHtml` only
+ * injects `/@vite/client` on these standalone pages, not `inject-hmr-runtime`.
+ */
+export const REACT_ROUTER_HMR_PREAMBLE_IMPORT = 'virtual:react-router/inject-hmr-runtime';
+const PREAMBLE_SCRIPT = `<script type="module">import "${REACT_ROUTER_HMR_PREAMBLE_IMPORT}";</script>`;
+
+export const ensureReactRouterHmrPreamble = (html: string): string => {
+    if (
+        html.includes(REACT_ROUTER_HMR_PREAMBLE_IMPORT) ||
+        html.includes('__vite_plugin_react_preamble_installed__')
+    ) {
+        return html;
+    }
+    const withHead = html.match(/<head[^>]*>/i);
+    if (withHead?.index === undefined) return `${PREAMBLE_SCRIPT}\n${html}`;
+    const insertAt = withHead.index + withHead[0].length;
+    return `${html.slice(0, insertAt)}\n    ${PREAMBLE_SCRIPT}${html.slice(insertAt)}`;
+};
+
 /** Serves the allowlisted HTML files through Vite's HTML transform before React Router. */
 export const serveStaticDevHtml = (root: string): Plugin => ({
     name: 'learncard-serve-static-dev-html',
     apply: 'serve',
+    enforce: 'pre',
     configureServer(server) {
         server.middlewares.use(async (request, response, next) => {
             if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -45,10 +67,12 @@ export const serveStaticDevHtml = (root: string): Plugin => ({
                 return;
             }
             try {
-                const html = await server.transformIndexHtml(
-                    pathname,
-                    await readFile(file, 'utf8'),
-                    request.originalUrl
+                const html = ensureReactRouterHmrPreamble(
+                    await server.transformIndexHtml(
+                        pathname,
+                        await readFile(file, 'utf8'),
+                        request.originalUrl
+                    )
                 );
                 response.setHeader('Content-Type', 'text/html; charset=utf-8');
                 response.setHeader('Cache-Control', 'no-store');

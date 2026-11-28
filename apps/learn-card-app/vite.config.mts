@@ -25,6 +25,7 @@ import {
 import { CHUNK_PREFETCH_LIST_FILE } from './scripts/finalize-static-build';
 import { cssModulesInEvaluationOrder, orderEntryCss } from './src/buildPlugins/entryCssOrder';
 import { serveStaticDevHtml } from './scripts/serve-static-dev-html';
+import { warmDevServer } from './scripts/warm-dev-server';
 import { documentBrandingFor } from './src/config/documentBranding';
 import { createManualChunks } from './src/buildPlugins/vendorChunks';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
@@ -396,6 +397,7 @@ export const learnCardViteConfig = async (
             ...(frameworkMode
                 ? [
                       serveStaticDevHtml(__dirname),
+                      warmDevServer(),
                       chunkPrefetchList(),
                       reactRouterEntryCssOrder(),
                       ...reactRouter(),
@@ -492,6 +494,32 @@ export const learnCardViteConfig = async (
                 'moment/dist/locale/ar',
                 'moment/dist/locale/es',
                 'moment/dist/locale/fr',
+                // Discovered during verification/mock sign-in on a cold Vite 8 cache.
+                // Without these, "optimized dependencies changed. reloading" detaches the Sign in button.
+                '@capacitor-mlkit/barcode-scanning',
+                '@capacitor/network',
+                '@capacitor/share',
+                '@capawesome/capacitor-badge',
+                '@nanostores/react',
+                '@tanstack/react-query-persist-client',
+                'base64url',
+                'capacitor-native-settings',
+                'dompurify',
+                'html2canvas',
+                'jspdf',
+                'lodash-es/isEqual',
+                'lodash/debounce',
+                'pdf-lib',
+                'react-colorful',
+                'react-lottie-player',
+                'react-oauth2-code-pkce',
+                'zustand',
+                '@capacitor-community/media',
+                'papaparse',
+                '@typeform/embed-react',
+                'jszip',
+                'react-countdown',
+                'react-phone-number-input',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,

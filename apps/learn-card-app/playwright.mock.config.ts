@@ -52,7 +52,8 @@ const config: PlaywrightTestConfig = {
         // re-optimize full-page reload lands during sign-in (flaky LaunchPad test).
         // With the output already on disk, the plugin's startup compile is a no-op.
         command: `bun scripts/prepare-native-config.ts learncard --stage local && bun run i18n:compile && bunx vite --host --port ${mockPort} --strictPort`,
-        url: `http://localhost:${mockPort}`,
+        // Stay 503 until Vite has finished the cold-start dep optimize+reload.
+        url: `http://localhost:${mockPort}/__lc-dev-ready`,
         timeout: 5 * 60 * 1000,
         reuseExistingServer: !process.env.CI,
         ignoreHTTPSErrors: true,

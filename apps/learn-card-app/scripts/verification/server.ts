@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { createServer, loadConfigFromFile } from 'vite';
+import { createServer } from 'vite';
 import type { Plugin } from 'vite';
 import { z } from 'zod';
 import { APP_ROOT } from './constants';
@@ -8,6 +8,7 @@ import { documentBrandingFor } from '../../src/config/documentBranding';
 import { verificationBrandingPlugin } from './branding';
 import { readStackEndpoints } from './stack';
 import { processIdentity } from './process';
+import { warmViteDevServer } from '../warm-dev-server';
 
 // This is a direct child entrypoint, not imported by lc. The real app configuration,
 // transforms and source modules are unchanged; only deployment configuration differs.
@@ -33,6 +34,7 @@ const start = async (): Promise<void> => {
     );
     const stack = await readStackEndpoints(directory);
     const tenant = await readFile(join(directory, 'tenant-config.json'), 'utf8');
+    let depsWarm = false;
     const overlay: Plugin = {
         name: 'lc-verification-tenant',
         enforce: 'pre',
@@ -40,6 +42,13 @@ const start = async (): Promise<void> => {
             server.middlewares.use((request, response, next) => {
                 const url = new URL(request.url ?? '/', stack.app);
                 const pathname = url.pathname;
+                if (pathname === '/__verification' && !depsWarm) {
+                    response.statusCode = 503;
+                    response.setHeader('Content-Type', 'application/json');
+                    response.setHeader('Cache-Control', 'no-store');
+                    response.end(JSON.stringify({ token, ready: false }));
+                    return;
+                }
                 if (
                     pathname === '/tenant-config.json' ||
                     pathname === '/__tenant-config' ||
@@ -48,7 +57,9 @@ const start = async (): Promise<void> => {
                     response.setHeader('Content-Type', 'application/json');
                     response.setHeader('Cache-Control', 'no-store');
                     response.end(
-                        pathname === '/__verification' ? JSON.stringify({ token }) : tenant
+                        pathname === '/__verification'
+                            ? JSON.stringify({ token, ready: true })
+                            : tenant
                     );
                     return;
                 }
@@ -71,28 +82,20 @@ const start = async (): Promise<void> => {
         CHOKIDAR_USEPOLLING: 'false',
         CHOKIDAR_INTERVAL: '1000',
     });
-    // Bun loads TypeScript with development exports. Vite's default bundler ignores
-    // that condition while externalizing config imports and requires stale dist builds.
-    const loaded = await loadConfigFromFile(
-        { command: 'serve', mode: 'development', isSsrBuild: false, isPreview: false },
-        join(app, 'vite.config.mts'),
-        app,
-        undefined,
-        undefined,
-        'native'
-    );
-    if (!loaded) throw new Error('LearnCard Vite configuration not found');
-    const resolved = loaded.config;
+    // React Router's Vite plugin throws in configResolved (and its child compiler
+    // reloads the same path) unless configFile is a real file. The native loader
+    // is required so Bun honors development package exports; Vite's default
+    // bundler would externalize those imports and require stale dist builds.
+    const configFile = join(app, 'vite.config.mts');
     const server = await createServer({
-        ...resolved,
+        configFile,
+        configLoader: 'native',
         root: app,
-        configFile: false,
         envFile: false,
         mode: 'development',
         cacheDir: join(directory, 'vite-cache'),
         // This stack's tenant title, not the developer's public/tenant-config.json.
         define: {
-            ...resolved.define,
             __LC_DOCUMENT_BRANDING__: JSON.stringify(
                 documentBrandingFor(
                     (JSON.parse(tenant) as { branding?: { name?: string; shortName?: string } })
@@ -100,9 +103,8 @@ const start = async (): Promise<void> => {
                 )
             ),
         },
-        plugins: [overlay, verificationBrandingPlugin(), ...(resolved.plugins ?? [])],
+        plugins: [overlay, verificationBrandingPlugin()],
         server: {
-            ...resolved.server,
             host: '127.0.0.1',
             port: stack.ports.app,
             strictPort: true,
@@ -120,6 +122,10 @@ const start = async (): Promise<void> => {
         void shutdown();
     });
     await server.listen();
+    // Discover and pre-bundle lazy sign-in deps before doctor/bootstrap attach a browser.
+    // Otherwise Vite's "optimized dependencies changed. reloading" aborts entry.client.
+    await warmViteDevServer(server);
+    depsWarm = true;
     server.printUrls();
 };
 
