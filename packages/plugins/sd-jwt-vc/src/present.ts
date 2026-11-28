@@ -1,4 +1,4 @@
-import type { HashAlgorithm, PresentationFrame, Signer as SdJwtLibSigner } from '@sd-jwt/types';
+import type { HashAlgorithm, PresentationFrame, Signer as SdJwtLibSigner } from '@sd-jwt/core';
 import type { VerificationCheck } from '@learncard/types';
 
 import { sha256Hasher } from './hasher';

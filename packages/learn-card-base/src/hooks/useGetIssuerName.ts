@@ -1,13 +1,14 @@
 import useWallet from './useWallet';
 import { useQuery } from '@tanstack/react-query';
 import { getIssuer } from 'learn-card-base/helpers/credentialHelpers';
-import { LCNProfile, VC } from '@learncard/types';
+import { VC } from '@learncard/types';
 
-export const useGetIssuerName = (vc: VC) => {
+export const useGetIssuerName = (vc: VC, enabled = true) => {
     const issuer = getIssuer(vc);
+    const issuerName = typeof issuer === 'string' ? undefined : issuer?.name;
     const { initWallet } = useWallet();
 
-    const getIssuerProfile = async () => {
+    const getIssuerProfile = async (): Promise<string | null> => {
         const wallet = await initWallet();
         const hasLCNetworkAcct =
             typeof vc?.issuer === 'string'
@@ -18,20 +19,21 @@ export const useGetIssuerName = (vc: VC) => {
 
         if (hasLCNetworkAcct) {
             const regex = /(users:)(.*)/;
-            const profileId = vc?.issuer?.match(regex)?.[2];
+            const issuerDid = typeof issuer === 'string' ? issuer : issuer?.id;
+            const profileId = issuerDid?.match(regex)?.[2];
             profile = await wallet?.invoke?.getProfile(profileId);
-            return profile?.displayName;
+            return profile?.displayName ?? null;
         }
         return null;
     };
 
-    const { data: profileName } = useQuery<LCNProfile>({
+    const { data: profileName } = useQuery<string | null>({
         queryKey: ['getIssuerProfile', issuer],
         queryFn: getIssuerProfile,
-        options: { skip: !!issuer?.name },
+        enabled: enabled && !!issuer && !issuerName,
     });
 
-    return issuer?.name || profileName;
+    return issuerName || profileName;
 };
 
 export default useGetIssuerName;

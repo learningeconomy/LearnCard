@@ -1,4 +1,4 @@
-import { decodeSdJwt, getClaims } from '@sd-jwt/decode';
+import { decodeSdJwt, getClaims } from '@sd-jwt/core';
 
 import { sha256Hasher } from './hasher';
 import {

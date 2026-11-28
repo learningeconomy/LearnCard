@@ -70,7 +70,7 @@ const completed = (usage: unknown = { input_tokens: 123, output_tokens: 7 }) => 
     usage,
 });
 const callParams = {
-    model: 'gpt-6.1-sol',
+    model: 'gpt-6.2-sol',
     message: 'synthetic private input',
     output: z.object({ answer: z.string() }),
 };
@@ -198,7 +198,7 @@ for (const status of ['completed', 'failed', 'incomplete'] as const) {
         };
         const pending = withUsageMeter(meter, () =>
             streamProvider([event, event]).streamingCall({
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 message: 'synthetic',
             })
         );
@@ -217,7 +217,7 @@ test('streams without terminal usage remain unmeasured', async () => {
     await withUsageMeter(meter, async () => {
         await expect(
             streamProvider([]).streamingCall({
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 message: 'synthetic',
             })
         ).rejects.toThrow();
@@ -227,7 +227,7 @@ test('streams without terminal usage remain unmeasured', async () => {
                     type: 'response.completed',
                     response: { status: 'completed', output: [] },
                 },
-            ]).streamingCall({ model: 'gpt-6.1-sol', message: 'synthetic' })
+            ]).streamingCall({ model: 'gpt-6.2-sol', message: 'synthetic' })
         ).toBe('');
     });
     expect(meter.generation).toEqual({
@@ -469,7 +469,7 @@ const budgetFixture = (mode: (typeof budgetCases)[number]) => {
             mode === 'structured'
                 ? client.call({ ...callParams, signal })
                 : client.streamingCall({
-                      model: 'gpt-6.1-sol',
+                      model: 'gpt-6.2-sol',
                       message: 'synthetic',
                       options: { signal },
                   }),

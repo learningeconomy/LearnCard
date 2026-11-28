@@ -6,5 +6,13 @@
     "dependencies": {
         "nx": "23.2.1",
         "typescript": "5.9.3"
+    },
+    "overrides": {
+        "nx@23.2.1": {
+            "axios": "1.20.0",
+            "follow-redirects": "1.16.2",
+            "brace-expansion": "5.0.12",
+            "smol-toml": "1.9.0"
+        }
     }
 }

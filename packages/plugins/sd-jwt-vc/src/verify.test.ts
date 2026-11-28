@@ -1,3 +1,4 @@
+import { deflateSync } from 'node:zlib';
 import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
@@ -70,7 +71,11 @@ const buildLearnCardMock = (publicJwk: Record<string, unknown>): LearnCardMock =
 const issueTestCredential = async (
     overrides: Record<string, unknown> = {},
     crv = 'Ed25519'
-): Promise<{ compact: string; publicJwk: Record<string, unknown> }> => {
+): Promise<{
+    compact: string;
+    publicJwk: Record<string, unknown>;
+    signer: (data: string) => Promise<string>;
+}> => {
     const { signer, publicJwk } = await makeIssuerSigner(crv);
 
     const instance = new SDJwtVcInstance({
@@ -94,10 +99,88 @@ const issueTestCredential = async (
         { header: { kid: ISSUER_KID, alg: 'EdDSA' } }
     );
 
-    return { compact, publicJwk };
+    return { compact, publicJwk, signer };
+};
+
+const STATUS_LIST_URI = 'https://status.example.com/lists/1';
+
+const signStatusListJwt = async (
+    signer: (data: string) => Promise<string>,
+    statusBytes: number[]
+): Promise<string> => {
+    const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+    const data = `${encode({ alg: 'EdDSA', typ: 'statuslist+jwt', kid: ISSUER_KID })}.${encode({
+        iss: ISSUER_DID,
+        sub: STATUS_LIST_URI,
+        iat: Math.floor(Date.now() / 1000),
+        status_list: {
+            bits: 1,
+            lst: deflateSync(Buffer.from(statusBytes)).toString('base64url'),
+        },
+    })}`;
+    return `${data}.${await signer(data)}`;
+};
+
+const stubStatusListFetch = (statusListJwt: string) => {
+    const fetchMock = vi.fn(
+        async () =>
+            new Response(statusListJwt, {
+                headers: { 'content-type': 'application/statuslist+jwt' },
+            })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
 };
 
 describe('verifySdJwtVc', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('verifies a credential whose status list is signed by the issuer', async () => {
+        const { compact, publicJwk, signer } = await issueTestCredential({
+            status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
+        });
+        const fetchMock = stubStatusListFetch(await signStatusListJwt(signer, [0]));
+
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact);
+
+        expect(fetchMock).toHaveBeenCalledWith(STATUS_LIST_URI, expect.anything());
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+    });
+
+    it('still verifies the status list with the OpenID4VCI receipt option', async () => {
+        const { compact, publicJwk, signer } = await issueTestCredential({
+            status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
+        });
+        const fetchMock = stubStatusListFetch(await signStatusListJwt(signer, [0]));
+
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact, {
+            skipStatusCheck: true,
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(STATUS_LIST_URI, expect.anything());
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+        expect(result.warnings).toEqual([]);
+    });
+
+    it('rejects a revoked credential even with the OpenID4VCI receipt option', async () => {
+        const { compact, publicJwk, signer } = await issueTestCredential({
+            status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
+        });
+        const fetchMock = stubStatusListFetch(await signStatusListJwt(signer, [1]));
+
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact, {
+            skipStatusCheck: true,
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(STATUS_LIST_URI, expect.anything());
+        expect(result.errors).not.toEqual([]);
+        expect(result.checks).not.toContain('issuer_signature');
+    });
+
     it('retains verification of an Ed448-signed credential from a resolvable DID issuer', async () => {
         const { compact, publicJwk } = await issueTestCredential({}, 'Ed448');
         expect(publicJwk.crv).toBe('Ed448');
@@ -249,15 +332,30 @@ describe('verifySdJwtVc', () => {
         expect(allMsgs).toMatch(/invalid_compact_form|disclosure_hash_mismatch/);
     });
 
+    it('rejects a disclosure re-encoded with a new value instead of dropping it (GHSA-f9j6-8p6x-r9j6)', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const parts = compact.split('~');
+        const index = parts.findIndex((part, i) => i > 0 && part.length > 0);
+        const [salt, key] = JSON.parse(Buffer.from(parts[index]!, 'base64url').toString('utf8'));
+        parts[index] = Buffer.from(JSON.stringify([salt, key, 'tampered'])).toString('base64url');
+        const learnCard = buildLearnCardMock(publicJwk);
+
+        const result = await verifySdJwtVc(learnCard, parts.join('~'));
+
+        expect(result.errors).toEqual([
+            expect.stringMatching(/^disclosure_hash_mismatch: .*Unreferenced disclosure/),
+        ]);
+        expect(result.checks).not.toContain('issuer_signature');
+    });
+
     it('rejects an SD-JWT-VC with a tampered JWT payload (signature path)', async () => {
         const { compact, publicJwk } = await issueTestCredential();
         const [jwt, ...rest] = compact.split('~');
-        const [header, , signature] = jwt!.split('.');
+        const [header, payload, signature] = jwt!.split('.');
+        // Keep _sd and _sd_alg so every disclosure stays referenced and only the signature fails.
         const fakePayload = Buffer.from(
             JSON.stringify({
-                iss: ISSUER_DID,
-                iat: Math.floor(Date.now() / 1000),
-                vct: 'https://example.com/credentials/test-cert',
+                ...JSON.parse(Buffer.from(payload!, 'base64url').toString('utf8')),
                 attacker: 'forged',
             })
         )

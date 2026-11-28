@@ -38,7 +38,7 @@ import { Buffer } from 'node:buffer';
 
 import { exportJWK, generateKeyPair, importJWK, SignJWT, type JWK, type KeyLike } from 'jose';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
-import { decodeSdJwt, getClaims } from '@sd-jwt/decode';
+import { decodeSdJwt, getClaims } from '@sd-jwt/core';
 
 /* -------------------------------------------------------------------------- */
 /*                              issuer singleton                              */
@@ -431,7 +431,8 @@ const handleCredential = async (
         });
     }
 
-    const body = await readJson(req);
+    const body = (await readJson(req)) as
+        { proofs?: { jwt?: unknown[] }; proof?: { jwt?: unknown } } | undefined;
     // Accept the OID4VCI 1.0 `proofs: { jwt: [...] }` shape and the legacy
     // Draft 13 singular `proof: { jwt }` shape (the wallet supports both).
     const proofJwt = body?.proofs?.jwt?.[0] ?? body?.proof?.jwt;
@@ -652,7 +653,8 @@ const verifyEmbeddedPresentation = async (opts: {
         throw new Error(
             `Issuer signature or disclosure hashes failed: ${
                 e instanceof Error ? e.message : String(e)
-            }`
+            }`,
+            { cause: e }
         );
     }
 
@@ -734,7 +736,8 @@ const verifyEmbeddedPresentation = async (opts: {
             throw new Error(
                 `KB-JWT signature failed against credential's cnf.jwk: ${
                     e instanceof Error ? e.message : String(e)
-                }`
+                }`,
+                { cause: e }
             );
         }
     }
@@ -890,7 +893,7 @@ const canonicalize = (jwk: JWK): Record<string, unknown> => {
     return out;
 };
 
-const readJson = (req: IncomingMessage): Promise<any> =>
+const readJson = (req: IncomingMessage): Promise<unknown> =>
     new Promise((resolve, reject) => {
         const chunks: Buffer[] = [];
         req.on('data', (c: Buffer) => chunks.push(c));

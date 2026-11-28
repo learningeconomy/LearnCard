@@ -360,11 +360,11 @@ describe('native structured generation', () => {
     });
 
     it.each([
-        'gpt-6.1-sol',
-        'us.openai.gpt-6.1-sol',
+        'gpt-6.2-sol',
+        'us.openai.gpt-6.2-sol',
         ...['low', 'medium', 'high', 'xhigh', 'max'].flatMap(effort => [
-            `gpt-6.1-sol-${effort}`,
-            `us.openai.gpt-6.1-sol-${effort}`,
+            `gpt-6.2-sol-${effort}`,
+            `us.openai.gpt-6.2-sol-${effort}`,
         ]),
     ])(
         'blocks unverified Bedrock Sol effort mapping before any client or request: %s',
@@ -479,7 +479,7 @@ describe('native structured generation', () => {
         await expect(
             new BedrockConverseProvider(factory).call({
                 ...common,
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 output: entry.schema,
             })
         ).rejects.toThrow();
