@@ -82,10 +82,12 @@ const start = async (): Promise<void> => {
         CHOKIDAR_USEPOLLING: 'false',
         CHOKIDAR_INTERVAL: '1000',
     });
-    // React Router's Vite plugin throws in configResolved (and its child compiler
-    // reloads the same path) unless configFile is a real file. The native loader
-    // is required so Bun honors development package exports; Vite's default
-    // bundler would externalize those imports and require stale dist builds.
+    // React Router's Vite plugin throws in configResolved unless configFile is a
+    // real file. That plugin then reloads the same path via loadConfigFromFile
+    // with Vite's default bundle loader, which cannot resolve workspace
+    // development exports (e.g. @learncard/helpers) unless their dist exists.
+    // createServer still requests the native loader; the bun --preload in
+    // stack.ts applies it to that child-compiler reload as well.
     const configFile = join(app, 'vite.config.mts');
     const server = await createServer({
         configFile,

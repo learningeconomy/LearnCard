@@ -224,9 +224,60 @@ assert.equal(summary.env.VERIFICATION_OUTCOME, '${{ steps.catalog.outcome }}');
 assert.ok(summary.run.includes(`if [[ "$SHARD_ID" == '3' ]]; then unset SCRIPT_OUTCOME; fi`));
 
 assert.equal(summary.env.TEARDOWN_OUTCOME, '${{ steps.teardown.outcome }}');
+
+const stageRuntimeLogsIndex = steps.findIndex(
+    step => step.name === 'Stage verification runtime logs'
+);
+const uploadRuntimeLogsIndex = steps.findIndex(
+    step => step.name === 'Upload verification runtime logs'
+);
+assert.ok(
+    stageRuntimeLogsIndex > campaignsIndex,
+    'runtime logs must be staged after the last proof step'
+);
+assert.ok(
+    stageRuntimeLogsIndex < teardownIndex,
+    'stage token-redacted runtime logs before teardown can remove the stack directory'
+);
+assert.ok(
+    uploadRuntimeLogsIndex > teardownIndex,
+    'upload already-staged runtime logs after teardown'
+);
+const stageRuntimeLogs = steps[stageRuntimeLogsIndex];
+assert.equal(stageRuntimeLogs.if, '${{ always() }}');
+assert.match(stageRuntimeLogs.run, /PRIVATE_LOG_DIR\/runtime/);
+assert.match(stageRuntimeLogs.run, /startup\.log/);
+assert.match(stageRuntimeLogs.run, /frontend\.log/);
+assert.match(stageRuntimeLogs.run, /startup-failure\.json/);
+assert.match(stageRuntimeLogs.run, /readiness\.json/);
+assert.match(stageRuntimeLogs.run, /startup-timings\.json/);
+assert.match(stageRuntimeLogs.run, /\[redacted-token\]/);
+
 const artifacts = steps.filter(step => step.uses === 'actions/upload-artifact@v4');
-assert.equal(artifacts.length, 2, 'retain only the existing media and sanitized summary');
-assert.ok(artifacts.every(step => step.if === '${{ always() }}'));
+assert.equal(
+    artifacts.length,
+    3,
+    'failure-only runtime logs, plus the shard bundle and sanitized summary'
+);
+const runtimeLogs = artifacts.find(step => step.name === 'Upload verification runtime logs');
+assert.ok(runtimeLogs, 'failure-only runtime-log upload must exist');
+assert.equal(runtimeLogs.if, '${{ failure() }}');
+assert.equal(
+    runtimeLogs.with.name,
+    'lc-verification-runtime-logs-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}'
+);
+assert.equal(runtimeLogs.with.path, '${{ env.PRIVATE_LOG_DIR }}/runtime');
+assert.equal(runtimeLogs.with['if-no-files-found'], 'ignore');
+assert.doesNotMatch(
+    String(runtimeLogs.with.path),
+    /STACK_DIR|trace|session/,
+    'upload only the staged, token-redacted runtime directory'
+);
+const retained = artifacts.filter(step => step.name !== 'Upload verification runtime logs');
+assert.equal(retained.length, 2);
+assert.ok(retained.every(step => step.if === '${{ always() }}'));
+assert.ok(retained.some(step => step.name === 'Retain sanitized summary only'));
+assert.ok(retained.some(step => step.name === 'Retain validated shard bundle'));
 assert.ok(source.every(step => !step.uses?.startsWith('actions/upload-artifact@')));
 assert.ok(bundle.every(step => !step.uses?.startsWith('actions/upload-artifact@')));
 console.log('verification lifecycle, isolated shards and fail-closed aggregate outcomes passed');
