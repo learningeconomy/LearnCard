@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
+import moment from 'moment';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
+import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from '../CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
 import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
 import { isDid, formatDidDisplayName, getLifecycleTreatment } from '@learncard/react';
 import {
@@ -11,6 +11,7 @@ import {
     getAchievementTypeDisplayText,
     getIssuer,
     getIssuanceDate,
+    getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { VC } from '@learncard/types';
@@ -77,6 +78,7 @@ export const formatRelativeDate = (date: string, locale: string, now = Date.now(
 
 type BoostListItemProps = {
     title?: string;
+    issuerName?: string;
     categoryType?: CredentialCategory;
     onClick?: () => void;
     onOptionsClick?: () => void;
@@ -101,6 +103,7 @@ const DEFAULT_BG_COLOR = 'bg-white';
 
 const BoostListItem: React.FC<BoostListItemProps> = ({
     title,
+    issuerName: resolvedIssuerName,
     credential,
     categoryType = CredentialCategoryEnum.achievement,
     onClick,
@@ -149,17 +152,16 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             return formatRelativeDate(getIssuanceDate(credential), activeLocale);
         }
 
-        const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
-            uppercaseDate: false,
-        });
-        return createdAt;
+        const dateValue = credential?.issuanceDate || credential?.validFrom;
+        return moment(dateValue).locale(activeLocale).format('MMMM DD YYYY');
     }, [activeLocale, credential, relativeDate]);
     const expirationDate = getCredentialExpirationDate(credential);
     const isExpired = hasCredentialExpired(credential);
 
     const { subColor } = categoryMetadata[categoryType];
 
-    const issuerName = useGetIssuerName(credential);
+    const fallbackIssuerName = useGetIssuerName(credential, !resolvedIssuerName);
+    const displayTitle = title || getCredentialName(credential);
 
     const bgColors = useMemo(() => {
         const baseColors = {
@@ -184,20 +186,39 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         return baseColors;
     }, [branding]);
 
-    const issuerDid = useMemo(() => {
+    const issuerId = useMemo(() => {
         const issuer = getIssuer(credential);
-        const did = typeof issuer === 'string' ? issuer : issuer?.id;
-        return did && isDid(did) ? did : undefined;
+        return typeof issuer === 'string' ? issuer : issuer?.id;
     }, [credential]);
-
-    const issuerNode: React.ReactNode = issuerName ? (
-        issuerName
-    ) : issuerDid ? (
-        <>
-            <span className="font-semibold text-grayscale-900">Digital ID:</span>{' '}
-            <span className="text-grayscale-500 underline">{formatDidDisplayName(issuerDid)}</span>
-        </>
-    ) : null;
+    const issuerDid = issuerId && isDid(issuerId) ? issuerId : undefined;
+    const { data: issuerRegistry } = useKnownDIDRegistry(issuerId);
+    const trustedIssuerName =
+        issuerRegistry?.source === 'trusted'
+            ? issuerRegistry.results.matchingIssuers?.[0]?.issuer?.federation_entity
+                  ?.organization_name
+            : undefined;
+    const resolvedName = resolvedIssuerName?.trim();
+    const hasResolvedDisplayName =
+        resolvedName &&
+        resolvedName !== issuerId &&
+        !isDid(resolvedName) &&
+        !/^(?:https?:\/\/|urn:)/i.test(resolvedName);
+    const issuerName =
+        (hasResolvedDisplayName ? resolvedIssuerName : undefined) ||
+        trustedIssuerName ||
+        resolvedIssuerName ||
+        fallbackIssuerName;
+    const issuerNode: React.ReactNode =
+        issuerName && !isDid(issuerName) ? (
+            issuerName
+        ) : issuerDid ? (
+            <>
+                <span className="font-semibold text-grayscale-900">Digital ID:</span>{' '}
+                <span className="text-grayscale-500 underline">
+                    {formatDidDisplayName(issuerDid)}
+                </span>
+            </>
+        ) : null;
 
     const backgroundColor = useMemo(
         () => (loading ? 'bg-white' : DEFAULT_BG_COLOR),
@@ -323,9 +344,14 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 className={`flex flex-col items-start ${textBlockSize} font-poppins flex-1 min-w-0`}
             >
                 {showMediaBadge && (
+                    <h3 className="text-grayscale-900 font-semibold truncate w-full leading-tight">
+                        {displayTitle}
+                    </h3>
+                )}
+                {showMediaBadge && (
                     <>
                         {attachmentFileName ? (
-                            <span className="text-grayscale-700 font-semibold">
+                            <span className="text-grayscale-500 font-normal">
                                 {newItemIndicator} {attachmentTitle}
                             </span>
                         ) : (
@@ -334,7 +360,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                                 href={attachmentUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-grayscale-900 font-semibold truncate w-full"
+                                className="text-grayscale-500 font-normal truncate w-full"
                             >
                                 {newItemIndicator} {attachmentUrl}
                             </a>
@@ -344,7 +370,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 {!showMediaBadge && (
                     <div className="flex items-center gap-1.5 w-full min-w-0">
                         <h3 className="text-grayscale-900 font-semibold truncate min-w-0 leading-tight">
-                            {title}
+                            {displayTitle}
                         </h3>
                         {isInactive && (
                             <span

@@ -136,6 +136,7 @@ beforeEach(() => {
     mocks.appBaseUrl = 'https://tenant.example';
     mocks.inferredCategory = 'Achievement';
     mocks.route.id = 'AAAAAAAAAAAAAAAAAAAAAA';
+    mocks.intersect = undefined;
     mocks.auth.loggedIn = false;
     mocks.account.did = 'did:key:recipient-1';
     mocks.account.switchedDid = undefined;
@@ -1258,6 +1259,7 @@ describe('recipient screen', () => {
     it('acknowledges only once after visible render', async () => {
         const view = render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
+        await waitFor(() => expect(mocks.intersect).toBeDefined());
         expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
         mocks.intersect?.([{ isIntersecting: true }]);
         await waitFor(() =>
@@ -1273,6 +1275,7 @@ describe('recipient screen', () => {
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
         render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
+        await waitFor(() => expect(mocks.intersect).toBeDefined());
         mocks.intersect?.([{ isIntersecting: true }]);
         expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
         Object.defineProperty(document, 'visibilityState', {
@@ -1371,6 +1374,7 @@ describe('recipient screen', () => {
         vi.stubGlobal('cancelAnimationFrame', cancelFrame);
         const view = render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
+        await waitFor(() => expect(mocks.intersect).toBeDefined());
         mocks.intersect?.([{ isIntersecting: true }]);
         mocks.intersect?.([{ isIntersecting: true }]);
         fireEvent(document, new Event('visibilitychange'));
@@ -1384,6 +1388,7 @@ describe('recipient screen', () => {
     it('does not acknowledge after unmount during anonymous client lookup', async () => {
         const view = render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
+        await waitFor(() => expect(mocks.intersect).toBeDefined());
         let resolveWallet!: (wallet: typeof mocks.wallet) => void;
         mocks.anonymousWallet.mockReturnValueOnce(
             new Promise(resolve => {

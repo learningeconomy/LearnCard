@@ -17,8 +17,8 @@ import { getBedrockAuth } from './bedrock-auth';
 
 const DEFAULT_BASE_URL = `${BEDROCK_RUNTIME_ENDPOINT}/openai/v1`;
 const LUNA_PROFILE = 'us.openai.gpt-6-luna';
-// Exact Runtime ID verified from AWS's GPT-6.1 Sol model card, not inferred.
-const SOL_PROFILE = 'us.openai.gpt-6.1-sol';
+// Exact Runtime ID verified from AWS's GPT-6.2 Sol model card, not inferred.
+const SOL_PROFILE = 'us.openai.gpt-6.2-sol';
 
 export type BedrockTokenProviderFactory = (config: GetTokenProviderConfig) => () => Promise<string>;
 
@@ -85,7 +85,7 @@ export const getBedrockGenerationModelForAudit = (model: string): string => {
         model.startsWith('us.openai.') ? model.slice('us.openai.'.length) : model
     ).apiModel;
     if (baseModel === 'gpt-6-luna') return LUNA_PROFILE;
-    if (baseModel === 'gpt-6.1-sol') return SOL_PROFILE;
+    if (baseModel === 'gpt-6.2-sol') return SOL_PROFILE;
     throw new Error('Unapproved Bedrock generation model');
 };
 
@@ -98,7 +98,7 @@ export const resolveBedrockGenerationModel = (model: string): string => {
             retryable: true,
             httpStatus: 503,
             cause: new Error(
-                'GPT-6.1 Sol activation blocked: profile us.openai.gpt-6.1-sol is documented; native strict-output support and reasoning mapping remain unverified'
+                'GPT-6.2 Sol activation blocked: profile us.openai.gpt-6.2-sol is documented; native strict-output support and reasoning mapping remain unverified'
             ),
         });
     return attribution;

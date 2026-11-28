@@ -34,6 +34,7 @@ import {
     boostPreviewStore,
     connectionPromptKeys,
     switchedProfileStore,
+    invalidateCredentialIndexQueries,
 } from 'learn-card-base';
 
 import {
@@ -559,6 +560,12 @@ const ClaimBoost: React.FC<{
                                 { throwOnError: true }
                             ),
                         ]);
+                        // LC-2383: skills/IDs/useGetCredentials are sticky for 5 minutes, and the
+                        // deferred save skipped useWallet's refresh. Counts were handled above;
+                        // fire-and-forget so an unrelated index read can't fail the claim.
+                        void invalidateCredentialIndexQueries(queryClient, collectionDid, {
+                            includeCount: false,
+                        });
                         await assertActive();
                     },
                 },

@@ -39,7 +39,7 @@ export type AIProvider = 'openai' | 'anthropic' | 'google';
 export const PROVIDER_MODELS = {
     openai: {
         // Required logical roles; Bedrock invocation resolves only verified profiles.
-        'gpt-6.1-sol': 'gpt-6.1-sol',
+        'gpt-6.2-sol': 'gpt-6.2-sol',
         'gpt-6-luna': 'gpt-6-luna',
         // GPT-5.6 family
         'gpt-5.6': 'gpt-5.6-sol',
@@ -104,7 +104,7 @@ const LUNA_6_REASONING_EFFORTS: readonly OpenAIReasoningEffort[] = [
     'xhigh',
     'max',
 ];
-const SOL_61_REASONING_EFFORTS: readonly OpenAIReasoningEffort[] = [
+const SOL_62_REASONING_EFFORTS: readonly OpenAIReasoningEffort[] = [
     'low',
     'medium',
     'high',
@@ -132,8 +132,8 @@ export function assertOpenAIReasoningEffort(
 ): asserts effort is OpenAIReasoningEffort {
     const resolvedModel = resolveOpenAIModel(model);
     const supportedEfforts =
-        resolvedModel === 'gpt-6.1-sol'
-            ? SOL_61_REASONING_EFFORTS
+        resolvedModel === 'gpt-6.2-sol'
+            ? SOL_62_REASONING_EFFORTS
             : resolvedModel === 'gpt-6-luna'
               ? LUNA_6_REASONING_EFFORTS
               : resolvedModel.startsWith('gpt-5.6') || resolvedModel.startsWith('gpt-6')
@@ -177,7 +177,7 @@ export function getOpenAIReasoningEffort(
     if (!resolvedModel.startsWith('gpt-5') && !resolvedModel.startsWith('gpt-6')) return undefined;
 
     const usesDocumentedModelDefault =
-        resolvedModel === 'gpt-6.1-sol' || resolvedModel === 'gpt-6-luna';
+        resolvedModel === 'gpt-6.2-sol' || resolvedModel === 'gpt-6-luna';
     // Exact models default to medium. An explicitly configured unsupported effort
     // is an error, even when a supported model alias would otherwise override it.
     if (usesDocumentedModelDefault && configuredEffort !== undefined)

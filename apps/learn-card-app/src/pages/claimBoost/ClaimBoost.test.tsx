@@ -44,7 +44,10 @@ vi.mock('learn-card-base/ui/overlays/useAppAlert', () => ({
 vi.mock('learn-card-base/ui/overlays/useAppOverlayModal', () => ({
     useAppOverlayModal: () => [vi.fn(), vi.fn()],
 }));
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
+    invalidateCredentialIndexQueries: (
+        await import('learn-card-base/react-query/queries/credentialIndexCache')
+    ).invalidateCredentialIndexQueries,
     CredentialCategoryEnum: { achievement: 'Achievement', family: 'Family' },
     ModalTypes: { Right: 'right', Center: 'center' },
     ProfilePicture: () => null,
@@ -654,6 +657,37 @@ describe('ClaimBoost recovery', () => {
             expect(otherActor).not.toHaveBeenCalled();
             expect(otherReader).not.toHaveBeenCalled();
             expect(mocks.claimBoostWithLink).toHaveBeenCalledOnce();
+        } finally {
+            unsubscribe.forEach(stop => stop());
+            queryClient.clear();
+        }
+    });
+
+    it('refreshes the sticky credential-index queries for the claiming actor (LC-2383)', async () => {
+        mocks.switchedDid = 'did:web:test:child';
+        const queryClient = await renderClaim();
+        const skills = vi.fn().mockResolvedValue([]);
+        const credentials = vi.fn().mockResolvedValue([]);
+        const observers = [
+            new QueryObserver(queryClient, {
+                queryKey: ['useGetSkills', mocks.switchedDid],
+                queryFn: skills,
+                staleTime: Infinity,
+            }),
+            new QueryObserver(queryClient, {
+                queryKey: ['useGetCredentials', mocks.switchedDid, 'Achievement', undefined],
+                queryFn: credentials,
+                staleTime: Infinity,
+            }),
+        ];
+        const unsubscribe = observers.map(observer => observer.subscribe(() => {}));
+        try {
+            await waitFor(() => expect(skills).toHaveBeenCalledOnce());
+            await waitFor(() => expect(credentials).toHaveBeenCalledOnce());
+            fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+            await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledOnce());
+            await waitFor(() => expect(skills).toHaveBeenCalledTimes(2));
+            await waitFor(() => expect(credentials).toHaveBeenCalledTimes(2));
         } finally {
             unsubscribe.forEach(stop => stop());
             queryClient.clear();

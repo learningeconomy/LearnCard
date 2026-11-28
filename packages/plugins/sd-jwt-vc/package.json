@@ -51,9 +51,8 @@
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/vc-plugin": "workspace:^",
-        "@sd-jwt/core": "^0.19.0",
-        "@sd-jwt/decode": "^0.19.0",
-        "@sd-jwt/sd-jwt-vc": "^0.19.0",
+        "@sd-jwt/core": "^0.20.0",
+        "@sd-jwt/sd-jwt-vc": "^0.20.0",
         "jose": "^5.9.6",
         "@noble/curves": "1.9.7",
         "@scure/base": "1.2.6"

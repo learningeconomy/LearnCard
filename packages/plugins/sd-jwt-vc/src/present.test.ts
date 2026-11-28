@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
-import { decodeSdJwt } from '@sd-jwt/decode';
+import { decodeSdJwt } from '@sd-jwt/core';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
 import type { JWK } from 'jose';
 

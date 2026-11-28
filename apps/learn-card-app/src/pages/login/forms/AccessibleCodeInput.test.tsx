@@ -132,4 +132,40 @@ describe('AccessibleCodeInput', () => {
 
         expect(onChange).toHaveBeenLastCalledWith('123');
     });
+
+    it('backspace on an empty box clears the previous digit and focuses it', () => {
+        const { boxes, onChange, values } = setup();
+        '123'.split('').forEach((digit, index) => {
+            fireEvent.change(boxes[index], { target: { value: digit } });
+        });
+        expect(boxes[3]).toHaveFocus();
+
+        fireEvent.keyDown(boxes[3], { key: 'Backspace' });
+
+        expect(values()).toEqual(['1', '2', '', '', '', '']);
+        expect(onChange).toHaveBeenLastCalledWith('12');
+        expect(boxes[2]).toHaveFocus();
+    });
+
+    it('Delete clears the focused box without moving focus', () => {
+        const { boxes, onChange, values } = setup();
+        fireEvent.paste(boxes[0], { clipboardData: { getData: () => '123456' } });
+        boxes[2].focus();
+
+        fireEvent.keyDown(boxes[2], { key: 'Delete' });
+
+        expect(values()).toEqual(['1', '2', '', '4', '5', '6']);
+        expect(onChange).toHaveBeenLastCalledWith('12456');
+        expect(boxes[2]).toHaveFocus();
+    });
+
+    it('clears a box on an empty change event (cut / mobile soft-keyboard backspace)', () => {
+        const { boxes, onChange, values } = setup();
+        fireEvent.paste(boxes[0], { clipboardData: { getData: () => '123456' } });
+
+        fireEvent.change(boxes[2], { target: { value: '' } });
+
+        expect(values()).toEqual(['1', '2', '', '4', '5', '6']);
+        expect(onChange).toHaveBeenLastCalledWith('12456');
+    });
 });

@@ -92,11 +92,20 @@ export const markArchivedKeyReleased = async (uid: string): Promise<void> => {
     if (isLegacyKeyArchiveEnabled()) await tagArchivedKey(uid, 'released');
 };
 
+/**
+ * `missing` is returned only when S3 reports no object for this login. A record that exists
+ * but cannot be released is `unusable`; storage and KMS failures throw.
+ */
+export type ArchivedKeyRelease =
+    | { status: 'released'; privateKey: string; did: string }
+    | { status: 'missing' }
+    | { status: 'unusable' };
+
 export const releaseArchivedKey = async (
     uid: string,
     expectedPrimaryDid?: string
-): Promise<{ privateKey: string; did: string } | null> => {
-    if (!isLegacyKeyArchiveEnabled()) return null;
+): Promise<ArchivedKeyRelease> => {
+    if (!isLegacyKeyArchiveEnabled()) return { status: 'unusable' };
 
     let objectBytes: Uint8Array | undefined;
     let ciphertext: Buffer | undefined;
@@ -112,7 +121,7 @@ export const releaseArchivedKey = async (
                 })
             );
         } catch (error) {
-            if (isMissing(error)) return null;
+            if (isMissing(error)) return { status: 'missing' };
             throw error;
         }
         objectBytes = await object.Body?.transformToByteArray();
@@ -121,18 +130,18 @@ export const releaseArchivedKey = async (
             parsed = JSON.parse(objectBytes ? new TextDecoder().decode(objectBytes) : 'null');
         } catch {
             warn(uid, 'archived_key_invalid_record');
-            return null;
+            return { status: 'unusable' };
         }
         const result = recordValidator.safeParse(parsed);
         if (!result.success || result.data.uid !== uid) {
             warn(uid, 'archived_key_invalid_record');
-            return null;
+            return { status: 'unusable' };
         }
         const record = result.data;
         ciphertext = Buffer.from(record.ciphertextB64, 'base64');
         if (!ciphertext.length || ciphertext.toString('base64') !== record.ciphertextB64) {
             warn(uid, 'archived_key_invalid_record');
-            return null;
+            return { status: 'unusable' };
         }
         const decrypted = await clients.kms.send(
             new DecryptCommand({
@@ -144,7 +153,7 @@ export const releaseArchivedKey = async (
         plaintext = decrypted.Plaintext;
         if (decrypted.KeyId !== environment.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN || !plaintext) {
             warn(uid, 'archived_key_invalid_plaintext');
-            return null;
+            return { status: 'unusable' };
         }
         // Share the backing buffer so finally clears it; immutable strings cannot be zeroed.
         const privateKey = Buffer.from(
@@ -154,14 +163,14 @@ export const releaseArchivedKey = async (
         ).toString('utf8');
         if (!/^[0-9a-f]{64}$/i.test(privateKey)) {
             warn(uid, 'archived_key_invalid_plaintext');
-            return null;
+            return { status: 'unusable' };
         }
         const did = (await getEphemeralLearnCard(privateKey)).id.did();
         if (did !== record.did || (expectedPrimaryDid && did !== expectedPrimaryDid)) {
             warn(uid, 'archived_key_identity_mismatch');
-            return null;
+            return { status: 'unusable' };
         }
-        return { privateKey, did };
+        return { status: 'released', privateKey, did };
     } catch (error) {
         warn(uid, 'archived_key_release_failed', error);
         throw new TRPCError({

@@ -7,6 +7,7 @@ import {
     deriveWeb3AuthKey,
 } from '../createWeb3AuthStrategy';
 import { isNetworkError } from '../../helpers/networkError';
+import { LegacyKeyUnassignedError } from '../../auth-coordinator/errors';
 
 const sdk = vi.hoisted(() => ({
     init: vi.fn(),
@@ -52,6 +53,41 @@ const derive = (strategy: ReturnType<typeof createWeb3AuthStrategy>): Promise<st
     strategy.reconstructKey('local', 'remote');
 
 describe('Web3Auth account setup coordination', () => {
+    it('preserves only the definitive connect-time unassigned-key signal', async () => {
+        sdk.connect.mockRejectedValueOnce(new Error('new key assignment is temporarily disabled'));
+        await expect(deriveWeb3AuthKey(config, token())).rejects.toBeInstanceOf(
+            LegacyKeyUnassignedError
+        );
+    });
+
+    it.each(['Failed to fetch', '503 Service Unavailable', 'timeout', 'MFA required', 'no key'])(
+        'does not classify %s as an unassigned key',
+        async message => {
+            sdk.connect.mockRejectedValueOnce(new Error(message));
+            const error = await deriveWeb3AuthKey(config, token()).catch((cause: unknown) => cause);
+            expect(error).toBeInstanceOf(Error);
+            expect(error).not.toBeInstanceOf(LegacyKeyUnassignedError);
+        }
+    );
+
+    it('does not treat the same message from private-key retrieval as authoritative', async () => {
+        sdk.request.mockRejectedValueOnce(new Error('new key assignment is temporarily disabled'));
+        const error = await deriveWeb3AuthKey(config, token()).catch((cause: unknown) => cause);
+        expect(error).toBeInstanceOf(Error);
+        expect(error).not.toBeInstanceOf(LegacyKeyUnassignedError);
+    });
+
+    it.each([
+        'new key assignment is temporarily disabled',
+        { message: 'new key assignment is temporarily disabled' },
+        new Error('Request failed: new key assignment is temporarily disabled'),
+    ])('does not broaden the definitive signal to arbitrary rejections', async failure => {
+        sdk.connect.mockRejectedValueOnce(failure);
+        const error = await deriveWeb3AuthKey(config, token()).catch((cause: unknown) => cause);
+        expect(error).toBeInstanceOf(Error);
+        expect(error).not.toBeInstanceOf(LegacyKeyUnassignedError);
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         sdk.connected = false;
