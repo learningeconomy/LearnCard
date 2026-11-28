@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import LearnCardNativeCore
 import LearnCardNativeSDK
 
@@ -24,6 +25,7 @@ struct RootView: View {
     @State private var passportEntry = 0
     @State private var compactBrands = Array(repeating: false, count: 4)
     @State private var showFamilyReview = false
+    @State private var dockedKeyboardVisible = false
 
     var body: some View {
         // Reserve the tray's real height outside TabView. An inset around TabView
@@ -69,7 +71,17 @@ struct RootView: View {
             if store.intake.hasSampleNotice {
                 SampleSyncBanner(store: store, viewPassport: openPassport)
             }
-            NativeTabTray(selection: $selectedTab, inboxCount: inboxCount)
+            if !dockedKeyboardVisible {
+                NativeTabTray(selection: $selectedTab, inboxCount: inboxCount)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+            // Remove the tray before keyboard avoidance lifts the bottom of this stack.
+            if keyboardCoversBottom(in: notification) == true { dockedKeyboardVisible = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidChangeFrameNotification)) { notification in
+            // Restore it once the keyboard has cleared the bottom of the window.
+            if let coversBottom = keyboardCoversBottom(in: notification) { dockedKeyboardVisible = coversBottom }
         }
         .onChange(of: store.openInboxRequested) { _, value in if value { selectedTab = 1; store.openInboxRequested = false } }
         .task { if store.snapshot == nil { await store.refresh() }; if !store.inbox.loaded { await store.inbox.load() } }
@@ -123,6 +135,22 @@ struct RootView: View {
     private var inboxCount: Int {
         store.inboxCount
     }
+
+    private func keyboardCoversBottom(in notification: Notification) -> Bool? {
+        guard notification.userInfo?[UIResponder.keyboardIsLocalUserInfoKey] as? Bool != false,
+              let endFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return nil }
+
+        let keyboardScreen = notification.object as? UIScreen
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .filter({ keyboardScreen == nil || $0.screen === keyboardScreen })
+            .flatMap(\.windows).first(where: \.isKeyWindow),
+              let screen = window.windowScene?.screen else { return nil }
+
+        let overlap = window.bounds.intersection(screen.coordinateSpace.convert(endFrame, to: window))
+        return !overlap.isNull && overlap.maxY >= window.bounds.maxY - 1 && overlap.height > window.safeAreaInsets.bottom
+    }
+
     private func openPassport() {
         // An explicit All credentials/View Passport action returns to the full list.
         passportEntry += 1; compactBrands[0] = false; selectedTab = 0

@@ -96,6 +96,38 @@ import XCTest
         XCTAssertFalse(app.otherElements["latest-stack"].exists)
     }
 
+    func testSoftwareKeyboardHidesTabTrayDuringPassportSearch() {
+        let app = launch()
+        let tray = app.descendants(matching: .any).matching(identifier: "bottom-navigation").firstMatch
+        let appsTab = app.buttons["nav-apps"]
+        XCTAssertTrue(tray.waitForExistence(timeout: 5))
+        XCTAssertTrue(appsTab.isHittable)
+        let restingTrayTop = tray.frame.minY
+
+        let search = app.textFields["collection-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        XCTAssertTrue(tray.waitForNonExistence(timeout: 5))
+        XCTAssertFalse(appsTab.exists)
+
+        search.typeText("Design for people")
+        XCTAssertTrue(app.staticTexts["1 match"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["credential-design"].exists)
+        XCTAssertTrue(keyboard.exists)
+        XCTAssertFalse(tray.exists)
+        capture(app, "Passport search with software keyboard and hidden tab tray")
+
+        search.typeText("\n")
+        XCTAssertTrue(keyboard.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(tray.waitForExistence(timeout: 5))
+        XCTAssertTrue(appsTab.isHittable)
+        XCTAssertEqual(tray.frame.minY, restingTrayTop, accuracy: 2)
+        XCTAssertTrue(app.buttons["credential-design"].isHittable)
+        capture(app, "Passport results with the tab tray restored")
+    }
+
     func testArabicAccessibilityDateSheetAndControlsRemainUsable() {
         let app = launch(["--locale", "ar", "--large-type", "--preview-dark"])
         let dates = app.buttons["passport-dates"]; reveal(dates, app: app); dates.tap()
