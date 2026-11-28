@@ -48,20 +48,50 @@ export const originForViteServer = (server: ViteDevServer): string => {
 };
 
 /**
- * Sequentially fetch the sign-in document and its JS graph over HTTP. A first
- * Firefox tab otherwise bursts dozens of still-cold @fs modules and hangs on
- * Loading until those transforms finish (or deadlock under the 6-connection cap).
+ * Sequentially fetch the sign-in document and the app's `/src/` graph over HTTP.
+ * A first Firefox tab otherwise bursts still-cold app modules and hangs on
+ * Loading (or deadlocks under HTTP/1.1's 6-connection cap).
+ *
+ * Do not recursively walk `/@fs/` workspace packages. That crawl pulled ~2000
+ * package modules, discovered lazy-route deps (xterm, streamdown, …), and
+ * triggered repeated "optimized dependencies changed. reloading" cycles that
+ * blew the 240s verification readiness budget when three shards ran at once.
+ * `warmupRequest(FullApp)` plus `waitForRequestsIdle` already transforms the
+ * static package graph those routes need.
  */
+// FullApp and Routes are still in DEV_SERVER_WARMUP_URLS (warmupRequest +
+// waitForRequestsIdle). Seeding them here would walk the entire /src graph
+// over HTTP (~2000 modules, ~50s) and is what blew the CI readiness budget.
 const HTTP_WARMUP_SEEDS = [
     '/developer/sign-in',
     '/@react-router/critical.css?pathname=/developer/sign-in',
     '/@id/__x00__virtual:react-router/inject-hmr-runtime',
     '/@id/__x00__virtual:react-router/browser-manifest',
-    ...DEV_SERVER_WARMUP_URLS,
+    '/src/entry.client.tsx',
+    '/src/root.tsx',
+    '/src/App.tsx',
+    '/src/pages/developer/DeveloperSignInPage.tsx',
+    '/src/components/app-url-listener/AppUrlListener.tsx',
 ] as const;
 
+const HTTP_WARMUP_SKIP_PREFIXES = ['/src/FullApp.tsx', '/src/Routes.tsx'] as const;
+
 const isAppModule = (pathname: string): boolean =>
-    pathname.startsWith('/src/') || pathname.startsWith('/@fs/') || pathname.startsWith('/@id/');
+    pathname.startsWith('/src/') || pathname.startsWith('/@id/');
+
+/** Follow imports from the sign-in document and app/virtual modules, not @fs packages. */
+export const shouldFollowHttpWarmupImports = (pathname: string): boolean => {
+    if (HTTP_WARMUP_SKIP_PREFIXES.some(skip => pathname === skip || pathname.endsWith(skip))) {
+        return false;
+    }
+    return (
+        pathname === '/' ||
+        pathname.startsWith('/src/') ||
+        pathname.startsWith('/@id/') ||
+        pathname.startsWith('/@react-router/') ||
+        pathname.startsWith('/developer/')
+    );
+};
 
 export const warmViteDevServerThroughHttp = async (
     origin: string,
@@ -82,6 +112,7 @@ export const warmViteDevServerThroughHttp = async (
         }
     };
     for (const seed of seeds) enqueue(new URL(seed, origin).href);
+    const started = performance.now();
     while (high.length > 0 || low.length > 0) {
         const href = high.shift() ?? low.shift()!;
         if (seen.has(href)) continue;
@@ -91,20 +122,69 @@ export const warmViteDevServerThroughHttp = async (
         const contentType = response.headers.get('content-type') ?? '';
         if (!/javascript|ecmascript|html|xml|css/.test(contentType)) continue;
         const text = await response.text();
-        if (/javascript|ecmascript|html|xml/.test(contentType)) {
+        const pathname = new URL(href).pathname;
+        if (
+            /javascript|ecmascript|html|xml/.test(contentType) &&
+            shouldFollowHttpWarmupImports(pathname)
+        ) {
             for (const next of importSpecsInModule(text, href)) enqueue(next);
         }
     }
+    let src = 0;
+    let fs = 0;
+    let id = 0;
+    let other = 0;
+    for (const href of seen) {
+        const pathname = new URL(href).pathname;
+        if (pathname.startsWith('/src/')) src += 1;
+        else if (pathname.startsWith('/@fs/')) fs += 1;
+        else if (pathname.startsWith('/@id/')) id += 1;
+        else other += 1;
+    }
+    const ms = Math.round(performance.now() - started);
+    console.info(
+        `[warm] http crawl ${seen.size} urls (src=${src} fs=${fs} id=${id} other=${other}) in ${ms}ms`
+    );
 };
 
+// vite.config.mts (loaded by Vite's config loader) and verification/server.ts each get
+// their own instance of this module, so the registry lives on globalThis.
+const WARMUP_REGISTRY = Symbol.for('learncard.warmViteDevServer');
+const warmupByServer: WeakMap<ViteDevServer, Promise<void>> = ((
+    globalThis as Record<symbol, unknown>
+)[WARMUP_REGISTRY] ??= new WeakMap()) as WeakMap<ViteDevServer, Promise<void>>;
+
 export const warmViteDevServer = async (server: ViteDevServer): Promise<void> => {
-    for (const url of DEV_SERVER_WARMUP_URLS) await server.warmupRequest(url);
-    // warmupRequest only waits for that URL. Static imports are queued as further
-    // warmup work and would otherwise still be transforming when /__lc-dev-ready
-    // flipped, so the first Firefox document could hang on Loading.
-    await server.environments.client.waitForRequestsIdle();
-    await warmViteDevServerThroughHttp(originForViteServer(server));
-    await server.environments.client.waitForRequestsIdle();
+    const existing = warmupByServer.get(server);
+    if (existing) return existing;
+    const warmup = (async () => {
+        const started = performance.now();
+        for (const url of DEV_SERVER_WARMUP_URLS) await server.warmupRequest(url);
+        // warmupRequest only waits for that URL. Static imports are queued as further
+        // warmup work and would otherwise still be transforming when /__lc-dev-ready
+        // flipped, so the first Firefox document could hang on Loading.
+        await server.environments.client.waitForRequestsIdle();
+        const afterSeed = Math.round(performance.now() - started);
+        console.info(`[warm] warmupRequest+idle in ${afterSeed}ms`);
+        const origin = originForViteServer(server);
+        // The first HTML fetch discovers prebundle entries and can reload. Do that
+        // once, then wait, so the HTTP crawl is not aborted mid-walk.
+        await fetch(`${origin}/developer/sign-in`).catch(() => undefined);
+        await server.environments.client.waitForRequestsIdle();
+        const afterPrime = Math.round(performance.now() - started);
+        console.info(`[warm] primed sign-in+idle in ${afterPrime - afterSeed}ms`);
+        await warmViteDevServerThroughHttp(origin);
+        const afterCrawl = Math.round(performance.now() - started);
+        await server.environments.client.waitForRequestsIdle();
+        const total = Math.round(performance.now() - started);
+        console.info(`[warm] final idle in ${total - afterCrawl}ms; total ${total}ms`);
+    })();
+    // The plugin's listen hook and verification/server.ts both call this for the same
+    // server; share one warmup instead of crawling twice concurrently. Forget a failed
+    // attempt so a retry can start over.
+    warmupByServer.set(server, warmup);
+    warmup.catch(() => warmupByServer.delete(server));
+    await warmup;
 };
 
 export const warmDevServer = (): Plugin => {

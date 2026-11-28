@@ -4,6 +4,7 @@ import {
     DEV_SERVER_READY_PATH,
     DEV_SERVER_WARMUP_URLS,
     importSpecsInModule,
+    shouldFollowHttpWarmupImports,
 } from './warm-dev-server';
 
 describe('warmDevServer', () => {
@@ -31,5 +32,24 @@ describe('importSpecsInModule', () => {
             'http://127.0.0.1:3018/src/entry.client.tsx',
             'http://127.0.0.1:3018/@fs/repo/packages/plugins/openid4vc/src/vci/types.ts',
         ]);
+    });
+});
+
+describe('shouldFollowHttpWarmupImports', () => {
+    it('follows the sign-in document and app/virtual modules, not workspace @fs packages', () => {
+        expect(shouldFollowHttpWarmupImports('/developer/sign-in')).toBe(true);
+        expect(shouldFollowHttpWarmupImports('/src/App.tsx')).toBe(true);
+        expect(shouldFollowHttpWarmupImports('/src/pages/developer/DeveloperSignInPage.tsx')).toBe(
+            true
+        );
+        expect(shouldFollowHttpWarmupImports('/src/FullApp.tsx')).toBe(false);
+        expect(shouldFollowHttpWarmupImports('/src/Routes.tsx')).toBe(false);
+        expect(
+            shouldFollowHttpWarmupImports('/@id/__x00__virtual:react-router/browser-manifest')
+        ).toBe(true);
+        expect(shouldFollowHttpWarmupImports('/@react-router/critical.css')).toBe(true);
+        expect(
+            shouldFollowHttpWarmupImports('/@fs/repo/packages/plugins/openid4vc/src/vci/types.ts')
+        ).toBe(false);
     });
 });

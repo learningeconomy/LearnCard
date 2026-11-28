@@ -901,7 +901,10 @@ export const startStack = async (
         }
         progress('readiness');
         await measure('readiness', async () => {
-            const deadline = Date.now() + 240_000;
+            // 300s is a buffer for three shards sharing a CI runner, not the
+            // fix. Cold warmup should land well under 240s after the smaller
+            // HTTP crawl; shard 1 previously finished in 237s under the 240s cap.
+            const deadline = Date.now() + 300_000;
             let report: Record<string, unknown> | undefined;
             while (Date.now() < deadline) {
                 signal?.throwIfAborted();
