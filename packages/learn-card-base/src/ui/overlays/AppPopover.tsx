@@ -167,8 +167,8 @@ const enterAnimation = (host: HTMLElement, opts: PresentOptions): OverlayAnimati
         if (adjusted.addPopoverBottomClass) host.classList.add('app-popover-bottom');
         if (bottom !== undefined) content.style.setProperty('bottom', `${bottom}px`);
         let leftValue = `${left}px`;
-        if (adjusted.checkSafeAreaLeft) leftValue = `${left}px + var(--app-safe-area-left)`;
-        if (adjusted.checkSafeAreaRight) leftValue = `${left}px - var(--app-safe-area-right)`;
+        if (adjusted.checkSafeAreaLeft) leftValue = `${left}px + var(--app-safe-area-left, 0px)`;
+        if (adjusted.checkSafeAreaRight) leftValue = `${left}px - var(--app-safe-area-right, 0px)`;
         content.style.setProperty('top', `calc(${top}px + var(--offset-y, 0))`);
         content.style.setProperty('left', `calc(${leftValue} + var(--offset-x, 0))`);
         content.style.setProperty('transform-origin', `${originY} ${originX}`);

@@ -31,7 +31,7 @@ div:where(.app-header) {
 }
 
 div:where(.app-header) div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
-    padding-top: var(--app-safe-area-top, 0);
+    padding-top: var(--app-safe-area-top, 0px);
 }
 
 .app-header-ios div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
@@ -83,7 +83,7 @@ div:where([data-app-footer]) {
 
 div:where([data-app-footer]).app-footer-toolbar-padding
     div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
-    padding-bottom: var(--app-safe-area-bottom, 0);
+    padding-bottom: var(--app-safe-area-bottom, 0px);
 }
 
 .app-footer-ios div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
@@ -136,8 +136,8 @@ div:where([data-app-footer]).app-footer-toolbar-padding
         display: block;
         position: relative;
         width: 100%;
-        padding-right: var(--app-safe-area-right);
-        padding-left: var(--app-safe-area-left);
+        padding-right: var(--app-safe-area-right, 0px);
+        padding-left: var(--app-safe-area-left, 0px);
         color: var(--color);
         /* Ionic: var(--ion-font-family, inherit); index.scss's `* { font-family }` wins either way. */
         contain: content;

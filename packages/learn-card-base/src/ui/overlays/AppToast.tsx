@@ -39,8 +39,8 @@ type AnimationPosition = { top: string; bottom: string };
 const getAnimationPosition = (position: AppToastPosition, mode: IonMode): AnimationPosition => {
     const offset = mode === 'md' ? (position === 'top' ? 8 : -8) : position === 'top' ? 10 : -10;
     return {
-        top: `calc(${offset}px + var(--app-safe-area-top))`,
-        bottom: `calc(${offset}px - var(--app-safe-area-bottom))`,
+        top: `calc(${offset}px + var(--app-safe-area-top, 0px))`,
+        bottom: `calc(${offset}px - var(--app-safe-area-bottom, 0px))`,
     };
 };
 

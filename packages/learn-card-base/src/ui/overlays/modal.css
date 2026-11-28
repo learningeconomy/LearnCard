@@ -63,7 +63,7 @@
     }
 
     .app-modal.modal-sheet {
-        --height: calc(100% - (var(--app-safe-area-top) + 10px));
+        --height: calc(100% - (var(--app-safe-area-top, 0px) + 10px));
     }
 
     /* md */
@@ -220,8 +220,8 @@ div:where(.app-modal-wrapper) > .ion-page {
 }
 
 html.ios div:where(.app-modal) ion-toolbar {
-    padding-right: calc(var(--app-safe-area-right) + 8px);
-    padding-left: calc(var(--app-safe-area-left) + 8px);
+    padding-right: calc(var(--app-safe-area-right, 0px) + 8px);
+    padding-left: calc(var(--app-safe-area-left, 0px) + 8px);
 }
 
 html.ios div:where(.app-modal).modal-sheet ion-header ion-toolbar:first-of-type,
@@ -235,8 +235,8 @@ html.ios div:where(.app-modal).modal-sheet ion-header ion-toolbar:last-of-type {
 
 /* The same rules for the app-owned chrome (components/chrome), at the same specificity. */
 html.ios div:where(.app-modal) div:where(.app-toolbar) {
-    padding-right: calc(var(--app-safe-area-right) + 8px);
-    padding-left: calc(var(--app-safe-area-left) + 8px);
+    padding-right: calc(var(--app-safe-area-right, 0px) + 8px);
+    padding-left: calc(var(--app-safe-area-left, 0px) + 8px);
 }
 
 html.ios
