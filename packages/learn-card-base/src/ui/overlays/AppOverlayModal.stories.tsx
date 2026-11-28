@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { AppOverlayManager } from './AppOverlayManager';
 import { AppOverlayModal } from './AppOverlayModal';
 import { useAppOverlayModal } from './useAppOverlayModal';
 
@@ -64,7 +63,6 @@ const Hook: React.FC = () => {
             >
                 present()
             </button>
-            <AppOverlayManager />
         </div>
     );
 };
