@@ -11,23 +11,25 @@ import { isNeverPrerendered } from '../src/routing/prerender';
 /** Written into the client build by the chunk-prefetch plugin; consumed and removed here. */
 export const CHUNK_PREFETCH_LIST_FILE = '.lc-chunk-prefetch.json';
 
-const htmlFiles = async (directory: string): Promise<string[]> => {
+/** HTML pages, and React Router's prerendered route data (`<path>.data`), which hosts cache too. */
+const staticFiles = async (directory: string): Promise<string[]> => {
     const entries = await readdir(directory, { withFileTypes: true, recursive: true });
     return entries
-        .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
+        .filter(entry => entry.isFile() && /\.(?:html|data)$/.test(entry.name))
         .map(entry => join(entry.parentPath, entry.name));
 };
 
-/** URL path an HTML file answers on a static host: `login/index.html` → `/login`. */
+/** URL path a static file answers: `login/index.html` → `/login`, `s/abc.data` → `/s/abc`. */
 const pathFor = (root: string, file: string): string =>
-    `/${relative(root, file).split(sep).join('/')}`.replace(/(?:\/index)?\.html$/, '') || '/';
+    `/${relative(root, file).split(sep).join('/')}`.replace(/(?:\/index)?\.(?:html|data)$/, '') ||
+    '/';
 
 /**
  * Runs after `react-router build` has prerendered. Leaves one flat static site in `build/`, where
  * Capacitor (webDir), Capgo, Netlify, nginx and Playwright already look:
  *
- * 1. Fails if HTML exists for a path that must never be static (see routing/prerender.ts), or a
- *    configured prerender path is missing.
+ * 1. Fails if HTML or route data exists for a path that must never be static (see
+ *    routing/prerender.ts), or a configured prerender path is missing.
  * 2. Writes the lazy-chunk prefetch list (#2104) into every HTML file's head.
  * 3. Replaces `build/` with the contents of `build/client` (the server build is already gone in
  *    SPA mode; anything else in `build/` is from an earlier build).
@@ -37,13 +39,14 @@ export const finalizeStaticBuild = async (
     prerenderPaths: readonly string[]
 ): Promise<{ html: string[] }> => {
     const client = join(buildDirectory, 'client');
-    const files = await htmlFiles(client);
-    const paths = files.map(file => pathFor(client, file));
-    const unsafe = paths.filter(isNeverPrerendered);
+    const emitted = await staticFiles(client);
+    const unsafe = emitted.map(file => pathFor(client, file)).filter(isNeverPrerendered);
     if (unsafe.length > 0)
         throw new Error(
             `[finalize-static-build] private paths were prerendered: ${unsafe.join(', ')}`
         );
+    const files = emitted.filter(file => file.endsWith('.html'));
+    const paths = files.map(file => pathFor(client, file));
     const missing = ['/', ...prerenderPaths].filter(path => !paths.includes(path));
     if (missing.length > 0)
         throw new Error(`[finalize-static-build] missing prerendered HTML: ${missing.join(', ')}`);

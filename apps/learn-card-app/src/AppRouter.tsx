@@ -46,6 +46,8 @@ import {
     redirectStore,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
+import { isAuthSettled } from './providers/useAuthSettled';
+import { rendersBeforeAuth } from './routing/authGate';
 import { useAuthStatus } from 'learn-card-base';
 import { OfflineBootGate } from './components/network-listener/OfflineBootGate';
 import { connectivityStore } from 'learn-card-base';
@@ -113,15 +115,10 @@ const AppRouter: React.FC = () => {
         !walletReady &&
         (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
 
-    const initLoading =
-        !isShareViewer &&
-        !(
-            walletReady ||
-            coordinatorState.status === 'idle' ||
-            coordinatorState.status === 'needs_setup' ||
-            coordinatorState.status === 'needs_recovery' ||
-            coordinatorState.status === 'error'
-        );
+    const authSettled = isAuthSettled(coordinatorState.status, walletReady);
+    // Share viewers and the public pages in rendersBeforeAuth don't depend on who is signed in
+    // (or wait for useAuthSettled where they do), so they skip the gate.
+    const initLoading = !isShareViewer && !rendersBeforeAuth(location.pathname) && !authSettled;
     useDashboardPathMark('shell_commit', !showOfflineBootGate && !initLoading);
 
     // Native splash bridge. The Capacitor splash is configured with
@@ -131,16 +128,10 @@ const AppRouter: React.FC = () => {
     // smooth fade from native splash → final screen, not a stack of JS loaders.
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
-        const ready =
-            walletReady ||
-            coordinatorState.status === 'idle' ||
-            coordinatorState.status === 'needs_setup' ||
-            coordinatorState.status === 'needs_recovery' ||
-            coordinatorState.status === 'error';
-        if (ready) {
+        if (authSettled) {
             SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => undefined);
         }
-    }, [walletReady, coordinatorState.status]);
+    }, [authSettled]);
 
     // Safety net: never let the native splash stay up longer than 8s even if
     // auth initialization hangs. After this, the user sees whatever the app

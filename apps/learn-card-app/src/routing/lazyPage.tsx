@@ -38,3 +38,10 @@ export const lazyNamedPage = <M, K extends keyof M>(factory: () => Promise<M>, n
     lazyPage(() =>
         factory().then(module => ({ default: module[name] as unknown as ComponentType }))
     );
+
+/** A page that its route renders with fixed props (routes pass no props of their own). */
+export const lazyPageWith = <P extends object>(
+    factory: () => Promise<{ default: ComponentType<P> }>,
+    props: P
+): LazyPage =>
+    lazyPage(() => factory().then(({ default: Page }) => ({ default: () => <Page {...props} /> })));

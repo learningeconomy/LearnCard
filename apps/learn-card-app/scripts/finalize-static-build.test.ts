@@ -57,6 +57,8 @@ describe('finalizeStaticBuild', () => {
         'client/s/abc/index.html',
         'client/share-boost/index.html',
         'client/verify/resume.html',
+        'client/s/abc.data',
+        'client/share-boost.data',
     ])('fails when %s is emitted', async file => {
         const build = site({ [file]: page });
         await expect(finalizeStaticBuild(build, ['/login'])).rejects.toThrow(/private paths/);

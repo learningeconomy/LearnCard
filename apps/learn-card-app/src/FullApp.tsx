@@ -2,7 +2,8 @@ import React, { Suspense, useEffect } from 'react';
 import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
-import { QueryClient, onlineManager } from '@tanstack/react-query';
+import { onlineManager } from '@tanstack/react-query';
+import { appQueryClient as client, QUERY_CACHE_TTL as CACHE_TTL } from './appQueryClient';
 import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
 import {
@@ -73,10 +74,6 @@ const DevDebugPanel =
     __APP_BUILD_ENV__.DEV || __APP_BUILD_ENV__.VITE_ENABLE_AUTH_DEBUG_WIDGET
         ? React.lazy(() => import('./components/debug/DevDebugPanel'))
         : null;
-
-const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
-
-const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
 // Drive React Query's online state from our connectivity model (fed by
 // Capacitor Network on native) instead of the default `navigator.onLine`, which

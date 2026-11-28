@@ -1,7 +1,5 @@
-import React from 'react';
-
 import { DashboardPageRoute, preloadDashboardPage } from '../pages/dashboard/DashboardPageRoute';
-import { lazyNamedPage, lazyPage, type LazyPage } from './lazyPage';
+import { lazyNamedPage, lazyPage, lazyPageWith, type LazyPage } from './lazyPage';
 
 /**
  * Every page the router can render, each its own chunk. Route modules (`src/routes/pages/`) render
@@ -57,19 +55,22 @@ export const PAGES = {
     connect: lazyPage(() => import('../pages/connectPage/ConnectPage')),
     invite: lazyPage(() => import('../pages/invitePage/InvitePage')),
     credentialExchange: lazyPage(() => import('../pages/credentialStorage/CredentialExchange')),
-    vprQueryByExample: lazyPage(() => import('../pages/credentialStorage/vpr/VprQueryByExample')),
+    vprQueryByExample: lazyPageWith(
+        () => import('../pages/credentialStorage/vpr/VprQueryByExample'),
+        { currentUser: null }
+    ),
     viewCredentialsSharedWithApp: lazyPage(
         () => import('learn-card-base/components/sharecreds/ViewCredentialsSharedWithApp')
     ),
     shareCredentialsWithApp: lazyPage(
         () => import('learn-card-base/components/sharecreds/ShareCredentialsWithApp')
     ),
-    consentFlowDoor: lazyPage(() => import('../pages/consentFlow/ExternalConsentFlowDoor')),
-    consentFlowLogin: lazyPage(() =>
-        import('../pages/consentFlow/ExternalConsentFlowDoor').then(module => ({
-            default: () => React.createElement(module.default, { login: true }),
-        }))
-    ),
+    consentFlowDoor: lazyPageWith(() => import('../pages/consentFlow/ExternalConsentFlowDoor'), {
+        login: false,
+    }),
+    consentFlowLogin: lazyPageWith(() => import('../pages/consentFlow/ExternalConsentFlowDoor'), {
+        login: true,
+    }),
     contractUpdateReview: lazyPage(() => import('../pages/consentFlow/ContractUpdateReviewRoute')),
     walletServiceWorker: lazyPage(() => import('../pages/walletServiceWorker/WalletServiceWorker')),
     claimBoost: lazyPage(() => import('../pages/claimBoost/ClaimBoost')),
@@ -106,8 +107,9 @@ export const PAGES = {
     aiTopics: lazyPage(() => import('../components/ai-sessions/AiSessionTopicsContainer')),
     aiSessions: lazyPage(() => import('../components/ai-sessions/AiSessionsContainer')),
     verifyEmail: lazyPage(() => import('../components/user-profile/UserContact/UserVerifyEmail')),
-    chatBot: lazyPage(
-        () => import('../components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot')
+    chatBot: lazyPageWith(
+        () => import('../components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot'),
+        { initialMessages: [] }
     ),
     termsOfService: lazyPage(() => import('../pages/legal/TermsOfServicePage')),
     privacyPolicy: lazyPage(() => import('../pages/legal/PrivacyPolicyPage')),

@@ -3,10 +3,9 @@ import { index, layout, route, type RouteConfig } from '@react-router/dev/routes
 import { ROUTE_TABLE, routeModuleFile, type RouteEntry } from './routing/routeTable';
 
 const toRoute = ({ path, page, id }: RouteEntry) => {
-    const options = id ? { id } : undefined;
-    return path === '/'
-        ? index(routeModuleFile(page), options)
-        : route(path, routeModuleFile(page), options);
+    const file = routeModuleFile(page);
+    if (path === '/') return id ? index(file, { id }) : index(file);
+    return id ? route(path, file, { id }) : route(path, file);
 };
 
 // The root route (root.tsx) renders the app shell once; pages render in its <Outlet />.
