@@ -3,10 +3,29 @@ import UniformTypeIdentifiers
 import LearnCardNativeSDK
 
 struct AccountRootView: View {
+    private struct CredentialPushRegistration: Equatable {
+        let owner: String
+        let token: String
+    }
+
     @Environment(\.locale) private var nativeLocale
     @Environment(\.scenePhase) private var scenePhase
     @State private var account: AccountController
+    @State private var registeredPush: CredentialPushRegistration?
+    private let credentialPush = NativeCredentialPush.shared
     init(account: AccountController? = nil) { _account = State(initialValue: account ?? AccountController(signInClient: SystemNativeSignInClient())) }
+
+    private var pushOwner: String? {
+        guard account.phase == "ready" else { return nil }
+        return account.state?.profileDid
+    }
+
+    private var requestedPush: CredentialPushRegistration? {
+        guard scenePhase == .active, let owner = pushOwner,
+              let token = credentialPush.token(for: owner) else { return nil }
+        return CredentialPushRegistration(owner: owner, token: token)
+    }
+
     var body: some View {
         Group {
             if ["resetting", "reset_pending"].contains(account.phase) { StagingResetProgressView(account: account) }
@@ -22,6 +41,32 @@ struct AccountRootView: View {
         .task {
             await account.resume()
             if ProcessInfo.processInfo.arguments.contains("--request-test-code"), account.phase == "signIn" { await account.sendCode() }
+        }
+        .task(id: pushOwner) {
+            if let owner = pushOwner { await credentialPush.start(for: owner) }
+        }
+        .onChange(of: credentialPush.arrivalRevision) { _, _ in
+            if scenePhase == .active { account.store?.requestCredentialOfferRefresh() }
+        }
+        .task(id: requestedPush) {
+            guard let requested = requestedPush, requested != registeredPush else { return }
+            do {
+                try await account.setCredentialPushRegistration(token: requested.token, enabled: true)
+                guard !Task.isCancelled else { return }
+                let previous = registeredPush
+                registeredPush = requested
+                if let previous, previous.owner == requested.owner, previous.token != requested.token {
+                    try? await account.setCredentialPushRegistration(token: previous.token, enabled: false)
+                }
+            } catch {
+                // A token update or the next foreground activation can retry registration.
+            }
+        }
+        .onChange(of: account.phase, initial: true) { _, phase in
+            if phase == "signIn" || phase == "resetting" {
+                credentialPush.endSession()
+                registeredPush = nil
+            }
         }
         .onChange(of: scenePhase) { _, new in
             // Lock synchronously, before SwiftUI replaces private account content.

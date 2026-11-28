@@ -11,7 +11,11 @@ public final class NativeAppStore {
     @ObservationIgnored private var seenOfferIDs: Set<String> = []
     @ObservationIgnored private var snapshotRevision = 0
     @ObservationIgnored private var checkingCredentialOffers = false
-    public var isBusy = false
+    @ObservationIgnored private var credentialOfferRefreshPending = false
+    @ObservationIgnored private var credentialOfferRefreshTask: Task<Void, Never>?
+    public var isBusy = false {
+        didSet { if !isBusy { startRequestedCredentialOfferRefresh() } }
+    }
     public var error: String?
     /// Dismissing the transient alert does not establish an empty Passport.
     public private(set) var snapshotReadFailed = false
@@ -59,12 +63,30 @@ public final class NativeAppStore {
         latestCredentialArrival = nil
     }
 
-    /// Called by the foreground scene. The initial Passport snapshot is the quiet baseline.
-    public func observeCredentialArrivals(every interval: Duration = .seconds(30)) async {
+    /// Push is a refresh signal only. The authenticated store supplies all displayed data.
+    public func requestCredentialOfferRefresh() {
         guard service is any CredentialOfferService else { return }
-        while !Task.isCancelled {
-            do { try await Task.sleep(for: interval) } catch { return }
-            await refreshCredentialOffers()
+        credentialOfferRefreshPending = true
+        startRequestedCredentialOfferRefresh()
+    }
+
+    public func cancelCredentialOfferRefresh() {
+        credentialOfferRefreshPending = false
+        credentialOfferRefreshTask?.cancel()
+    }
+
+    private func startRequestedCredentialOfferRefresh() {
+        guard credentialOfferRefreshPending, snapshot != nil, !isBusy,
+              !checkingCredentialOffers, credentialOfferRefreshTask == nil else { return }
+        credentialOfferRefreshPending = false
+        credentialOfferRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            if !Task.isCancelled {
+                if self.isBusy { self.credentialOfferRefreshPending = true }
+                else { await self.refreshCredentialOffers() }
+            }
+            self.credentialOfferRefreshTask = nil
+            self.startRequestedCredentialOfferRefresh()
         }
     }
 
@@ -72,12 +94,20 @@ public final class NativeAppStore {
         guard let offerService = service as? any CredentialOfferService,
               let current = snapshot, !isBusy, !checkingCredentialOffers, !Task.isCancelled else { return }
         checkingCredentialOffers = true
-        defer { checkingCredentialOffers = false }
+        defer {
+            checkingCredentialOffers = false
+            startRequestedCredentialOfferRefresh()
+        }
         let revision = snapshotRevision
         let cachedIDs = current.offers.map(\.id)
-        // A delayed offer read must not overwrite a claim, a full refresh, or a new account.
         guard let page = try? await offerService.credentialOffers(cachedIDs: cachedIDs),
-              !Task.isCancelled, !isBusy, revision == snapshotRevision, page.ids != cachedIDs,
+              !Task.isCancelled else { return }
+        // A write that overlaps this read takes precedence. Reconcile the push again afterward.
+        if isBusy || revision != snapshotRevision {
+            if credentialOfferRefreshTask != nil { credentialOfferRefreshPending = true }
+            return
+        }
+        guard page.ids != cachedIDs,
               Set(page.ids).count == page.ids.count else { return }
         let byID = Dictionary((current.offers + page.credentials).map { ($0.id, $0) },
                               uniquingKeysWith: { _, fresh in fresh })

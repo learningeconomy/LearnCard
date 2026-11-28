@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a dependency-free Xcode project. Run after changing project settings.
+"""Generate the native Xcode project. Run after changing project settings.
 
 Source folders use Xcode's synchronized groups; adding Swift files needs no regeneration.
 No global XcodeGen, CocoaPods, npm install, or Apple signing team is required for simulator builds.
@@ -50,6 +50,11 @@ package_folder = add("Core folder", 'isa = PBXFileReference; lastKnownFileType =
 products = add("Products", f'isa = PBXGroup; children = ({app_product}, {test_product},); name = Products; sourceTree = "<group>";')
 main = add("Main group", f'isa = PBXGroup; children = ({sources}, {tests}, {package_folder}, {plist}, {oauth_config}, {products},); sourceTree = "<group>";')
 package = add("Local core package", 'isa = XCLocalSwiftPackageReference; relativePath = NativeCore;')
+firebase = add("Firebase package", 'isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git"; requirement = { kind = exactVersion; version = 12.7.0; };')
+firebase_core = add("Firebase Core product", f"isa = XCSwiftPackageProductDependency; package = {firebase}; productName = FirebaseCore;")
+firebase_messaging = add("Firebase Messaging product", f"isa = XCSwiftPackageProductDependency; package = {firebase}; productName = FirebaseMessaging;")
+firebase_core_build = add("Firebase Core framework build", f"isa = PBXBuildFile; productRef = {firebase_core};")
+firebase_messaging_build = add("Firebase Messaging framework build", f"isa = PBXBuildFile; productRef = {firebase_messaging};")
 core = add("Core product", f"isa = XCSwiftPackageProductDependency; package = {package}; productName = LearnCardNativeCore;")
 core_build = add("Core framework build", f"isa = PBXBuildFile; productRef = {core};")
 sdk = add("SDK product", f"isa = XCSwiftPackageProductDependency; package = {package}; productName = LearnCardNativeSDK;")
@@ -80,7 +85,7 @@ test_configs = configs("UI tests", {
 })
 
 phases = {}
-for target, frameworks in (("App", f"{core_build}, {sdk_app_build}"), ("UI tests", sdk_build)):
+for target, frameworks in (("App", f"{core_build}, {sdk_app_build}, {firebase_core_build}, {firebase_messaging_build}"), ("UI tests", sdk_build)):
     phases[target] = []
     for phase, kind in (("Sources", "PBXSourcesBuildPhase"), ("Frameworks", "PBXFrameworksBuildPhase"), ("Resources", "PBXResourcesBuildPhase")):
         files = f"{frameworks}," if phase == "Frameworks" and frameworks else ""
@@ -88,9 +93,9 @@ for target, frameworks in (("App", f"{core_build}, {sdk_app_build}"), ("UI tests
 
 proxy = add("App dependency proxy", f"isa = PBXContainerItemProxy; containerPortal = {key('Project')}; proxyType = 1; remoteGlobalIDString = {key('App target')}; remoteInfo = {app_name};")
 dependency = add("App dependency", f"isa = PBXTargetDependency; target = {key('App target')}; targetProxy = {proxy};")
-app_target = add("App target", f'isa = PBXNativeTarget; buildConfigurationList = {app_configs}; buildPhases = ({", ".join(phases["App"])},); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = ({sources},); name = {app_name}; packageProductDependencies = ({core}, {sdk},); productName = {app_name}; productReference = {app_product}; productType = "com.apple.product-type.application";')
+app_target = add("App target", f'isa = PBXNativeTarget; buildConfigurationList = {app_configs}; buildPhases = ({", ".join(phases["App"])},); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = ({sources},); name = {app_name}; packageProductDependencies = ({core}, {sdk}, {firebase_core}, {firebase_messaging},); productName = {app_name}; productReference = {app_product}; productType = "com.apple.product-type.application";')
 test_target = add("UI test target", f'isa = PBXNativeTarget; buildConfigurationList = {test_configs}; buildPhases = ({", ".join(phases["UI tests"])},); buildRules = (); dependencies = ({dependency},); fileSystemSynchronizedGroups = ({tests},); name = {test_name}; packageProductDependencies = ({sdk},); productName = {test_name}; productReference = {test_product}; productType = "com.apple.product-type.bundle.ui-testing";')
-project_id = add("Project", f'isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 2600; TargetAttributes = {{ {app_target} = {{ CreatedOnToolsVersion = 26.0; }}; {test_target} = {{ CreatedOnToolsVersion = 26.0; TestTargetID = {app_target}; }}; }}; }}; buildConfigurationList = {project_configs}; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, es, fr, ar, Base,); mainGroup = {main}; packageReferences = ({package},); preferredProjectObjectVersion = 77; productRefGroup = {products}; projectDirPath = ""; projectRoot = ""; targets = ({app_target}, {test_target},);')
+project_id = add("Project", f'isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 2600; TargetAttributes = {{ {app_target} = {{ CreatedOnToolsVersion = 26.0; }}; {test_target} = {{ CreatedOnToolsVersion = 26.0; TestTargetID = {app_target}; }}; }}; }}; buildConfigurationList = {project_configs}; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, es, fr, ar, Base,); mainGroup = {main}; packageReferences = ({package}, {firebase},); preferredProjectObjectVersion = 77; productRefGroup = {products}; projectDirPath = ""; projectRoot = ""; targets = ({app_target}, {test_target},);')
 (project / "project.pbxproj").write_text("// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {};\n\tobjectVersion = 77;\n\tobjects = {\n" + "\n".join(objects) + f"\n\t}};\n\trootObject = {project_id};\n}}\n")
 
 schemes = project / "xcshareddata" / "xcschemes"

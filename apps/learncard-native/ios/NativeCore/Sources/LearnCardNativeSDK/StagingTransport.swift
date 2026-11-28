@@ -94,7 +94,14 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
         guard url.path.hasPrefix("/trpc/"), ["GET", "POST"].contains(method) else { return false }
         let actions = url.path.dropFirst("/trpc/".count).split(separator: ",", omittingEmptySubsequences: false)
         let allowed: Set<String> = ["utilities.getChallenges", "preferences.updatePreferences", "preferences.getPreferencesForDid", "pins.hasPin", "pins.createPin", "pins.verifyPin", "notifications.notifications", "notifications.updateNotificationMeta"]
-        return !actions.isEmpty && actions.allSatisfy { allowed.contains(String($0)) }
+        return !actions.isEmpty && actions.allSatisfy { action in
+            switch action {
+            case "notifications.registerDeviceForPushNotifications", "notifications.unregisterDeviceForPushNotifications":
+                return method == "POST"
+            default:
+                return allowed.contains(String(action))
+            }
+        }
     }
 
     /// Four-megabyte originals expand when base64-encoded and encrypted. Only

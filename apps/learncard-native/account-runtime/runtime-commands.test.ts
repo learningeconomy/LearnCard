@@ -112,6 +112,14 @@ test('signed-out recipient search returns no account data or native requests', a
     expect(bridgeCalls).toBe(0);
 });
 
+test.each([true, false])('push registration (%s) requires a ready account', async enabled => {
+    const reply = JSON.parse(
+        await account.call('pushRegistration', { token: 'test-token', enabled })
+    );
+    expect(reply).toEqual({ ok: false, error: 'unavailable' });
+    expect(bridgeCalls).toBe(0);
+});
+
 test('unknown and inherited command names are refused', async () => {
     for (const method of ['unknown', 'constructor', 'toString', '__proto__']) {
         await expect(account.call(method, {})).rejects.toThrow('Command refused');

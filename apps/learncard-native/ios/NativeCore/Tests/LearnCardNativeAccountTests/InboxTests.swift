@@ -116,4 +116,15 @@ import LearnCardNativeCore
         XCTAssertEqual(store.updates(excluding: ["credential-uri"]).map(\.id), ["request"])
         XCTAssertEqual(store.updates(excluding: []).count, 2)
     }
+
+    func testPushRegistrationTransportRequiresStagingAccountPost() {
+        for action in ["notifications.registerDeviceForPushNotifications", "notifications.unregisterDeviceForPushNotifications"] {
+            let staging = URL(string: "https://staging.api.learncard.app/trpc/\(action)?batch=1")!
+            XCTAssertTrue(StagingTransport.permits(staging, method: "POST", accountHost: true))
+            XCTAssertFalse(StagingTransport.permits(staging, method: "GET", accountHost: true))
+            XCTAssertFalse(StagingTransport.permits(staging, method: "POST", accountHost: false))
+            let production = URL(string: "https://api.learncard.app/trpc/\(action)?batch=1")!
+            XCTAssertFalse(StagingTransport.permits(production, method: "POST", accountHost: true))
+        }
+    }
 }

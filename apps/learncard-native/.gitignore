@@ -22,4 +22,5 @@ ios/NativeCore/Sources/LearnCardNativeSDK/Resources/signup-policy.json
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/native-oauth.json
 ios/GeneratedOAuth.xcconfig
 ios/GeneratedOAuth.entitlements
+ios/Sources/NativeCredentialPushConfig.json
 oauth-config.local.json

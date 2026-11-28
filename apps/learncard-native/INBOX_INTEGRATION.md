@@ -16,7 +16,14 @@ The staging LCA API is independent of the brain network client. `runtime.ts` cre
 
 Notifications load 30 at a time, in reverse chronological order with `archived: false`. More updates uses the server-issued opaque cursor. Arrival notifications whose credential URIs match a pending offer are suppressed from the update list and badge. The badge counts loaded unread updates plus credential offers; it is not a total count across unloaded notification pages. Relationship pagination validates requests against the current account's full bounded membership query, and fails rather than accepting an incomplete view when a cursor is missing/repeated.
 
-While the app is active, a signed-in account checks the existing pending-offers endpoint every 30 seconds. Initial offers establish a baseline. Newly discovered offers update the Inbox and its badge together and trigger a SwiftUI toast once per account session. The toast opens Inbox. The check reuses known offers and preserves Passport's loaded records and pagination. Transient check failures leave the current Inbox in place. The check stops when the app leaves the foreground.
+While the app is active, a Firebase credential notification triggers an immediate read from the existing authenticated pending-offers endpoint. The notification supplies a refresh signal. The offer read supplies the credential, badge count and SwiftUI toast. Initial offers establish a quiet baseline, and repeated delivery does not reannounce an existing offer. The read reuses known offers and preserves Passport's loaded records and pagination. If a claim or full refresh is in progress, the push-triggered read waits for that operation. Foreground reconciliation and manual refresh cover missed notifications.
+
+### Enable push for a signed Native Lab build
+
+- Export the public `GoogleService-Info.plist` for the registered `org.learningeconomy.learncard.native.experiment` Firebase iOS app.
+- Set `LC_NATIVE_PUSH_FIREBASE_PLIST` to that file and `LC_NATIVE_APNS_ENVIRONMENT` to the signing profile's `development` or `production` environment when preparing the build. Both values are required together.
+- Use a provisioning profile with Push Notifications enabled for the Native Lab bundle ID. Firebase must have a matching APNs credential, and the staging notification service must send from the app's Firebase project.
+- Sign in on the device and allow notifications. The ready account enrolls its FCM token through the existing staging notifications API. Signing out disables delivery and invalidates the installation token before another account can enroll it.
 
 Dismiss matches the web notification action: archive/read metadata only. It does not reject, cancel or disconnect a relationship. Relationship queries do not synthesize new Inbox notices from pending requests, which would recreate previously archived notifications on refresh.
 
@@ -34,7 +41,7 @@ Legacy/malformed prompt metadata keeps its ordinary notification type. It never 
 
 Protocol tests inject SDK/API boundaries without contacting staging. Swift tests cover late replies after lock, duplicate taps, terminal receipt reconciliation, cursor rejection, sample-only post-claim prompts, localization and the exact transport allowlist. Simulator tests exercise actual request actions and explicit post-claim decisions in sample mode. No agent test sends a real connection request or accepts a real credential.
 
-Live account notification/prompt actions, long histories, partner-specific notification variants and real server delivery still need dedicated staging validation. This slice does not implement push registration, a full connections directory, guardian approval, device-request decisions or every web notification destination. Those notices remain readable/dismissible without pretending their specialized actions are implemented.
+Live account notification/prompt actions, long histories, partner-specific notification variants and signed-device FCM/APNs delivery still need dedicated staging validation. Connection, guardian and device notices retain their existing specialized-action coverage.
 
 ## Landmarks
 

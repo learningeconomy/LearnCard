@@ -6,6 +6,7 @@ import LearnCardNativeCore
     var page: CredentialOfferPage
     var failRead = false
     private(set) var seenCachedIDs: [String] = []
+    private(set) var offerReads = 0
     private let initial: CollectionSnapshot
 
     init(initial: CollectionSnapshot) {
@@ -15,6 +16,7 @@ import LearnCardNativeCore
 
     func snapshot() async throws -> CollectionSnapshot { initial }
     func credentialOffers(cachedIDs: [String]) async throws -> CredentialOfferPage {
+        offerReads += 1
         seenCachedIDs = cachedIDs
         if failRead { throw AccountError.connection }
         return page
@@ -90,6 +92,28 @@ import LearnCardNativeCore
         XCTAssertNil(store.latestCredentialArrival)
         XCTAssertNil(store.error)
         XCTAssertNil(store.refreshError)
+    }
+
+    func testPushRequestsWaitForBusyWorkAndCoalesceBeforeReading() async {
+        let known = credential("known")
+        let incoming = credential("incoming")
+        let service = OfferReader(initial: CollectionSnapshot(credentials: [], offers: [known], activity: []))
+        let store = NativeAppStore(service: service)
+        await store.refresh()
+        service.page = CredentialOfferPage(ids: [incoming.id, known.id], credentials: [incoming])
+
+        store.isBusy = true
+        store.requestCredentialOfferRefresh()
+        store.requestCredentialOfferRefresh()
+        await Task.yield()
+        XCTAssertEqual(service.offerReads, 0)
+        XCTAssertEqual(store.inboxCount, 1)
+
+        store.isBusy = false
+        for _ in 0..<100 where store.latestCredentialArrival == nil { await Task.yield() }
+        XCTAssertEqual(service.offerReads, 1)
+        XCTAssertEqual(store.inboxCount, 2)
+        XCTAssertEqual(store.latestCredentialArrival?.id, incoming.id)
     }
 
     private func credential(_ id: String) -> Credential {

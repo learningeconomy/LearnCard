@@ -10,6 +10,9 @@
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
     <key>CFBundleVersion</key><string>3</string>
     <key>CFBundleLocalizations</key><array><string>en</string><string>es</string><string>fr</string><string>ar</string></array>
+    <key>FirebaseAppDelegateProxyEnabled</key><false/>
+    <key>FirebaseMessagingAutoInitEnabled</key><false/>
+    <key>LCNativeAPNSEnvironment</key><string>$(LC_NATIVE_APNS_ENVIRONMENT)</string>
     <key>LSRequiresIPhoneOS</key><true/>
     <key>NSCameraUsageDescription</key><string>Scan a LearnCard code to review a credential before adding it.</string>
     <key>UILaunchStoryboardName</key><string>LearnCardLaunch</string>

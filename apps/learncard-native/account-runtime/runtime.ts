@@ -537,6 +537,13 @@ const shares = new Map<
     { fingerprint: string; prepared: PreparedShare; operation?: ShareLinkOperationKeyInput }
 >();
 
+const inboxAccountAPI = (current: NonNullable<typeof wallet>) =>
+    getAccountAPI('https://staging.api.learncard.app/trpc', async challenge => {
+        const proof = await current.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        if (typeof proof !== 'string') throw new Error('Account proof unavailable');
+        return proof;
+    });
+
 const commands = {
     ...createLearnerCommands(() => wallet, display),
     ...createCareerCommands(
@@ -575,17 +582,7 @@ const commands = {
     ...createInboxCommands(
         () => wallet,
         async current => {
-            const client = await getAccountAPI(
-                'https://staging.api.learncard.app/trpc',
-                async challenge => {
-                    const proof = await current.invoke.getDidAuthVp({
-                        proofFormat: 'jwt',
-                        challenge,
-                    });
-                    if (typeof proof !== 'string') throw new Error('Account proof unavailable');
-                    return proof;
-                }
-            );
+            const client = await inboxAccountAPI(current);
             return {
                 list: async cursor =>
                     client.notifications.notifications.query({
@@ -597,6 +594,23 @@ const commands = {
             };
         }
     ),
+    pushRegistration: async (input: { token?: string; enabled?: boolean }) => {
+        const current = wallet;
+        if (!current || accountPhase !== 'ready') throw new Error('Sign in first');
+        const { token, enabled } = input ?? {};
+        if (
+            typeof token !== 'string' ||
+            !/^[\x21-\x7e]{1,4096}$/.test(token) ||
+            typeof enabled !== 'boolean'
+        )
+            throw new Error('Invalid push registration');
+
+        const { notifications } = await inboxAccountAPI(current);
+        if (wallet !== current || accountPhase !== 'ready') throw new Error('Account changed');
+        return enabled
+            ? notifications.registerDeviceForPushNotifications.mutate({ token })
+            : notifications.unregisterDeviceForPushNotifications.mutate({ token });
+    },
     ...createFamilyCommands(
         () => wallet,
         async current => {

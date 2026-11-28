@@ -407,6 +407,15 @@ public final class NativeAccountController {
         return saved
     }
 
+    public func setCredentialPushRegistration(token: String, enabled: Bool) async throws {
+        guard phase == "ready", !endingSession, let runtime = runtime as? AccountRuntime else {
+            throw AccountError.unavailable
+        }
+        let expected = generation
+        try await runtime.setPushRegistration(token: token, enabled: enabled)
+        try check(expected)
+    }
+
     /// Sign-out takes priority over connecting/recovery. Dispose before awaiting cleanup so
     /// an earlier reply cannot reopen the account or keep the SDK's keys in memory.
     public func signOut(forget: Bool) async {
@@ -442,6 +451,7 @@ public final class NativeAccountController {
         claims.lock()
         runtime?.dispose(); runtime = nil
         activation.lock()
+        store?.cancelCredentialOfferRefresh()
         store?.consumer.lock()
         store?.families.lock()
         store?.inbox.lock(); store?.people.lock()

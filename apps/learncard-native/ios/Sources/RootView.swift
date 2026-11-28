@@ -9,7 +9,7 @@ struct RootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var store: AppStore
     var account: AccountController? = nil
-    var credentialOfferCheckInterval: Duration = .seconds(30)
+    private let credentialPush = NativeCredentialPush.shared
     @State private var demoClaims = NativeClaimStore(isDemo: true, journal: MemoryClaimJournal())
     private var claims: NativeClaimStore { account?.claims ?? demoClaims }
     @State private var showCreate = false
@@ -107,13 +107,19 @@ struct RootView: View {
             if tab == 1 { store.dismissCredentialArrival() }
         }
         .task { if store.snapshot == nil { await store.refresh() }; if !store.inbox.loaded { await store.inbox.load() } }
-        .task(id: scenePhase) {
-            guard scenePhase == .active else {
-                store.dismissCredentialArrival()
-                return
-            }
-            await store.observeCredentialArrivals(every: credentialOfferCheckInterval)
+        .onChange(of: credentialPush.arrivalRevision) { _, _ in
+            // Isolated demo builds have no account root.
+            if account == nil, scenePhase == .active { store.requestCredentialOfferRefresh() }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                if account != nil { store.requestCredentialOfferRefresh() }
+            } else {
+                store.cancelCredentialOfferRefresh()
+                store.dismissCredentialArrival()
+            }
+        }
+        .onDisappear { store.cancelCredentialOfferRefresh() }
         .modifier(ClaimPresentation(flow: demoClaims, store: store, enabled: account == nil))
         .task { if account == nil { demoClaims.connect(service: store.demoClaimService, accountID: "demo") } }
         .sheet(isPresented: $showActions, onDismiss: performRequestedAction) {

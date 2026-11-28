@@ -4,6 +4,7 @@ import LearnCardNativeSDK
 
 @main
 struct LearnCardNativeApp: App {
+    @UIApplicationDelegateAdaptor(NativeCredentialPushDelegate.self) private var pushDelegate
     @State private var store = AppStore()
     #if DEBUG
     @State private var fixtureAccount: AccountController?

@@ -106,6 +106,11 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         guard ready else { throw AccountError.unavailable }
         return try await command("credentialOffers", input: ["cachedIDs": cachedIDs])
     }
+    public func setPushRegistration(token: String, enabled: Bool) async throws {
+        guard ready else { throw AccountError.unavailable }
+        let registered: Bool = try await command("pushRegistration", input: ["token": token, "enabled": enabled])
+        guard registered else { throw AccountError.unavailable }
+    }
     public func credentialStatus(_ id: String) async throws -> CredentialStatusCheck {
         try await command("credentialStatus", input: ["uri": id])
     }
