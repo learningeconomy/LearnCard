@@ -477,8 +477,15 @@ describe('campaign composer', () => {
             expect(view.history.location.pathname).toBe('/admin/campaigns/test-campaign')
         );
         expect(api.campaignsCreate).toHaveBeenCalledTimes(1);
-        fireEvent.click(await screen.findByRole('button', { name: 'Go Live' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm live' }));
+        // navigate() updates the data-router location before React remounts the :id
+        // editor, which flashes "Loading campaign...". Wait for that editor, not the
+        // pre-navigation Go Live control, or Confirm live is clicked on a dead tree.
+        await waitFor(() => {
+            expect(screen.queryByText('Loading campaign...')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Go Live' })).toBeInTheDocument();
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Go Live' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Confirm live' }));
         await waitFor(() =>
             expect(api.campaignsSetStatus).toHaveBeenCalledWith('test-campaign', 'live')
         );

@@ -674,7 +674,9 @@ export const doctorStack = async (
             throw new Error(`Frontend root ${root}: HTTP ${response.status}`);
         }
         const html = await response.text();
-        if (!html.includes('id="root"') || !html.includes('/src/index')) {
+        // The document is src/root.tsx; the client entry is src/entry.client.tsx (renamed from
+        // src/index.tsx when the app moved to React Router framework mode).
+        if (!html.includes('id="root"') || !html.includes('/src/entry.client')) {
             permanentFrontendFailure = true;
             throw new Error(`Frontend root ${root} is not the prepared LearnCard HTML`);
         }

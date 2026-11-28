@@ -24,6 +24,7 @@ import {
 } from './src/buildPlugins/chunkPrefetchList';
 import { CHUNK_PREFETCH_LIST_FILE } from './scripts/finalize-static-build';
 import { cssModulesInEvaluationOrder, orderEntryCss } from './src/buildPlugins/entryCssOrder';
+import { serveStaticDevHtml } from './scripts/serve-static-dev-html';
 import { documentBrandingFor } from './src/config/documentBranding';
 import { createManualChunks } from './src/buildPlugins/vendorChunks';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
@@ -393,7 +394,12 @@ export const learnCardViteConfig = async (
             paraglideBarrelWithoutSideEffects(),
             // The prefetch list and stylesheet order are for the documents React Router writes.
             ...(frameworkMode
-                ? [chunkPrefetchList(), reactRouterEntryCssOrder(), ...reactRouter()]
+                ? [
+                      serveStaticDevHtml(__dirname),
+                      chunkPrefetchList(),
+                      reactRouterEntryCssOrder(),
+                      ...reactRouter(),
+                  ]
                 : [react()]),
             svgr(),
             tsconfigPaths({ root: '../../' }),
